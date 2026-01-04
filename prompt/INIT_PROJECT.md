@@ -4,6 +4,8 @@
 
 อ่านฟีเจอร์ที่เขียนไว้ที่ /Users/marosdeeuma/ai-content-creator-nextjs/prompt/FEATURE.md
 
+ออกแบบ Master Data และ Mock data สำหรับโปรเจค
+
 โดยทุกครั้งที่สร้าง page.tsx ต้องทำตาม rule ที่เขียนไว้ที่ /Users/marosdeeuma/ai-content-creator-nextjs/prompt/CREATE_PAGE_PATTERN.md
 
 ตามหลัก SOLID Clean
