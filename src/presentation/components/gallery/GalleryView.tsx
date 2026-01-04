@@ -8,6 +8,10 @@ import { MainLayout } from '../layout/MainLayout';
 import { JellyButton } from '../ui/JellyButton';
 import { JellyCard } from '../ui/JellyCard';
 
+// Types
+type ViewMode = 'grid' | 'list';
+type SortOption = 'newest' | 'oldest' | 'likes' | 'shares';
+
 interface FilterButtonProps {
   label: string;
   value: ContentFilter;
@@ -64,7 +68,6 @@ function ContentDetailModal({ content, onClose }: ContentDetailModalProps) {
         className="glass-card p-6 max-w-lg w-full max-h-[90vh] overflow-auto"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Close button */}
         <JellyButton
           onClick={onClose}
           variant="ghost"
@@ -74,12 +77,10 @@ function ContentDetailModal({ content, onClose }: ContentDetailModalProps) {
           ✕
         </JellyButton>
 
-        {/* Image */}
         <div className="w-full aspect-square rounded-xl bg-gradient-to-br from-violet-500/30 via-purple-500/20 to-fuchsia-500/30 mb-4 flex items-center justify-center">
           <span className="text-6xl">🎨</span>
         </div>
 
-        {/* Info */}
         <div className="space-y-4">
           <div className="flex items-center gap-2 flex-wrap">
             <span className={`text-xs px-3 py-1 rounded-full ${statusColors[content.status]}`}>
@@ -104,13 +105,11 @@ function ContentDetailModal({ content, onClose }: ContentDetailModalProps) {
             </div>
           )}
 
-          {/* Prompt */}
           <JellyCard className="glass-card p-3">
             <div className="text-xs text-muted mb-1">AI Prompt:</div>
             <div className="text-sm text-foreground">{content.prompt}</div>
           </JellyCard>
 
-          {/* Actions */}
           <div className="flex gap-2">
             <JellyButton variant="primary" className="flex-1">
               ✨ Regenerate
@@ -148,21 +147,14 @@ function GalleryCard({ content, onClick, delay }: GalleryCardProps) {
 
   return (
     <animated.div style={spring}>
-      <JellyCard
-        onClick={onClick}
-        className="glass-card-hover p-4 group"
-      >
-        {/* Image */}
+      <JellyCard onClick={onClick} className="glass-card-hover p-4 group">
         <div className="w-full aspect-square rounded-xl bg-gradient-to-br from-violet-500/20 via-purple-500/10 to-fuchsia-500/20 mb-3 flex items-center justify-center overflow-hidden relative">
           <span className="text-4xl group-hover:scale-125 transition-transform duration-500">🎨</span>
-          
-          {/* Hover overlay */}
           <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
             <span className="text-white text-sm font-medium">View Details</span>
           </div>
         </div>
 
-        {/* Content */}
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <span className={`text-xs px-2 py-1 rounded-full ${statusColors[content.status]}`}>
@@ -185,13 +177,129 @@ function GalleryCard({ content, onClick, delay }: GalleryCardProps) {
   );
 }
 
+/**
+ * GalleryListCard - List view card with more details
+ */
+interface GalleryListCardProps {
+  content: GeneratedContent;
+  onClick: () => void;
+  delay: number;
+}
+
+function GalleryListCard({ content, onClick, delay }: GalleryListCardProps) {
+  const statusColors = {
+    draft: 'bg-gray-500/20 text-gray-400',
+    scheduled: 'bg-blue-500/20 text-blue-400',
+    published: 'bg-green-500/20 text-green-400',
+    failed: 'bg-red-500/20 text-red-400',
+  };
+
+  const spring = useSpring({
+    from: { opacity: 0, x: -20 },
+    to: { opacity: 1, x: 0 },
+    delay,
+    config: config.gentle,
+  });
+
+  return (
+    <animated.div style={spring}>
+      <JellyCard onClick={onClick} className="glass-card-hover p-4 group">
+        <div className="flex gap-4">
+          {/* Thumbnail */}
+          <div className="w-20 h-20 flex-shrink-0 rounded-xl bg-gradient-to-br from-violet-500/20 via-purple-500/10 to-fuchsia-500/20 flex items-center justify-center">
+            <span className="text-2xl group-hover:scale-110 transition-transform">🎨</span>
+          </div>
+
+          {/* Content */}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-1">
+              <span className={`text-xs px-2 py-0.5 rounded-full ${statusColors[content.status]}`}>
+                {content.status}
+              </span>
+              <span className="text-xs text-muted">{content.timeSlot}</span>
+            </div>
+            <h4 className="text-sm font-semibold text-foreground line-clamp-1 group-hover:text-violet-400 transition-colors mb-1">
+              {content.title}
+            </h4>
+            <p className="text-xs text-muted line-clamp-2">{content.description}</p>
+          </div>
+
+          {/* Stats */}
+          {content.status === 'published' && (
+            <div className="flex-shrink-0 text-right">
+              <div className="text-sm font-bold text-foreground">❤️ {content.likes}</div>
+              <div className="text-xs text-muted">🔗 {content.shares}</div>
+            </div>
+          )}
+        </div>
+      </JellyCard>
+    </animated.div>
+  );
+}
+
+/**
+ * ViewModeToggle - Grid/List view toggle
+ */
+function ViewModeToggle({ mode, onChange }: { mode: ViewMode; onChange: (mode: ViewMode) => void }) {
+  return (
+    <div className="flex gap-1 p-1 glass-card rounded-lg">
+      <button
+        onClick={() => onChange('grid')}
+        className={`px-3 py-1.5 text-xs rounded-md transition-all flex items-center gap-1 ${
+          mode === 'grid'
+            ? 'bg-violet-600 text-white'
+            : 'text-muted hover:text-foreground'
+        }`}
+      >
+        <span>▦</span> Grid
+      </button>
+      <button
+        onClick={() => onChange('list')}
+        className={`px-3 py-1.5 text-xs rounded-md transition-all flex items-center gap-1 ${
+          mode === 'list'
+            ? 'bg-violet-600 text-white'
+            : 'text-muted hover:text-foreground'
+        }`}
+      >
+        <span>☰</span> List
+      </button>
+    </div>
+  );
+}
+
+/**
+ * SortSelector - Sorting options dropdown
+ */
+function SortSelector({ sort, onChange }: { sort: SortOption; onChange: (sort: SortOption) => void }) {
+  const sortOptions: { value: SortOption; label: string; icon: string }[] = [
+    { value: 'newest', label: 'ใหม่สุด', icon: '🕐' },
+    { value: 'oldest', label: 'เก่าสุด', icon: '📅' },
+    { value: 'likes', label: 'Likes มากสุด', icon: '❤️' },
+    { value: 'shares', label: 'Shares มากสุด', icon: '🔗' },
+  ];
+
+  return (
+    <select
+      value={sort}
+      onChange={(e) => onChange(e.target.value as SortOption)}
+      className="px-3 py-2 text-sm rounded-lg glass-card text-foreground focus:outline-none focus:ring-2 focus:ring-violet-500/50 cursor-pointer"
+    >
+      {sortOptions.map((option) => (
+        <option key={option.value} value={option.value}>
+          {option.icon} {option.label}
+        </option>
+      ))}
+    </select>
+  );
+}
+
 interface GalleryViewProps {
   initialViewModel?: GalleryViewModel;
 }
 
 /**
  * GalleryView component
- * Content gallery with jelly animations
+ * Content gallery with Grid/List toggle and sorting
  */
 export function GalleryView({ initialViewModel }: GalleryViewProps) {
   const viewModel = initialViewModel || {
@@ -203,13 +311,37 @@ export function GalleryView({ initialViewModel }: GalleryViewProps) {
 
   const [filter, setFilter] = useState<ContentFilter>(viewModel.filter);
   const [selectedContent, setSelectedContent] = useState<GeneratedContent | null>(null);
+  const [viewMode, setViewMode] = useState<ViewMode>('grid');
+  const [sortOption, setSortOption] = useState<SortOption>('newest');
 
-  // Filter contents with useMemo
-  const filteredContents = useMemo(() => {
-    return filter === 'all'
+  // Filter and sort contents
+  const filteredAndSortedContents = useMemo(() => {
+    let contents = filter === 'all'
       ? viewModel.contents
       : viewModel.contents.filter((c) => c.status === filter);
-  }, [viewModel.contents, filter]);
+
+    // Sort
+    switch (sortOption) {
+      case 'newest':
+        contents = [...contents].sort((a, b) => 
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
+        break;
+      case 'oldest':
+        contents = [...contents].sort((a, b) => 
+          new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+        );
+        break;
+      case 'likes':
+        contents = [...contents].sort((a, b) => (b.likes || 0) - (a.likes || 0));
+        break;
+      case 'shares':
+        contents = [...contents].sort((a, b) => (b.shares || 0) - (a.shares || 0));
+        break;
+    }
+
+    return contents;
+  }, [viewModel.contents, filter, sortOption]);
 
   // Get counts for each filter
   const counts = useMemo(() => ({
@@ -231,12 +363,20 @@ export function GalleryView({ initialViewModel }: GalleryViewProps) {
         <div className="max-w-7xl mx-auto px-6 py-6 space-y-6">
           
           {/* Header */}
-          <animated.div style={headerSpring} className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div>
-              <h1 className="text-2xl font-bold gradient-text-purple">Gallery</h1>
-              <p className="text-sm text-muted">
-                รวมคอนเทนต์ทั้งหมด {viewModel.totalCount} รายการ
-              </p>
+          <animated.div style={headerSpring} className="space-y-4">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div>
+                <h1 className="text-2xl font-bold gradient-text-purple">Gallery</h1>
+                <p className="text-sm text-muted">
+                  รวมคอนเทนต์ทั้งหมด {viewModel.totalCount} รายการ
+                </p>
+              </div>
+              
+              {/* View controls */}
+              <div className="flex items-center gap-3">
+                <SortSelector sort={sortOption} onChange={setSortOption} />
+                <ViewModeToggle mode={viewMode} onChange={setViewMode} />
+              </div>
             </div>
             
             {/* Filters */}
@@ -248,18 +388,31 @@ export function GalleryView({ initialViewModel }: GalleryViewProps) {
             </div>
           </animated.div>
 
-          {/* Content Grid */}
-          {filteredContents.length > 0 ? (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {filteredContents.map((content, index) => (
-                <GalleryCard
-                  key={content.id}
-                  content={content}
-                  onClick={() => setSelectedContent(content)}
-                  delay={50 + index * 30}
-                />
-              ))}
-            </div>
+          {/* Content Grid/List */}
+          {filteredAndSortedContents.length > 0 ? (
+            viewMode === 'grid' ? (
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                {filteredAndSortedContents.map((content, index) => (
+                  <GalleryCard
+                    key={content.id}
+                    content={content}
+                    onClick={() => setSelectedContent(content)}
+                    delay={50 + index * 30}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {filteredAndSortedContents.map((content, index) => (
+                  <GalleryListCard
+                    key={content.id}
+                    content={content}
+                    onClick={() => setSelectedContent(content)}
+                    delay={50 + index * 30}
+                  />
+                ))}
+              </div>
+            )
           ) : (
             <JellyCard className="glass-card p-12 text-center">
               <span className="text-5xl mb-4 block">🎨</span>

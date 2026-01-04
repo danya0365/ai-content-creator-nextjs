@@ -77,6 +77,82 @@ function SettingRow({ label, description, children }: SettingRowProps) {
   );
 }
 
+/**
+ * ProfileSection - User profile section with avatar, stats
+ */
+function ProfileSection({ delay }: { delay: number }) {
+  const springProps = useSpring({
+    from: { opacity: 0, y: 20 },
+    to: { opacity: 1, y: 0 },
+    delay,
+    config: config.gentle,
+  });
+
+  // Mock user data
+  const user = {
+    name: 'ผู้สร้างคอนเทนต์',
+    email: 'creator@example.com',
+    bio: 'สร้างคอนเทนต์ Pixel Art ที่น่ารักด้วย AI',
+    avatar: '👤',
+    stats: {
+      totalContents: 156,
+      published: 89,
+      likes: 2847,
+      shares: 523,
+    },
+  };
+
+  return (
+    <animated.div style={springProps}>
+      <JellyCard className="glass-card p-6">
+        <div className="flex flex-col sm:flex-row gap-6 items-center sm:items-start">
+          {/* Avatar */}
+          <div className="relative">
+            <div className="w-24 h-24 rounded-full bg-gradient-to-br from-violet-500 to-fuchsia-500 flex items-center justify-center text-4xl shadow-lg shadow-purple-500/25">
+              {user.avatar}
+            </div>
+            <button className="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-violet-600 text-white flex items-center justify-center text-sm hover:bg-violet-500 transition-colors shadow-lg">
+              📷
+            </button>
+          </div>
+
+          {/* Info */}
+          <div className="flex-1 text-center sm:text-left">
+            <h2 className="text-xl font-bold text-foreground mb-1">{user.name}</h2>
+            <p className="text-sm text-muted mb-2">{user.email}</p>
+            <p className="text-sm text-muted/80 mb-4">{user.bio}</p>
+
+            {/* Stats */}
+            <div className="flex gap-4 justify-center sm:justify-start">
+              <div className="text-center">
+                <div className="text-lg font-bold text-foreground">{user.stats.totalContents}</div>
+                <div className="text-xs text-muted">คอนเทนต์</div>
+              </div>
+              <div className="text-center">
+                <div className="text-lg font-bold text-green-400">{user.stats.published}</div>
+                <div className="text-xs text-muted">เผยแพร่</div>
+              </div>
+              <div className="text-center">
+                <div className="text-lg font-bold text-pink-400">{user.stats.likes}</div>
+                <div className="text-xs text-muted">Likes</div>
+              </div>
+              <div className="text-center">
+                <div className="text-lg font-bold text-blue-400">{user.stats.shares}</div>
+                <div className="text-xs text-muted">Shares</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Edit button */}
+          <JellyButton variant="secondary" size="sm">
+            ✏️ แก้ไข
+          </JellyButton>
+        </div>
+      </JellyCard>
+    </animated.div>
+  );
+}
+
 interface SettingsViewProps {
   initialViewModel?: SettingsViewModel;
 }
@@ -150,6 +226,9 @@ export function SettingsView({ initialViewModel }: SettingsViewProps) {
               )}
             </JellyButton>
           </animated.div>
+
+          {/* Profile Section */}
+          <ProfileSection delay={50} />
 
           {/* API Settings */}
           <SettingsSection title="API Configuration" icon="🔑" delay={100}>
