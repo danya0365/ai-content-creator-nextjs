@@ -1,0 +1,21 @@
+/* Tailwind v4 Utilities */
+
+/* Hide scrollbar utility */
+@utility scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@layer base {
+  /* Overlay backgrounds */
+  .bg-overlay { background-color: var(--color-overlay); }
+  .bg-overlay-light { background-color: var(--color-overlay-light); }
+  .bg-overlay-dark { background-color: var(--color-overlay-dark); }
+
+  /* Gradients */
+  .bg-primary-gradient { background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark)); }
+}
+
