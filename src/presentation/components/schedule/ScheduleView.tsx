@@ -6,6 +6,8 @@ import { ScheduleDay, ScheduleViewModel } from '@/src/presentation/presenters/sc
 import { animated, config, useSpring } from '@react-spring/web';
 import { useState } from 'react';
 import { MainLayout } from '../layout/MainLayout';
+import { JellyButton } from '../ui/JellyButton';
+import { JellyCard } from '../ui/JellyCard';
 
 interface DayColumnProps {
   day: ScheduleDay;
@@ -23,27 +25,29 @@ function DayColumn({ day, isSelected, onClick, delay }: DayColumnProps) {
   });
 
   return (
-    <animated.button
-      style={springProps}
-      onClick={onClick}
-      className={`flex flex-col items-center p-3 rounded-2xl transition-all duration-300 min-w-[70px] ${
-        isSelected
-          ? 'bg-gradient-to-b from-violet-600 to-fuchsia-600 text-white shadow-lg shadow-purple-500/25'
-          : day.isToday
-          ? 'bg-violet-500/20 text-violet-400 border border-violet-500/30'
-          : 'glass-card text-muted hover:text-foreground'
-      }`}
-    >
-      <span className="text-xs font-medium mb-1">{day.dayOfWeek}</span>
-      <span className="text-xl font-bold">{day.dayNumber}</span>
-      {day.contents.length > 0 && (
-        <div className="flex gap-0.5 mt-2">
-          {day.contents.slice(0, 3).map((_, i) => (
-            <div key={i} className={`w-1.5 h-1.5 rounded-full ${isSelected ? 'bg-white' : 'bg-violet-400'}`} />
-          ))}
-        </div>
-      )}
-    </animated.button>
+    <animated.div style={springProps}>
+      <JellyCard
+        onClick={onClick}
+        as="button"
+        className={`flex flex-col items-center p-3 rounded-2xl transition-all duration-300 min-w-[70px] ${
+          isSelected
+            ? 'bg-gradient-to-b from-violet-600 to-fuchsia-600 text-white shadow-lg shadow-purple-500/25'
+            : day.isToday
+            ? 'bg-violet-500/20 text-violet-400 border border-violet-500/30'
+            : 'glass-card text-muted hover:text-foreground'
+        }`}
+      >
+        <span className="text-xs font-medium mb-1">{day.dayOfWeek}</span>
+        <span className="text-xl font-bold">{day.dayNumber}</span>
+        {day.contents.length > 0 && (
+          <div className="flex gap-0.5 mt-2">
+            {day.contents.slice(0, 3).map((_, i) => (
+              <div key={i} className={`w-1.5 h-1.5 rounded-full ${isSelected ? 'bg-white' : 'bg-violet-400'}`} />
+            ))}
+          </div>
+        )}
+      </JellyCard>
+    </animated.div>
   );
 }
 
@@ -71,34 +75,36 @@ function TimeSlotRow({ slot, contents, onAddContent }: TimeSlotRowProps) {
       <div className="flex-1 min-h-[100px] glass-card rounded-xl p-3 flex gap-3 overflow-x-auto scrollbar-thin">
         {contents.length > 0 ? (
           contents.map((content) => (
-            <div
+            <JellyCard
               key={content.id}
-              className="flex-shrink-0 w-48 glass-card-hover p-3 rounded-xl cursor-pointer"
+              className="flex-shrink-0 w-48 glass-card-hover p-3 rounded-xl"
             >
               <div className="w-full aspect-video rounded-lg bg-gradient-to-br from-violet-500/20 to-fuchsia-500/20 mb-2 flex items-center justify-center">
                 <span className="text-2xl">🎨</span>
               </div>
               <h4 className="text-xs font-medium text-foreground line-clamp-2">{content.title}</h4>
-            </div>
+            </JellyCard>
           ))
         ) : (
-          <button
+          <JellyCard
             onClick={onAddContent}
+            as="button"
             className="flex-shrink-0 w-48 h-full min-h-[80px] border-2 border-dashed border-border/50 rounded-xl flex flex-col items-center justify-center text-muted hover:text-foreground hover:border-violet-500/50 transition-colors"
           >
             <span className="text-xl mb-1">+</span>
             <span className="text-xs">เพิ่มคอนเทนต์</span>
-          </button>
+          </JellyCard>
         )}
         
         {/* Add more button if has contents */}
         {contents.length > 0 && (
-          <button
+          <JellyCard
             onClick={onAddContent}
+            as="button"
             className="flex-shrink-0 w-12 border-2 border-dashed border-border/50 rounded-xl flex items-center justify-center text-muted hover:text-foreground hover:border-violet-500/50 transition-colors"
           >
             <span className="text-xl">+</span>
-          </button>
+          </JellyCard>
         )}
       </div>
     </div>
@@ -111,7 +117,7 @@ interface ScheduleViewProps {
 
 /**
  * ScheduleView component
- * Calendar view with time slots for content scheduling
+ * Calendar view with jelly animations
  */
 export function ScheduleView({ initialViewModel }: ScheduleViewProps) {
   const viewModel = initialViewModel || {
@@ -150,10 +156,10 @@ export function ScheduleView({ initialViewModel }: ScheduleViewProps) {
                 จัดตารางโพสต์คอนเทนต์ • {viewModel.totalScheduled} รายการที่กำลังรอโพสต์
               </p>
             </div>
-            <button className="flex items-center gap-2 px-5 py-3 rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white font-semibold shadow-lg shadow-purple-500/25 hover:shadow-purple-500/40 transition-all duration-300">
+            <JellyButton variant="primary" size="lg">
               <span>➕</span>
               <span>เพิ่ม Schedule</span>
-            </button>
+            </JellyButton>
           </animated.div>
 
           {/* Week selector */}
@@ -171,7 +177,7 @@ export function ScheduleView({ initialViewModel }: ScheduleViewProps) {
 
           {/* Selected day info */}
           {selectedDay && (
-            <div className="glass-card p-4">
+            <JellyCard className="glass-card p-4">
               <div className="flex items-center justify-between mb-4">
                 <div>
                   <h2 className="text-lg font-semibold text-foreground">
@@ -199,7 +205,7 @@ export function ScheduleView({ initialViewModel }: ScheduleViewProps) {
                   />
                 ))}
               </div>
-            </div>
+            </JellyCard>
           )}
 
           {/* Quick stats */}
@@ -207,13 +213,13 @@ export function ScheduleView({ initialViewModel }: ScheduleViewProps) {
             {viewModel.timeSlots.map((slot) => {
               const count = viewModel.scheduledContents.filter((c) => c.timeSlot === slot.id).length;
               return (
-                <div key={slot.id} className="glass-card p-4 flex items-center gap-3">
+                <JellyCard key={slot.id} className="glass-card p-4 flex items-center gap-3">
                   <span className="text-2xl">{slot.emoji}</span>
                   <div>
                     <div className="text-lg font-bold text-foreground">{count}</div>
                     <div className="text-xs text-muted">{slot.nameTh}</div>
                   </div>
-                </div>
+                </JellyCard>
               );
             })}
           </div>

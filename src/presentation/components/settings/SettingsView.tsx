@@ -4,6 +4,8 @@ import { AppSettings, SettingsViewModel } from '@/src/presentation/presenters/se
 import { animated, config, useSpring } from '@react-spring/web';
 import { useState } from 'react';
 import { MainLayout } from '../layout/MainLayout';
+import { JellyButton } from '../ui/JellyButton';
+import { JellyCard, JellyWrapper } from '../ui/JellyCard';
 
 interface ToggleSwitchProps {
   enabled: boolean;
@@ -12,18 +14,20 @@ interface ToggleSwitchProps {
 
 function ToggleSwitch({ enabled, onChange }: ToggleSwitchProps) {
   return (
-    <button
-      onClick={() => onChange(!enabled)}
-      className={`relative w-12 h-6 rounded-full transition-colors duration-300 ${
-        enabled ? 'bg-gradient-to-r from-violet-600 to-fuchsia-600' : 'bg-surface'
-      }`}
-    >
-      <div
-        className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow-lg transition-transform duration-300 ${
-          enabled ? 'translate-x-7' : 'translate-x-1'
+    <JellyWrapper>
+      <button
+        onClick={() => onChange(!enabled)}
+        className={`relative w-12 h-6 rounded-full transition-colors duration-300 ${
+          enabled ? 'bg-gradient-to-r from-violet-600 to-fuchsia-600' : 'bg-surface'
         }`}
-      />
-    </button>
+      >
+        <div
+          className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow-lg transition-transform duration-300 ${
+            enabled ? 'translate-x-7' : 'translate-x-1'
+          }`}
+        />
+      </button>
+    </JellyWrapper>
   );
 }
 
@@ -43,12 +47,14 @@ function SettingsSection({ title, icon, children, delay }: SettingsSectionProps)
   });
 
   return (
-    <animated.div style={springProps} className="glass-card p-5">
-      <div className="flex items-center gap-3 mb-4 pb-3 border-b border-border/30">
-        <span className="text-xl">{icon}</span>
-        <h3 className="text-lg font-semibold text-foreground">{title}</h3>
-      </div>
-      <div className="space-y-4">{children}</div>
+    <animated.div style={springProps}>
+      <JellyCard className="glass-card p-5">
+        <div className="flex items-center gap-3 mb-4 pb-3 border-b border-border/30">
+          <span className="text-xl">{icon}</span>
+          <h3 className="text-lg font-semibold text-foreground">{title}</h3>
+        </div>
+        <div className="space-y-4">{children}</div>
+      </JellyCard>
     </animated.div>
   );
 }
@@ -77,7 +83,7 @@ interface SettingsViewProps {
 
 /**
  * SettingsView component
- * Settings page for app configuration
+ * Settings page with jelly animations
  */
 export function SettingsView({ initialViewModel }: SettingsViewProps) {
   const viewModel = initialViewModel || {
@@ -125,10 +131,11 @@ export function SettingsView({ initialViewModel }: SettingsViewProps) {
               <h1 className="text-2xl font-bold gradient-text-purple">Settings</h1>
               <p className="text-sm text-muted">ตั้งค่าและปรับแต่งการทำงาน</p>
             </div>
-            <button
+            <JellyButton
               onClick={handleSave}
               disabled={isSaving}
-              className="flex items-center gap-2 px-5 py-3 rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white font-semibold shadow-lg shadow-purple-500/25 hover:shadow-purple-500/40 transition-all duration-300 disabled:opacity-50"
+              variant="primary"
+              size="lg"
             >
               {isSaving ? (
                 <>
@@ -141,7 +148,7 @@ export function SettingsView({ initialViewModel }: SettingsViewProps) {
                   <span>บันทึก</span>
                 </>
               )}
-            </button>
+            </JellyButton>
           </animated.div>
 
           {/* API Settings */}
@@ -155,12 +162,13 @@ export function SettingsView({ initialViewModel }: SettingsViewProps) {
                   placeholder="Enter API key..."
                   className="w-48 px-3 py-2 rounded-lg glass-card text-sm text-foreground placeholder-muted focus:outline-none focus:ring-2 focus:ring-violet-500/50"
                 />
-                <button
+                <JellyButton
                   onClick={() => setShowApiKey(!showApiKey)}
-                  className="text-sm text-muted hover:text-foreground"
+                  variant="ghost"
+                  size="sm"
                 >
                   {showApiKey ? '🙈' : '👁️'}
-                </button>
+                </JellyButton>
               </div>
             </SettingRow>
           </SettingsSection>
@@ -252,9 +260,13 @@ export function SettingsView({ initialViewModel }: SettingsViewProps) {
           {/* Danger Zone */}
           <SettingsSection title="Danger Zone" icon="⚠️" delay={350}>
             <SettingRow label="ล้างข้อมูลทั้งหมด" description="ลบคอนเทนต์และ Schedule ทั้งหมด">
-              <button className="px-4 py-2 rounded-lg bg-red-500/20 text-red-400 text-sm font-medium hover:bg-red-500/30 transition-colors">
+              <JellyButton
+                variant="ghost"
+                size="sm"
+                className="bg-red-500/20 text-red-400 hover:bg-red-500/30"
+              >
                 ล้างข้อมูล
-              </button>
+              </JellyButton>
             </SettingRow>
           </SettingsSection>
         </div>

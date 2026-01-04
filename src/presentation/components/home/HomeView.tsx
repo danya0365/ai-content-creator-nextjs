@@ -5,6 +5,8 @@ import { getContentStats } from '@/src/data/mock/mockContents';
 import { animated, config, useSpring } from '@react-spring/web';
 import Link from 'next/link';
 import { MainLayout } from '../layout/MainLayout';
+import { JellyButton } from '../ui/JellyButton';
+import { JellyCard } from '../ui/JellyCard';
 
 interface FeatureCardProps {
   icon: string;
@@ -23,18 +25,17 @@ function FeatureCard({ icon, title, description, color, delay }: FeatureCardProp
   });
 
   return (
-    <animated.div
-      style={springProps}
-      className="glass-card-hover p-5 group cursor-pointer transition-all duration-300 hover:scale-[1.02]"
-    >
-      <div
-        className="w-12 h-12 rounded-xl flex items-center justify-center text-xl mb-3 group-hover:scale-110 transition-transform duration-300"
-        style={{ backgroundColor: `${color}20` }}
-      >
-        {icon}
-      </div>
-      <h3 className="text-base font-semibold text-foreground mb-1">{title}</h3>
-      <p className="text-xs text-muted leading-relaxed line-clamp-2">{description}</p>
+    <animated.div style={springProps}>
+      <JellyCard className="glass-card-hover p-5 h-full">
+        <div
+          className="w-12 h-12 rounded-xl flex items-center justify-center text-xl mb-3"
+          style={{ backgroundColor: `${color}20` }}
+        >
+          {icon}
+        </div>
+        <h3 className="text-base font-semibold text-foreground mb-1">{title}</h3>
+        <p className="text-xs text-muted leading-relaxed line-clamp-2">{description}</p>
+      </JellyCard>
     </animated.div>
   );
 }
@@ -55,13 +56,12 @@ function StatCard({ value, label, icon, delay }: StatCardProps) {
   });
 
   return (
-    <animated.div
-      style={springProps}
-      className="glass-card p-4 text-center"
-    >
-      <div className="text-xl mb-1">{icon}</div>
-      <div className="text-xl font-bold gradient-text-purple">{value}</div>
-      <div className="text-xs text-muted">{label}</div>
+    <animated.div style={springProps}>
+      <JellyCard className="glass-card p-4 text-center">
+        <div className="text-xl mb-1">{icon}</div>
+        <div className="text-xl font-bold gradient-text-purple">{value}</div>
+        <div className="text-xs text-muted">{label}</div>
+      </JellyCard>
     </animated.div>
   );
 }
@@ -85,18 +85,17 @@ function QuickLink({ href, icon, title, description, color, delay }: QuickLinkPr
 
   return (
     <animated.div style={springProps}>
-      <Link
-        href={href}
-        className="glass-card-hover p-4 flex items-center gap-4 group transition-all duration-300 hover:scale-[1.02]"
-      >
-        <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${color} flex items-center justify-center text-xl shadow-lg group-hover:scale-110 transition-transform`}>
-          {icon}
-        </div>
-        <div className="flex-1 min-w-0">
-          <h4 className="font-semibold text-foreground group-hover:text-violet-400 transition-colors">{title}</h4>
-          <p className="text-xs text-muted truncate">{description}</p>
-        </div>
-        <span className="text-muted group-hover:text-violet-400 transition-colors">→</span>
+      <Link href={href}>
+        <JellyCard className="glass-card-hover p-4 flex items-center gap-4 group">
+          <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${color} flex items-center justify-center text-xl shadow-lg`}>
+            {icon}
+          </div>
+          <div className="flex-1 min-w-0">
+            <h4 className="font-semibold text-foreground group-hover:text-violet-400 transition-colors">{title}</h4>
+            <p className="text-xs text-muted truncate">{description}</p>
+          </div>
+          <span className="text-muted group-hover:text-violet-400 transition-colors">→</span>
+        </JellyCard>
       </Link>
     </animated.div>
   );
@@ -104,7 +103,7 @@ function QuickLink({ href, icon, title, description, color, delay }: QuickLinkPr
 
 /**
  * HomeView component
- * Landing page for AI Content Creator - Redesigned
+ * Landing page for AI Content Creator - With Jelly Animations
  */
 export function HomeView() {
   const stats = getContentStats();
@@ -137,21 +136,17 @@ export function HomeView() {
 
           {/* CTA Buttons */}
           <div className="flex flex-wrap justify-center gap-3">
-            <Link 
-              href="/dashboard"
-              className="group relative px-6 py-3 rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white font-semibold shadow-lg shadow-purple-500/25 hover:shadow-purple-500/40 transition-all duration-300 overflow-hidden"
-            >
-              <span className="relative z-10 flex items-center gap-2">
+            <Link href="/dashboard">
+              <JellyButton variant="primary" size="lg">
                 <span>✨</span>
                 <span>เริ่มสร้างคอนเทนต์</span>
-              </span>
+              </JellyButton>
             </Link>
-            <Link 
-              href="/gallery"
-              className="px-6 py-3 rounded-xl glass-card-hover text-foreground font-semibold flex items-center gap-2"
-            >
-              <span>🖼️</span>
-              <span>ดูแกลเลอรี่</span>
+            <Link href="/gallery">
+              <JellyButton variant="secondary" size="lg">
+                <span>🖼️</span>
+                <span>ดูแกลเลอรี่</span>
+              </JellyButton>
             </Link>
           </div>
         </animated.div>
@@ -204,7 +199,7 @@ export function HomeView() {
             />
 
             {/* Time Slots */}
-            <div className="glass-card p-4 mt-4">
+            <JellyCard className="glass-card p-4 mt-4">
               <h4 className="text-sm font-semibold text-foreground mb-3">⏰ ช่วงเวลาโพสต์</h4>
               <div className="space-y-2">
                 {TIME_SLOTS.map((slot) => (
@@ -217,7 +212,7 @@ export function HomeView() {
                   </div>
                 ))}
               </div>
-            </div>
+            </JellyCard>
           </div>
 
           {/* Content Types Grid */}
@@ -239,17 +234,16 @@ export function HomeView() {
         </div>
 
         {/* Bottom CTA */}
-        <div className="glass-card p-6 text-center">
+        <JellyCard className="glass-card p-6 text-center">
           <h3 className="text-xl font-bold gradient-text-purple mb-2">พร้อมเริ่มสร้างคอนเทนต์?</h3>
           <p className="text-sm text-muted mb-4">เริ่มต้นสร้าง Pixel Art content อัตโนมัติได้เลย</p>
-          <Link 
-            href="/dashboard"
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white font-semibold shadow-lg shadow-purple-500/25 hover:shadow-purple-500/40 transition-all"
-          >
-            <span>🚀</span>
-            <span>ไปหน้า Dashboard</span>
+          <Link href="/dashboard">
+            <JellyButton variant="primary" size="lg">
+              <span>🚀</span>
+              <span>ไปหน้า Dashboard</span>
+            </JellyButton>
           </Link>
-        </div>
+        </JellyCard>
       </div>
     </MainLayout>
   );

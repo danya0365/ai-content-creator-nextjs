@@ -2,9 +2,11 @@
 
 import { GeneratedContent } from '@/src/data/mock/mockContents';
 import { ContentFilter, GalleryViewModel } from '@/src/presentation/presenters/gallery/GalleryPresenter';
-import { animated, config, useSpring, useTrail } from '@react-spring/web';
-import { useState } from 'react';
+import { animated, config, useSpring } from '@react-spring/web';
+import { useMemo, useState } from 'react';
 import { MainLayout } from '../layout/MainLayout';
+import { JellyButton } from '../ui/JellyButton';
+import { JellyCard } from '../ui/JellyCard';
 
 interface FilterButtonProps {
   label: string;
@@ -14,18 +16,15 @@ interface FilterButtonProps {
   onClick: () => void;
 }
 
-function FilterButton({ label, value, count, isActive, onClick }: FilterButtonProps) {
+function FilterButton({ label, count, isActive, onClick }: FilterButtonProps) {
   return (
-    <button
+    <JellyButton
       onClick={onClick}
-      className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 ${
-        isActive
-          ? 'bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white shadow-lg shadow-purple-500/25'
-          : 'glass-card text-muted hover:text-foreground'
-      }`}
+      variant={isActive ? 'primary' : 'secondary'}
+      size="sm"
     >
       {label} <span className="opacity-60">({count})</span>
-    </button>
+    </JellyButton>
   );
 }
 
@@ -66,12 +65,14 @@ function ContentDetailModal({ content, onClose }: ContentDetailModalProps) {
         onClick={(e) => e.stopPropagation()}
       >
         {/* Close button */}
-        <button
+        <JellyButton
           onClick={onClose}
-          className="absolute top-4 right-4 w-8 h-8 rounded-full glass-card flex items-center justify-center text-muted hover:text-foreground transition-colors"
+          variant="ghost"
+          size="sm"
+          className="absolute top-4 right-4 w-8 h-8 rounded-full"
         >
           ✕
-        </button>
+        </JellyButton>
 
         {/* Image */}
         <div className="w-full aspect-square rounded-xl bg-gradient-to-br from-violet-500/30 via-purple-500/20 to-fuchsia-500/30 mb-4 flex items-center justify-center">
@@ -104,19 +105,19 @@ function ContentDetailModal({ content, onClose }: ContentDetailModalProps) {
           )}
 
           {/* Prompt */}
-          <div className="glass-card p-3">
+          <JellyCard className="glass-card p-3">
             <div className="text-xs text-muted mb-1">AI Prompt:</div>
             <div className="text-sm text-foreground">{content.prompt}</div>
-          </div>
+          </JellyCard>
 
           {/* Actions */}
           <div className="flex gap-2">
-            <button className="flex-1 py-3 rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white font-semibold">
+            <JellyButton variant="primary" className="flex-1">
               ✨ Regenerate
-            </button>
-            <button className="px-4 py-3 rounded-xl glass-card text-foreground">
+            </JellyButton>
+            <JellyButton variant="secondary">
               📤 Share
-            </button>
+            </JellyButton>
           </div>
         </div>
       </animated.div>
@@ -127,10 +128,10 @@ function ContentDetailModal({ content, onClose }: ContentDetailModalProps) {
 interface GalleryCardProps {
   content: GeneratedContent;
   onClick: () => void;
-  style?: React.CSSProperties;
+  delay: number;
 }
 
-function GalleryCard({ content, onClick, style }: GalleryCardProps) {
+function GalleryCard({ content, onClick, delay }: GalleryCardProps) {
   const statusColors = {
     draft: 'bg-gray-500/20 text-gray-400',
     scheduled: 'bg-blue-500/20 text-blue-400',
@@ -138,40 +139,48 @@ function GalleryCard({ content, onClick, style }: GalleryCardProps) {
     failed: 'bg-red-500/20 text-red-400',
   };
 
-  return (
-    <animated.div
-      style={style}
-      onClick={onClick}
-      className="glass-card-hover p-4 cursor-pointer group"
-    >
-      {/* Image */}
-      <div className="w-full aspect-square rounded-xl bg-gradient-to-br from-violet-500/20 via-purple-500/10 to-fuchsia-500/20 mb-3 flex items-center justify-center overflow-hidden relative">
-        <span className="text-4xl group-hover:scale-125 transition-transform duration-500">🎨</span>
-        
-        {/* Hover overlay */}
-        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-          <span className="text-white text-sm font-medium">View Details</span>
-        </div>
-      </div>
+  const spring = useSpring({
+    from: { opacity: 0, y: 20 },
+    to: { opacity: 1, y: 0 },
+    delay,
+    config: config.gentle,
+  });
 
-      {/* Content */}
-      <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <span className={`text-xs px-2 py-1 rounded-full ${statusColors[content.status]}`}>
-            {content.status}
-          </span>
-          <span className="text-xs text-muted">{content.timeSlot}</span>
-        </div>
-        <h4 className="text-sm font-semibold text-foreground line-clamp-2 group-hover:text-violet-400 transition-colors">
-          {content.title}
-        </h4>
-        {content.status === 'published' && (
-          <div className="flex items-center gap-3 text-xs text-muted">
-            <span>❤️ {content.likes}</span>
-            <span>🔗 {content.shares}</span>
+  return (
+    <animated.div style={spring}>
+      <JellyCard
+        onClick={onClick}
+        className="glass-card-hover p-4 group"
+      >
+        {/* Image */}
+        <div className="w-full aspect-square rounded-xl bg-gradient-to-br from-violet-500/20 via-purple-500/10 to-fuchsia-500/20 mb-3 flex items-center justify-center overflow-hidden relative">
+          <span className="text-4xl group-hover:scale-125 transition-transform duration-500">🎨</span>
+          
+          {/* Hover overlay */}
+          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+            <span className="text-white text-sm font-medium">View Details</span>
           </div>
-        )}
-      </div>
+        </div>
+
+        {/* Content */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <span className={`text-xs px-2 py-1 rounded-full ${statusColors[content.status]}`}>
+              {content.status}
+            </span>
+            <span className="text-xs text-muted">{content.timeSlot}</span>
+          </div>
+          <h4 className="text-sm font-semibold text-foreground line-clamp-2 group-hover:text-violet-400 transition-colors">
+            {content.title}
+          </h4>
+          {content.status === 'published' && (
+            <div className="flex items-center gap-3 text-xs text-muted">
+              <span>❤️ {content.likes}</span>
+              <span>🔗 {content.shares}</span>
+            </div>
+          )}
+        </div>
+      </JellyCard>
     </animated.div>
   );
 }
@@ -182,7 +191,7 @@ interface GalleryViewProps {
 
 /**
  * GalleryView component
- * Content gallery with filters and detail modal
+ * Content gallery with jelly animations
  */
 export function GalleryView({ initialViewModel }: GalleryViewProps) {
   const viewModel = initialViewModel || {
@@ -195,25 +204,20 @@ export function GalleryView({ initialViewModel }: GalleryViewProps) {
   const [filter, setFilter] = useState<ContentFilter>(viewModel.filter);
   const [selectedContent, setSelectedContent] = useState<GeneratedContent | null>(null);
 
-  // Filter contents
-  const filteredContents = filter === 'all'
-    ? viewModel.contents
-    : viewModel.contents.filter((c) => c.status === filter);
-
-  // Animation trail for cards
-  const trail = useTrail(filteredContents.length, {
-    from: { opacity: 0, y: 20 },
-    to: { opacity: 1, y: 0 },
-    config: config.gentle,
-  });
+  // Filter contents with useMemo
+  const filteredContents = useMemo(() => {
+    return filter === 'all'
+      ? viewModel.contents
+      : viewModel.contents.filter((c) => c.status === filter);
+  }, [viewModel.contents, filter]);
 
   // Get counts for each filter
-  const counts = {
+  const counts = useMemo(() => ({
     all: viewModel.contents.length,
     published: viewModel.contents.filter((c) => c.status === 'published').length,
     scheduled: viewModel.contents.filter((c) => c.status === 'scheduled').length,
     draft: viewModel.contents.filter((c) => c.status === 'draft').length,
-  };
+  }), [viewModel.contents]);
 
   const headerSpring = useSpring({
     from: { opacity: 0, y: -10 },
@@ -247,24 +251,24 @@ export function GalleryView({ initialViewModel }: GalleryViewProps) {
           {/* Content Grid */}
           {filteredContents.length > 0 ? (
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {trail.map((style, index) => (
+              {filteredContents.map((content, index) => (
                 <GalleryCard
-                  key={filteredContents[index].id}
-                  content={filteredContents[index]}
-                  onClick={() => setSelectedContent(filteredContents[index])}
-                  style={style}
+                  key={content.id}
+                  content={content}
+                  onClick={() => setSelectedContent(content)}
+                  delay={50 + index * 30}
                 />
               ))}
             </div>
           ) : (
-            <div className="glass-card p-12 text-center">
+            <JellyCard className="glass-card p-12 text-center">
               <span className="text-5xl mb-4 block">🎨</span>
               <h3 className="text-lg font-semibold text-foreground mb-2">ไม่พบคอนเทนต์</h3>
               <p className="text-muted mb-4">ยังไม่มีคอนเทนต์ในหมวดหมู่นี้</p>
-              <button className="px-6 py-3 rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white font-semibold">
+              <JellyButton variant="primary">
                 ✨ สร้างคอนเทนต์ใหม่
-              </button>
-            </div>
+              </JellyButton>
+            </JellyCard>
           )}
         </div>
       </div>

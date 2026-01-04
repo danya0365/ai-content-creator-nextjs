@@ -13,28 +13,26 @@ import {
 import { animated, config, useSpring } from '@react-spring/web';
 import { useMemo, useState } from 'react';
 import { MainLayout } from '../layout/MainLayout';
+import { JellyButton } from '../ui/JellyButton';
+import { JellyCard } from '../ui/JellyCard';
 
 interface FilterButtonProps {
   label: string;
   emoji?: string;
   isActive: boolean;
   onClick: () => void;
-  colorClass?: string;
 }
 
-function FilterButton({ label, emoji, isActive, onClick, colorClass }: FilterButtonProps) {
+function FilterButton({ label, emoji, isActive, onClick }: FilterButtonProps) {
   return (
-    <button
+    <JellyButton
       onClick={onClick}
-      className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 flex items-center gap-2 ${
-        isActive
-          ? colorClass || 'bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white shadow-lg shadow-purple-500/25'
-          : 'glass-card text-muted hover:text-foreground hover:scale-105'
-      }`}
+      variant={isActive ? 'primary' : 'secondary'}
+      size="sm"
     >
       {emoji && <span>{emoji}</span>}
       {label}
-    </button>
+    </JellyButton>
   );
 }
 
@@ -78,7 +76,7 @@ function TimelineCard({ entry, isLeft }: TimelineCardProps) {
   return (
     <div className={`flex items-center gap-4 ${isLeft ? 'flex-row' : 'flex-row-reverse'} animate-fade-in`}>
       {/* Card */}
-      <div className="flex-1 glass-card-hover p-5 rounded-2xl group cursor-pointer max-w-md transition-all duration-300 hover:scale-[1.02]">
+      <JellyCard className="flex-1 glass-card-hover p-5 rounded-2xl group max-w-md">
         {/* Header */}
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
@@ -135,7 +133,7 @@ function TimelineCard({ entry, isLeft }: TimelineCardProps) {
             ))}
           </div>
         )}
-      </div>
+      </JellyCard>
 
       {/* Timeline dot */}
       <div className="relative flex-shrink-0">
@@ -157,7 +155,7 @@ interface TimelineDateHeaderProps {
 function TimelineDateHeader({ group }: TimelineDateHeaderProps) {
   return (
     <div className="flex justify-center my-6 animate-fade-in">
-      <div className={`px-6 py-3 rounded-2xl font-semibold flex items-center gap-3 ${
+      <JellyCard className={`px-6 py-3 rounded-2xl font-semibold flex items-center gap-3 ${
         group.isToday
           ? 'bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white shadow-lg shadow-purple-500/25'
           : group.isYesterday
@@ -167,7 +165,7 @@ function TimelineDateHeader({ group }: TimelineDateHeaderProps) {
         {group.isToday && <span className="w-2 h-2 rounded-full bg-white animate-pulse" />}
         <span>{group.dateLabel}</span>
         <span className="text-sm opacity-60">({group.entries.length} items)</span>
-      </div>
+      </JellyCard>
     </div>
   );
 }
@@ -189,14 +187,16 @@ function StatsCard({ icon, label, value, color, delay }: StatsCardProps) {
   });
 
   return (
-    <animated.div style={spring} className="glass-card p-4 flex items-center gap-3">
-      <span className={`w-10 h-10 rounded-xl bg-gradient-to-br ${color} flex items-center justify-center text-lg`}>
-        {icon}
-      </span>
-      <div>
-        <div className="text-xl font-bold text-foreground">{value.toLocaleString()}</div>
-        <div className="text-xs text-muted">{label}</div>
-      </div>
+    <animated.div style={spring}>
+      <JellyCard className="glass-card p-4 flex items-center gap-3">
+        <span className={`w-10 h-10 rounded-xl bg-gradient-to-br ${color} flex items-center justify-center text-lg`}>
+          {icon}
+        </span>
+        <div>
+          <div className="text-xl font-bold text-foreground">{value.toLocaleString()}</div>
+          <div className="text-xs text-muted">{label}</div>
+        </div>
+      </JellyCard>
     </animated.div>
   );
 }
@@ -207,7 +207,7 @@ interface TimelineViewProps {
 
 /**
  * TimelineView component
- * Beautiful vertical timeline with animations
+ * Beautiful vertical timeline with jelly animations
  */
 export function TimelineView({ initialViewModel }: TimelineViewProps) {
   const viewModel = initialViewModel || {
@@ -367,7 +367,7 @@ export function TimelineView({ initialViewModel }: TimelineViewProps) {
               
               {/* Timeline items */}
               <div className="space-y-4 relative">
-                {filteredGroups.map((group, groupIndex) => (
+                {filteredGroups.map((group) => (
                   <div key={group.date}>
                     <TimelineDateHeader group={group} />
                     {group.entries.map((entry, entryIndex) => (
@@ -382,20 +382,20 @@ export function TimelineView({ initialViewModel }: TimelineViewProps) {
               </div>
             </div>
           ) : (
-            <div className="glass-card p-12 text-center">
+            <JellyCard className="glass-card p-12 text-center">
               <span className="text-5xl mb-4 block">🔍</span>
               <h3 className="text-lg font-semibold text-foreground mb-2">ไม่พบคอนเทนต์</h3>
               <p className="text-muted mb-4">ลองปรับ filter เพื่อดูคอนเทนต์อื่น</p>
-              <button
+              <JellyButton
                 onClick={() => {
                   setFilter('all');
                   setStatusFilter('all');
                 }}
-                className="px-6 py-3 rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white font-semibold"
+                variant="primary"
               >
                 ดูทั้งหมด
-              </button>
-            </div>
+              </JellyButton>
+            </JellyCard>
           )}
         </div>
       </div>

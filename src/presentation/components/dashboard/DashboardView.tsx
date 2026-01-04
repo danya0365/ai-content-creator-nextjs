@@ -8,6 +8,8 @@ import { animated, config, useSpring } from '@react-spring/web';
 import Link from 'next/link';
 import { GenerateContentModal } from '../generate/GenerateContentModal';
 import { MainLayout } from '../layout/MainLayout';
+import { JellyButton } from '../ui/JellyButton';
+import { JellyCard } from '../ui/JellyCard';
 
 interface StatCardProps {
   value: number | string;
@@ -26,20 +28,19 @@ function StatCard({ value, label, icon, color, delay }: StatCardProps) {
   });
 
   return (
-    <animated.div
-      style={springProps}
-      className="glass-card p-5 flex items-center gap-4"
-    >
-      <div
-        className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl"
-        style={{ backgroundColor: `${color}20` }}
-      >
-        {icon}
-      </div>
-      <div>
-        <div className="text-2xl font-bold text-foreground">{value}</div>
-        <div className="text-sm text-muted">{label}</div>
-      </div>
+    <animated.div style={springProps}>
+      <JellyCard className="glass-card p-5 flex items-center gap-4">
+        <div
+          className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl"
+          style={{ backgroundColor: `${color}20` }}
+        >
+          {icon}
+        </div>
+        <div>
+          <div className="text-2xl font-bold text-foreground">{value}</div>
+          <div className="text-sm text-muted">{label}</div>
+        </div>
+      </JellyCard>
     </animated.div>
   );
 }
@@ -65,33 +66,32 @@ function ContentCard({ content, delay }: ContentCardProps) {
   };
 
   return (
-    <animated.div
-      style={springProps}
-      className="glass-card-hover p-4 cursor-pointer group"
-    >
-      {/* Image placeholder */}
-      <div className="w-full aspect-square rounded-xl bg-gradient-to-br from-violet-500/20 to-fuchsia-500/20 mb-3 flex items-center justify-center overflow-hidden">
-        <span className="text-4xl group-hover:scale-110 transition-transform duration-300">🎨</span>
-      </div>
-      
-      {/* Content info */}
-      <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <span className={`text-xs px-2 py-1 rounded-full ${statusColors[content.status]}`}>
-            {content.status === 'published' ? '✅ Published' : 
-             content.status === 'scheduled' ? '📅 Scheduled' : 
-             content.status === 'draft' ? '📝 Draft' : '❌ Failed'}
-          </span>
-          <span className="text-xs text-muted">{content.timeSlot}</span>
+    <animated.div style={springProps}>
+      <JellyCard className="glass-card-hover p-4 group">
+        {/* Image placeholder */}
+        <div className="w-full aspect-square rounded-xl bg-gradient-to-br from-violet-500/20 to-fuchsia-500/20 mb-3 flex items-center justify-center overflow-hidden">
+          <span className="text-4xl group-hover:scale-110 transition-transform duration-300">🎨</span>
         </div>
-        <h4 className="text-sm font-semibold text-foreground line-clamp-2">{content.title}</h4>
-        {content.status === 'published' && (
-          <div className="flex items-center gap-3 text-xs text-muted">
-            <span>❤️ {content.likes}</span>
-            <span>🔗 {content.shares}</span>
+        
+        {/* Content info */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <span className={`text-xs px-2 py-1 rounded-full ${statusColors[content.status]}`}>
+              {content.status === 'published' ? '✅ Published' : 
+               content.status === 'scheduled' ? '📅 Scheduled' : 
+               content.status === 'draft' ? '📝 Draft' : '❌ Failed'}
+            </span>
+            <span className="text-xs text-muted">{content.timeSlot}</span>
           </div>
-        )}
-      </div>
+          <h4 className="text-sm font-semibold text-foreground line-clamp-2">{content.title}</h4>
+          {content.status === 'published' && (
+            <div className="flex items-center gap-3 text-xs text-muted">
+              <span>❤️ {content.likes}</span>
+              <span>🔗 {content.shares}</span>
+            </div>
+          )}
+        </div>
+      </JellyCard>
     </animated.div>
   );
 }
@@ -111,27 +111,29 @@ function QuickGenerateCard({ contentType, delay, onClick }: QuickGenerateCardPro
   });
 
   return (
-    <animated.button
-      style={springProps}
-      onClick={onClick}
-      className="glass-card-hover p-4 flex items-center gap-3 text-left w-full"
-    >
-      <div
-        className="w-10 h-10 rounded-xl flex items-center justify-center text-xl"
-        style={{ backgroundColor: `${contentType.color}20` }}
+    <animated.div style={springProps}>
+      <JellyCard 
+        onClick={onClick}
+        className="glass-card-hover p-4 flex items-center gap-3 text-left w-full"
+        as="button"
       >
-        {contentType.icon}
-      </div>
-      <div className="flex-1 min-w-0">
-        <div className="text-sm font-semibold text-foreground">{contentType.nameTh}</div>
-        <div className="text-xs text-muted truncate">{contentType.descriptionTh}</div>
-      </div>
-      <div className="text-muted">
-        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          <path d="M9 5l7 7-7 7" />
-        </svg>
-      </div>
-    </animated.button>
+        <div
+          className="w-10 h-10 rounded-xl flex items-center justify-center text-xl"
+          style={{ backgroundColor: `${contentType.color}20` }}
+        >
+          {contentType.icon}
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="text-sm font-semibold text-foreground">{contentType.nameTh}</div>
+          <div className="text-xs text-muted truncate">{contentType.descriptionTh}</div>
+        </div>
+        <div className="text-muted">
+          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path d="M9 5l7 7-7 7" />
+          </svg>
+        </div>
+      </JellyCard>
+    </animated.div>
   );
 }
 
@@ -141,7 +143,7 @@ interface DashboardViewProps {
 
 /**
  * DashboardView component
- * Main dashboard for content management
+ * Main dashboard for content management - With Jelly Animations
  */
 export function DashboardView({ initialViewModel }: DashboardViewProps) {
   // Use initial data or fallback
@@ -176,13 +178,10 @@ export function DashboardView({ initialViewModel }: DashboardViewProps) {
               <h1 className="text-2xl font-bold gradient-text-purple">Dashboard</h1>
               <p className="text-sm text-muted">จัดการและติดตามคอนเทนต์ของคุณ</p>
             </div>
-            <button 
-              onClick={openModal}
-              className="flex items-center gap-2 px-5 py-3 rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white font-semibold shadow-lg shadow-purple-500/25 hover:shadow-purple-500/40 transition-all duration-300"
-            >
+            <JellyButton onClick={openModal} variant="primary" size="lg">
               <span>✨</span>
               <span>สร้างคอนเทนต์ใหม่</span>
-            </button>
+            </JellyButton>
           </animated.div>
 
           {/* Stats Grid */}
@@ -210,10 +209,10 @@ export function DashboardView({ initialViewModel }: DashboardViewProps) {
                     <ContentCard key={content.id} content={content} delay={300 + index * 50} />
                   ))
                 ) : (
-                  <div className="col-span-full glass-card p-8 text-center">
+                  <JellyCard className="col-span-full glass-card p-8 text-center">
                     <span className="text-4xl mb-3 block">🎨</span>
                     <p className="text-muted">ยังไม่มีคอนเทนต์ เริ่มสร้างกันเลย!</p>
-                  </div>
+                  </JellyCard>
                 )}
               </div>
             </div>
@@ -222,7 +221,7 @@ export function DashboardView({ initialViewModel }: DashboardViewProps) {
             <div className="space-y-4">
               {/* Current Time Slot */}
               {viewModel.currentTimeSlot && (
-                <div className="glass-card p-4">
+                <JellyCard className="glass-card p-4">
                   <div className="flex items-center gap-2 mb-3">
                     <span className="text-2xl">{viewModel.currentTimeSlot.emoji}</span>
                     <div>
@@ -241,7 +240,7 @@ export function DashboardView({ initialViewModel }: DashboardViewProps) {
                       }}
                     />
                   </div>
-                </div>
+                </JellyCard>
               )}
 
               {/* Quick Generate */}
@@ -265,13 +264,13 @@ export function DashboardView({ initialViewModel }: DashboardViewProps) {
                   <h3 className="text-sm font-semibold text-foreground mb-3">📅 กำลังจะโพสต์</h3>
                   <div className="space-y-2">
                     {viewModel.scheduledContents.slice(0, 3).map((content) => (
-                      <div key={content.id} className="glass-card p-3 flex items-center gap-3">
+                      <JellyCard key={content.id} className="glass-card p-3 flex items-center gap-3">
                         <span className="text-xl">🎨</span>
                         <div className="flex-1 min-w-0">
                           <div className="text-xs font-medium text-foreground truncate">{content.title}</div>
                           <div className="text-xs text-muted">{content.timeSlot}</div>
                         </div>
-                      </div>
+                      </JellyCard>
                     ))}
                   </div>
                 </div>
