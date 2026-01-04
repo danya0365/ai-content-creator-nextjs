@@ -10,6 +10,10 @@ import { GenerateContentModal } from '../generate/GenerateContentModal';
 import { MainLayout } from '../layout/MainLayout';
 import { JellyButton } from '../ui/JellyButton';
 import { JellyCard } from '../ui/JellyCard';
+import { MiniSparkline } from '../ui/SimpleChart';
+import { TrendIndicator } from '../ui/TrendIndicator';
+import { ActivityFeed } from './ActivityFeed';
+import { EngagementChart } from './EngagementChart';
 
 interface StatCardProps {
   value: number | string;
@@ -17,9 +21,11 @@ interface StatCardProps {
   icon: string;
   color: string;
   delay: number;
+  trend?: number;
+  sparklineData?: number[];
 }
 
-function StatCard({ value, label, icon, color, delay }: StatCardProps) {
+function StatCard({ value, label, icon, color, delay, trend, sparklineData }: StatCardProps) {
   const springProps = useSpring({
     from: { opacity: 0, y: 20 },
     to: { opacity: 1, y: 0 },
@@ -29,16 +35,28 @@ function StatCard({ value, label, icon, color, delay }: StatCardProps) {
 
   return (
     <animated.div style={springProps}>
-      <JellyCard className="glass-card p-5 flex items-center gap-4">
-        <div
-          className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl"
-          style={{ backgroundColor: `${color}20` }}
-        >
-          {icon}
-        </div>
-        <div>
-          <div className="text-2xl font-bold text-foreground">{value}</div>
-          <div className="text-sm text-muted">{label}</div>
+      <JellyCard className="glass-card p-5">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div
+              className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl"
+              style={{ backgroundColor: `${color}20` }}
+            >
+              {icon}
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-2xl font-bold text-foreground">{value}</span>
+                {trend !== undefined && (
+                  <TrendIndicator value={100 + trend} previousValue={100} size="sm" />
+                )}
+              </div>
+              <div className="text-sm text-muted">{label}</div>
+            </div>
+          </div>
+          {sparklineData && (
+            <MiniSparkline data={sparklineData} color={color} />
+          )}
         </div>
       </JellyCard>
     </animated.div>
@@ -186,10 +204,48 @@ export function DashboardView({ initialViewModel }: DashboardViewProps) {
 
           {/* Stats Grid */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <StatCard value={viewModel.stats.totalContents} label="Total Contents" icon="📝" color="#8B5CF6" delay={100} />
-            <StatCard value={viewModel.stats.publishedCount} label="Published" icon="✅" color="#10B981" delay={150} />
-            <StatCard value={viewModel.stats.scheduledCount} label="Scheduled" icon="📅" color="#3B82F6" delay={200} />
-            <StatCard value={viewModel.stats.totalLikes} label="Total Likes" icon="❤️" color="#EF4444" delay={250} />
+            <StatCard 
+              value={viewModel.stats.totalContents} 
+              label="Total Contents" 
+              icon="📝" 
+              color="#8B5CF6" 
+              delay={100} 
+              trend={12.5}
+              sparklineData={[8, 12, 10, 15, 14, 18, 22]}
+            />
+            <StatCard 
+              value={viewModel.stats.publishedCount} 
+              label="Published" 
+              icon="✅" 
+              color="#10B981" 
+              delay={150} 
+              trend={8.3}
+              sparklineData={[5, 7, 6, 9, 11, 10, 12]}
+            />
+            <StatCard 
+              value={viewModel.stats.scheduledCount} 
+              label="Scheduled" 
+              icon="📅" 
+              color="#3B82F6" 
+              delay={200} 
+              trend={-5.2}
+              sparklineData={[10, 8, 9, 7, 6, 8, 5]}
+            />
+            <StatCard 
+              value={viewModel.stats.totalLikes} 
+              label="Total Likes" 
+              icon="❤️" 
+              color="#EF4444" 
+              delay={250} 
+              trend={24.8}
+              sparklineData={[120, 145, 180, 210, 250, 290, 340]}
+            />
+          </div>
+
+          {/* Charts Section */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <EngagementChart />
+            <ActivityFeed />
           </div>
 
           {/* Main Content Grid */}
