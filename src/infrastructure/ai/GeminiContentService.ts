@@ -36,11 +36,11 @@ function buildPrompt(request: GenerateContentRequest): string {
   }[timeSlot] || '';
 
   return `
-You are a creative content creator specializing in ${contentType.nameEn} content. 
+You are a creative content creator specializing in ${contentType.name} content. 
 Create engaging social media content about: "${topic}"
 
 Context: This content will be posted during ${timeContext}.
-Content Type: ${contentType.nameEn} - ${contentType.descriptionEn}
+Content Type: ${contentType.name} - ${contentType.description}
 Language: ${language === 'th' ? 'Thai' : 'English'}
 
 Please provide:

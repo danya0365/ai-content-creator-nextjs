@@ -1,3 +1,4 @@
+import { ClientProviders } from "@/src/presentation/components/ui/ClientProviders";
 import { ThemeProvider } from "@/src/presentation/components/ui/ThemeProvider";
 import type { Metadata } from "next";
 import "../public/styles/index.css";
@@ -35,7 +36,9 @@ export default function RootLayout({
     <html lang="th" suppressHydrationWarning>
       <body className="antialiased">
         <ThemeProvider>
-          {children}
+          <ClientProviders>
+            {children}
+          </ClientProviders>
         </ThemeProvider>
       </body>
     </html>
