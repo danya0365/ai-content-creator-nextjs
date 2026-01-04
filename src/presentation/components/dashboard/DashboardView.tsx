@@ -188,22 +188,22 @@ export function DashboardView({ initialViewModel }: DashboardViewProps) {
   return (
     <MainLayout showBubbles={false}>
       <div className="h-full overflow-auto scrollbar-thin">
-        <div className="max-w-7xl mx-auto px-6 py-6 space-y-6">
+        <div className="max-w-7xl mx-auto px-3 py-4 md:px-6 md:py-6 space-y-4 md:space-y-6">
           
           {/* Header */}
-          <animated.div style={headerSpring} className="flex items-center justify-between">
+          <animated.div style={headerSpring} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
-              <h1 className="text-2xl font-bold gradient-text-purple">Dashboard</h1>
-              <p className="text-sm text-muted">จัดการและติดตามคอนเทนต์ของคุณ</p>
+              <h1 className="text-xl md:text-2xl font-bold gradient-text-purple">Dashboard</h1>
+              <p className="text-xs md:text-sm text-muted">จัดการและติดตามคอนเทนต์ของคุณ</p>
             </div>
-            <JellyButton onClick={openModal} variant="primary" size="lg">
+            <JellyButton onClick={openModal} variant="primary" size="lg" className="w-full sm:w-auto">
               <span>✨</span>
               <span>สร้างคอนเทนต์ใหม่</span>
             </JellyButton>
           </animated.div>
 
           {/* Stats Grid */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 md:gap-4">
             <StatCard 
               value={viewModel.stats.totalContents} 
               label="Total Contents" 
@@ -243,23 +243,23 @@ export function DashboardView({ initialViewModel }: DashboardViewProps) {
           </div>
 
           {/* Charts Section */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 md:gap-6">
             <EngagementChart />
             <ActivityFeed />
           </div>
 
           {/* Main Content Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
             
             {/* Recent Contents - 2 columns */}
-            <div className="lg:col-span-2 space-y-4">
+            <div className="lg:col-span-2 space-y-3 md:space-y-4">
               <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold text-foreground">คอนเทนต์ล่าสุด</h2>
-                <Link href="/gallery" className="text-sm text-violet-400 hover:text-violet-300 transition-colors">
+                <h2 className="text-base md:text-lg font-semibold text-foreground">คอนเทนต์ล่าสุด</h2>
+                <Link href="/gallery" className="text-xs md:text-sm text-violet-400 hover:text-violet-300 transition-colors">
                   ดูทั้งหมด →
                 </Link>
               </div>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-2 md:gap-4">
                 {viewModel.recentContents.length > 0 ? (
                   viewModel.recentContents.map((content, index) => (
                     <ContentCard key={content.id} content={content} delay={300 + index * 50} />

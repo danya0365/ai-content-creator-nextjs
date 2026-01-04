@@ -360,27 +360,27 @@ export function GalleryView({ initialViewModel }: GalleryViewProps) {
   return (
     <MainLayout showBubbles={false}>
       <div className="h-full overflow-auto scrollbar-thin">
-        <div className="max-w-7xl mx-auto px-6 py-6 space-y-6">
+        <div className="max-w-7xl mx-auto px-3 py-4 md:px-6 md:py-6 space-y-4 md:space-y-6">
           
           {/* Header */}
-          <animated.div style={headerSpring} className="space-y-4">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <animated.div style={headerSpring} className="space-y-3 md:space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 md:gap-4">
               <div>
-                <h1 className="text-2xl font-bold gradient-text-purple">Gallery</h1>
-                <p className="text-sm text-muted">
+                <h1 className="text-xl md:text-2xl font-bold gradient-text-purple">Gallery</h1>
+                <p className="text-xs md:text-sm text-muted">
                   รวมคอนเทนต์ทั้งหมด {viewModel.totalCount} รายการ
                 </p>
               </div>
               
               {/* View controls */}
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 md:gap-3">
                 <SortSelector sort={sortOption} onChange={setSortOption} />
                 <ViewModeToggle mode={viewMode} onChange={setViewMode} />
               </div>
             </div>
             
             {/* Filters */}
-            <div className="flex gap-2 flex-wrap">
+            <div className="flex gap-1.5 md:gap-2 flex-wrap overflow-x-auto pb-1 scrollbar-hide">
               <FilterButton label="ทั้งหมด" value="all" count={counts.all} isActive={filter === 'all'} onClick={() => setFilter('all')} />
               <FilterButton label="Published" value="published" count={counts.published} isActive={filter === 'published'} onClick={() => setFilter('published')} />
               <FilterButton label="Scheduled" value="scheduled" count={counts.scheduled} isActive={filter === 'scheduled'} onClick={() => setFilter('scheduled')} />
@@ -391,7 +391,7 @@ export function GalleryView({ initialViewModel }: GalleryViewProps) {
           {/* Content Grid/List */}
           {filteredAndSortedContents.length > 0 ? (
             viewMode === 'grid' ? (
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 md:gap-4">
                 {filteredAndSortedContents.map((content, index) => (
                   <GalleryCard
                     key={content.id}
