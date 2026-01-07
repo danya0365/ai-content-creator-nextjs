@@ -1,47 +1,25 @@
 'use client';
 
-import { GeneratedContent } from '@/src/data/mock/mockContents';
+import { ContentEditViewModel } from '@/src/presentation/presenters/content/ContentEditPresenter';
+import { useContentEditPresenter } from '@/src/presentation/presenters/content/useContentEditPresenter';
 import { animated, config, useSpring } from '@react-spring/web';
 import Link from 'next/link';
-import { useState } from 'react';
 import { MainLayout } from '../layout/MainLayout';
 import { JellyButton } from '../ui/JellyButton';
 import { JellyCard } from '../ui/JellyCard';
 
 interface ContentEditViewProps {
-  content?: GeneratedContent;
+  contentId: string;
+  initialViewModel?: ContentEditViewModel;
 }
 
 /**
  * ContentEditView - Edit content form with live preview
+ * ✅ Clean View - All logic moved to useContentEditPresenter hook
  */
-export function ContentEditView({ content }: ContentEditViewProps) {
-  // Mock content for demo
-  const mockContent: GeneratedContent = content || {
-    id: 'demo-1',
-    title: 'สรุปข่าว AI ประจำวัน 🤖',
-    description: 'อัพเดทข่าวสาร AI ล่าสุดแบบ Pixel Art สุดน่ารัก พร้อมสรุปเข้าใจง่ายสำหรับทุกคน',
-    prompt: 'Create a cute pixel art illustration about AI news today',
-    imageUrl: '',
-    status: 'published',
-    timeSlot: 'morning',
-    contentTypeId: 'morning-news',
-    scheduledAt: new Date().toISOString(),
-    createdAt: new Date().toISOString(),
-    publishedAt: new Date().toISOString(),
-    likes: 1247,
-    shares: 312,
-  };
-
-  const [formData, setFormData] = useState({
-    title: mockContent.title,
-    description: mockContent.description,
-    prompt: mockContent.prompt,
-    timeSlot: mockContent.timeSlot,
-    hashtags: ['#PixelArt', '#AI', '#Content', '#Creative', '#Tech'],
-  });
-  const [isSaving, setIsSaving] = useState(false);
-  const [isRegenerating, setIsRegenerating] = useState(false);
+export function ContentEditView({ contentId, initialViewModel }: ContentEditViewProps) {
+  // ✅ All state and logic comes from hook
+  const [state, actions] = useContentEditPresenter(contentId, initialViewModel);
 
   const headerSpring = useSpring({
     from: { opacity: 0, y: -20 },
@@ -63,25 +41,53 @@ export function ContentEditView({ content }: ContentEditViewProps) {
     config: config.gentle,
   });
 
-  const handleSave = async () => {
-    setIsSaving(true);
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    setIsSaving(false);
-    console.log('Saved:', formData);
-  };
+  // Loading state
+  if (state.loading && !state.viewModel) {
+    return (
+      <MainLayout showBubbles={false}>
+        <div className="h-full flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-violet-500 mx-auto mb-4"></div>
+            <p className="text-muted">กำลังโหลด...</p>
+          </div>
+        </div>
+      </MainLayout>
+    );
+  }
 
-  const handleRegenerate = async () => {
-    setIsRegenerating(true);
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-    setIsRegenerating(false);
-  };
+  // Error state
+  if (state.error) {
+    return (
+      <MainLayout showBubbles={false}>
+        <div className="h-full flex items-center justify-center">
+          <div className="text-center">
+            <p className="text-red-400 mb-4">{state.error}</p>
+            <JellyButton onClick={() => actions.refresh(contentId)} variant="primary">
+              ลองใหม่
+            </JellyButton>
+          </div>
+        </div>
+      </MainLayout>
+    );
+  }
 
-  const timeSlots = [
-    { id: 'morning', label: '🌅 ตอนเช้า', time: '6:00 - 9:00' },
-    { id: 'lunch', label: '🍱 ตอนเที่ยง', time: '11:00 - 14:00' },
-    { id: 'afternoon', label: '☀️ ตอนบ่าย', time: '14:00 - 18:00' },
-    { id: 'evening', label: '🌙 ตอนเย็น', time: '18:00 - 22:00' },
-  ];
+  // Not found state
+  if (!state.content) {
+    return (
+      <MainLayout showBubbles={false}>
+        <div className="h-full flex items-center justify-center">
+          <div className="text-center">
+            <span className="text-5xl mb-4 block">🔍</span>
+            <h2 className="text-xl font-bold text-foreground mb-2">ไม่พบคอนเทนต์</h2>
+            <p className="text-muted mb-4">คอนเทนต์นี้อาจถูกลบไปแล้ว</p>
+            <Link href="/gallery">
+              <JellyButton variant="primary">กลับไปหน้า Gallery</JellyButton>
+            </Link>
+          </div>
+        </div>
+      </MainLayout>
+    );
+  }
 
   return (
     <MainLayout showBubbles={false}>
@@ -95,8 +101,8 @@ export function ContentEditView({ content }: ContentEditViewProps) {
                 Gallery
               </Link>
               <span>/</span>
-              <Link href={`/content/${mockContent.id}`} className="hover:text-violet-400 transition-colors">
-                {mockContent.title}
+              <Link href={`/content/${state.content.id}`} className="hover:text-violet-400 transition-colors">
+                {state.content.title}
               </Link>
               <span>/</span>
               <span className="text-foreground">Edit</span>
@@ -109,17 +115,17 @@ export function ContentEditView({ content }: ContentEditViewProps) {
               </div>
 
               <div className="flex gap-2">
-                <Link href={`/content/${mockContent.id}`}>
+                <Link href={`/content/${state.content.id}`}>
                   <JellyButton variant="ghost">
                     ✕ Cancel
                   </JellyButton>
                 </Link>
                 <JellyButton
-                  onClick={handleSave}
-                  disabled={isSaving}
+                  onClick={actions.saveContent}
+                  disabled={state.isSaving}
                   variant="primary"
                 >
-                  {isSaving ? '⏳ Saving...' : '💾 Save Changes'}
+                  {state.isSaving ? '⏳ Saving...' : '💾 Save Changes'}
                 </JellyButton>
               </div>
             </div>
@@ -137,8 +143,8 @@ export function ContentEditView({ content }: ContentEditViewProps) {
                 </label>
                 <input
                   type="text"
-                  value={formData.title}
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                  value={state.formData.title}
+                  onChange={(e) => actions.updateFormData({ title: e.target.value })}
                   className="w-full px-4 py-3 rounded-xl glass-card text-foreground placeholder-muted focus:outline-none focus:ring-2 focus:ring-violet-500/50"
                   placeholder="Enter title..."
                 />
@@ -150,8 +156,8 @@ export function ContentEditView({ content }: ContentEditViewProps) {
                   📄 Description
                 </label>
                 <textarea
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  value={state.formData.description}
+                  onChange={(e) => actions.updateFormData({ description: e.target.value })}
                   rows={3}
                   className="w-full px-4 py-3 rounded-xl glass-card text-foreground placeholder-muted focus:outline-none focus:ring-2 focus:ring-violet-500/50 resize-none"
                   placeholder="Enter description..."
@@ -165,17 +171,17 @@ export function ContentEditView({ content }: ContentEditViewProps) {
                     🤖 AI Prompt
                   </label>
                   <JellyButton
-                    onClick={handleRegenerate}
-                    disabled={isRegenerating}
+                    onClick={actions.regenerateContent}
+                    disabled={state.isRegenerating}
                     variant="ghost"
                     size="sm"
                   >
-                    {isRegenerating ? '⏳ Generating...' : '✨ Regenerate Image'}
+                    {state.isRegenerating ? '⏳ Generating...' : '✨ Regenerate Image'}
                   </JellyButton>
                 </div>
                 <textarea
-                  value={formData.prompt}
-                  onChange={(e) => setFormData({ ...formData, prompt: e.target.value })}
+                  value={state.formData.prompt}
+                  onChange={(e) => actions.updateFormData({ prompt: e.target.value })}
                   rows={4}
                   className="w-full px-4 py-3 rounded-xl glass-card text-foreground placeholder-muted focus:outline-none focus:ring-2 focus:ring-violet-500/50 resize-none font-mono text-sm"
                   placeholder="Enter AI prompt..."
@@ -188,18 +194,18 @@ export function ContentEditView({ content }: ContentEditViewProps) {
                   ⏰ Time Slot
                 </label>
                 <div className="grid grid-cols-2 gap-2">
-                  {timeSlots.map((slot) => (
+                  {state.timeSlots.map((slot) => (
                     <button
                       key={slot.id}
-                      onClick={() => setFormData({ ...formData, timeSlot: slot.id as 'morning' | 'lunch' | 'afternoon' | 'evening' })}
+                      onClick={() => actions.updateFormData({ timeSlot: slot.id })}
                       className={`p-3 rounded-xl text-left transition-all ${
-                        formData.timeSlot === slot.id
+                        state.formData.timeSlot === slot.id
                           ? 'bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white'
                           : 'glass-card hover:border-violet-500/50'
                       }`}
                     >
                       <div className="text-sm font-medium">{slot.label}</div>
-                      <div className={`text-xs ${formData.timeSlot === slot.id ? 'text-white/70' : 'text-muted'}`}>
+                      <div className={`text-xs ${state.formData.timeSlot === slot.id ? 'text-white/70' : 'text-muted'}`}>
                         {slot.time}
                       </div>
                     </button>
@@ -213,18 +219,14 @@ export function ContentEditView({ content }: ContentEditViewProps) {
                   # Hashtags
                 </label>
                 <div className="flex flex-wrap gap-2 mb-3">
-                  {formData.hashtags.map((tag, index) => (
+                  {state.formData.hashtags.map((tag) => (
                     <span
                       key={tag}
                       className="px-3 py-1 text-sm rounded-full bg-violet-500/20 text-violet-400 flex items-center gap-2"
                     >
                       {tag}
                       <button
-                        onClick={() => {
-                          const newTags = [...formData.hashtags];
-                          newTags.splice(index, 1);
-                          setFormData({ ...formData, hashtags: newTags });
-                        }}
+                        onClick={() => actions.removeHashtag(tag)}
                         className="hover:text-red-400"
                       >
                         ×
@@ -239,8 +241,8 @@ export function ContentEditView({ content }: ContentEditViewProps) {
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
                       const value = (e.target as HTMLInputElement).value.trim();
-                      if (value && !formData.hashtags.includes(value)) {
-                        setFormData({ ...formData, hashtags: [...formData.hashtags, value.startsWith('#') ? value : `#${value}`] });
+                      if (value && !state.formData.hashtags.includes(value)) {
+                        actions.addHashtag(value.startsWith('#') ? value : `#${value}`);
                         (e.target as HTMLInputElement).value = '';
                       }
                     }
@@ -259,8 +261,8 @@ export function ContentEditView({ content }: ContentEditViewProps) {
                 {/* Preview Card */}
                 <div className="glass-card p-4 rounded-xl">
                   {/* Image */}
-                  <div className={`aspect-video rounded-xl bg-gradient-to-br from-violet-500/30 via-purple-500/20 to-fuchsia-500/30 flex items-center justify-center mb-4 relative ${isRegenerating ? 'animate-pulse' : ''}`}>
-                    {isRegenerating ? (
+                  <div className={`aspect-video rounded-xl bg-gradient-to-br from-violet-500/30 via-purple-500/20 to-fuchsia-500/30 flex items-center justify-center mb-4 relative ${state.isRegenerating ? 'animate-pulse' : ''}`}>
+                    {state.isRegenerating ? (
                       <div className="text-center">
                         <span className="text-4xl mb-2 block animate-spin">✨</span>
                         <span className="text-sm text-muted">Generating...</span>
@@ -273,13 +275,13 @@ export function ContentEditView({ content }: ContentEditViewProps) {
                   {/* Content */}
                   <div className="space-y-3">
                     <h4 className="text-lg font-bold text-foreground">
-                      {formData.title || 'Untitled'}
+                      {state.formData.title || 'Untitled'}
                     </h4>
                     <p className="text-sm text-muted line-clamp-2">
-                      {formData.description || 'No description'}
+                      {state.formData.description || 'No description'}
                     </p>
                     <div className="flex flex-wrap gap-1">
-                      {formData.hashtags.slice(0, 3).map((tag) => (
+                      {state.formData.hashtags.slice(0, 3).map((tag) => (
                         <span key={tag} className="text-xs text-violet-400">{tag}</span>
                       ))}
                     </div>

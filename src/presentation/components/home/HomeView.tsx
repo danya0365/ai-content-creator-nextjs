@@ -1,7 +1,7 @@
 'use client';
 
 import { CONTENT_TYPES, TIME_SLOTS } from '@/src/data/master/contentTypes';
-import { getContentStats } from '@/src/data/mock/mockContents';
+import { HomeViewModel } from '@/src/presentation/presenters/home/HomePresenter';
 import { animated, config, useSpring } from '@react-spring/web';
 import Link from 'next/link';
 import { MainLayout } from '../layout/MainLayout';
@@ -101,12 +101,26 @@ function QuickLink({ href, icon, title, description, color, delay }: QuickLinkPr
   );
 }
 
+interface HomeViewProps {
+  initialViewModel?: HomeViewModel;
+}
+
+// Default stats fallback
+const defaultStats = {
+  totalContents: 0,
+  publishedCount: 0,
+  scheduledCount: 0,
+  draftCount: 0,
+  totalLikes: 0,
+  totalShares: 0,
+};
+
 /**
  * HomeView component
  * Landing page for AI Content Creator - With Jelly Animations
  */
-export function HomeView() {
-  const stats = getContentStats();
+export function HomeView({ initialViewModel }: HomeViewProps) {
+  const stats = initialViewModel?.stats || defaultStats;
 
   const heroSpring = useSpring({
     from: { opacity: 0, y: -20 },

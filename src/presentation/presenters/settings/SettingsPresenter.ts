@@ -1,8 +1,11 @@
 /**
  * SettingsPresenter
  * Handles business logic for Settings page
+ * ✅ Uses dependency injection for repository
+ * ✅ Single Source of Truth - All data comes from here
  */
 
+import { IContentRepository } from '@/src/application/repositories/IContentRepository';
 import { Metadata } from 'next';
 
 export interface AppSettings {
@@ -18,9 +21,25 @@ export interface AppSettings {
   };
 }
 
+// ✅ User profile interface - Single Source of Truth
+export interface UserProfile {
+  name: string;
+  email: string;
+  bio: string;
+  avatar: string;
+  stats: {
+    totalContents: number;
+    published: number;
+    likes: number;
+    shares: number;
+  };
+}
+
 export interface SettingsViewModel {
   settings: AppSettings;
   availableTimeSlots: Array<{ id: string; name: string }>;
+  // ✅ Single Source of Truth - user profile comes from presenter
+  userProfile: UserProfile;
 }
 
 const defaultSettings: AppSettings = {
@@ -38,13 +57,34 @@ const defaultSettings: AppSettings = {
 
 /**
  * Presenter for Settings page
+ * ✅ Receives repository via constructor injection
  */
 export class SettingsPresenter {
+  constructor(
+    private readonly repository: IContentRepository
+  ) {}
+
   /**
    * Get view model for the page
    */
   async getViewModel(): Promise<SettingsViewModel> {
-    // In production, load from database/localStorage
+    // Get stats from repository for user profile
+    const stats = await this.repository.getStats();
+
+    // ✅ User profile - in production, this would come from auth/user service
+    const userProfile: UserProfile = {
+      name: 'ผู้สร้างคอนเทนต์',
+      email: 'creator@example.com',
+      bio: 'สร้างคอนเทนต์ Pixel Art ที่น่ารักด้วย AI',
+      avatar: '👤',
+      stats: {
+        totalContents: stats.totalContents,
+        published: stats.publishedCount,
+        likes: stats.totalLikes,
+        shares: stats.totalShares,
+      },
+    };
+
     return {
       settings: defaultSettings,
       availableTimeSlots: [
@@ -53,6 +93,7 @@ export class SettingsPresenter {
         { id: 'afternoon', name: '☀️ บ่าย (14:00-18:00)' },
         { id: 'evening', name: '🌙 เย็น (18:00-22:00)' },
       ],
+      userProfile,
     };
   }
 

@@ -2,16 +2,14 @@
 
 import {
   TIMELINE_CATEGORIES,
-  TimelineEntry
-} from '@/src/data/mock/mockTimeline';
-import {
+  TimelineEntry,
   TimelineFilter,
   TimelineGroup,
   TimelineStatusFilter,
   TimelineViewModel,
 } from '@/src/presentation/presenters/timeline/TimelinePresenter';
+import { useTimelinePresenter } from '@/src/presentation/presenters/timeline/useTimelinePresenter';
 import { animated, config, useSpring } from '@react-spring/web';
-import { useMemo, useState } from 'react';
 import { MainLayout } from '../layout/MainLayout';
 import { JellyButton } from '../ui/JellyButton';
 import { JellyCard } from '../ui/JellyCard';
@@ -81,7 +79,7 @@ function TimelineCard({ entry, isLeft }: TimelineCardProps) {
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <span className={`w-8 h-8 rounded-lg bg-gradient-to-br ${categoryConfig.color} flex items-center justify-center text-white text-sm`}>
-              {entry.emoji}
+              {categoryConfig.emoji}
             </span>
             <span className="text-xs text-muted">{categoryConfig.labelTh}</span>
           </div>
@@ -112,27 +110,9 @@ function TimelineCard({ entry, isLeft }: TimelineCardProps) {
                 <span>🔗</span>
                 <span>{entry.shares.toLocaleString()}</span>
               </span>
-              <span className="flex items-center gap-1">
-                <span>💬</span>
-                <span>{entry.comments.toLocaleString()}</span>
-              </span>
             </div>
           )}
         </div>
-
-        {/* Tags */}
-        {entry.tags.length > 0 && (
-          <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t border-border/30">
-            {entry.tags.slice(0, 3).map((tag) => (
-              <span
-                key={tag}
-                className="text-xs px-2 py-1 rounded-full bg-violet-500/10 text-violet-400"
-              >
-                #{tag}
-              </span>
-            ))}
-          </div>
-        )}
       </JellyCard>
 
       {/* Timeline dot */}
@@ -208,9 +188,13 @@ interface TimelineViewProps {
 /**
  * TimelineView component
  * Beautiful vertical timeline with jelly animations
+ * ✅ Clean View - All logic moved to useTimelinePresenter hook
  */
 export function TimelineView({ initialViewModel }: TimelineViewProps) {
-  const viewModel = initialViewModel || {
+  // ✅ All state and logic comes from hook
+  const [state, actions] = useTimelinePresenter(initialViewModel);
+
+  const viewModel = state.viewModel || {
     groups: [],
     categories: [],
     filter: 'all' as TimelineFilter,
@@ -227,34 +211,42 @@ export function TimelineView({ initialViewModel }: TimelineViewProps) {
     },
   };
 
-  const [filter, setFilter] = useState<TimelineFilter>(viewModel.filter);
-  const [statusFilter, setStatusFilter] = useState<TimelineStatusFilter>(viewModel.statusFilter);
-
-  // Memoize filtered data to prevent recalculation loops
-  const filteredGroups = useMemo(() => {
-    return viewModel.groups
-      .map((group) => ({
-        ...group,
-        entries: group.entries.filter((entry) => {
-          const matchesCategory = filter === 'all' || entry.category === filter;
-          const matchesStatus = statusFilter === 'all' || entry.status === statusFilter;
-          return matchesCategory && matchesStatus;
-        }),
-      }))
-      .filter((group) => group.entries.length > 0);
-  }, [viewModel.groups, filter, statusFilter]);
-
-  // Count filtered items
-  const filteredCount = useMemo(() => {
-    return filteredGroups.reduce((sum, g) => sum + g.entries.length, 0);
-  }, [filteredGroups]);
-
   // Animation springs
   const headerSpring = useSpring({
     from: { opacity: 0, y: -20 },
     to: { opacity: 1, y: 0 },
     config: config.gentle,
   });
+
+  // Loading state
+  if (state.loading && !state.viewModel) {
+    return (
+      <MainLayout showBubbles={false}>
+        <div className="h-full flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-violet-500 mx-auto mb-4"></div>
+            <p className="text-muted">กำลังโหลด...</p>
+          </div>
+        </div>
+      </MainLayout>
+    );
+  }
+
+  // Error state
+  if (state.error) {
+    return (
+      <MainLayout showBubbles={false}>
+        <div className="h-full flex items-center justify-center">
+          <div className="text-center">
+            <p className="text-red-400 mb-4">{state.error}</p>
+            <JellyButton onClick={actions.refresh} variant="primary">
+              ลองใหม่
+            </JellyButton>
+          </div>
+        </div>
+      </MainLayout>
+    );
+  }
 
   return (
     <MainLayout showBubbles={false}>
@@ -312,16 +304,16 @@ export function TimelineView({ initialViewModel }: TimelineViewProps) {
               <FilterButton
                 label="ทั้งหมด"
                 emoji="📋"
-                isActive={filter === 'all'}
-                onClick={() => setFilter('all')}
+                isActive={state.filter === 'all'}
+                onClick={() => actions.setFilter('all')}
               />
               {viewModel.categories.map((cat) => (
                 <FilterButton
                   key={cat.id}
                   label={cat.labelTh}
                   emoji={cat.emoji}
-                  isActive={filter === cat.id}
-                  onClick={() => setFilter(cat.id)}
+                  isActive={state.filter === cat.id}
+                  onClick={() => actions.setFilter(cat.id)}
                 />
               ))}
             </div>
@@ -330,44 +322,44 @@ export function TimelineView({ initialViewModel }: TimelineViewProps) {
             <div className="flex gap-2">
               <FilterButton
                 label="ทุกสถานะ"
-                isActive={statusFilter === 'all'}
-                onClick={() => setStatusFilter('all')}
+                isActive={state.statusFilter === 'all'}
+                onClick={() => actions.setStatusFilter('all')}
               />
               <FilterButton
                 label="Published"
                 emoji="✅"
-                isActive={statusFilter === 'published'}
-                onClick={() => setStatusFilter('published')}
+                isActive={state.statusFilter === 'published'}
+                onClick={() => actions.setStatusFilter('published')}
               />
               <FilterButton
                 label="Scheduled"
                 emoji="📅"
-                isActive={statusFilter === 'scheduled'}
-                onClick={() => setStatusFilter('scheduled')}
+                isActive={state.statusFilter === 'scheduled'}
+                onClick={() => actions.setStatusFilter('scheduled')}
               />
               <FilterButton
                 label="Draft"
                 emoji="📝"
-                isActive={statusFilter === 'draft'}
-                onClick={() => setStatusFilter('draft')}
+                isActive={state.statusFilter === 'draft'}
+                onClick={() => actions.setStatusFilter('draft')}
               />
             </div>
           </div>
 
           {/* Result count */}
           <div className="text-sm text-muted">
-            แสดง {filteredCount} รายการ
+            แสดง {state.filteredCount} รายการ
           </div>
 
           {/* Timeline */}
-          {filteredGroups.length > 0 ? (
+          {state.filteredGroups.length > 0 ? (
             <div className="relative">
               {/* Vertical timeline line */}
               <div className="absolute left-1/2 top-0 bottom-0 w-0.5 bg-gradient-to-b from-violet-500 via-fuchsia-500 to-purple-500 opacity-30 transform -translate-x-1/2" />
               
               {/* Timeline items */}
               <div className="space-y-4 relative">
-                {filteredGroups.map((group) => (
+                {state.filteredGroups.map((group) => (
                   <div key={group.date}>
                     <TimelineDateHeader group={group} />
                     {group.entries.map((entry, entryIndex) => (
@@ -387,10 +379,7 @@ export function TimelineView({ initialViewModel }: TimelineViewProps) {
               <h3 className="text-lg font-semibold text-foreground mb-2">ไม่พบคอนเทนต์</h3>
               <p className="text-muted mb-4">ลองปรับ filter เพื่อดูคอนเทนต์อื่น</p>
               <JellyButton
-                onClick={() => {
-                  setFilter('all');
-                  setStatusFilter('all');
-                }}
+                onClick={actions.resetFilters}
                 variant="primary"
               >
                 ดูทั้งหมด

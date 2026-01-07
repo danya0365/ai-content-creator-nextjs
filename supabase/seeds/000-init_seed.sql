@@ -215,3 +215,17 @@ SET role = 'admin'::public.profile_role;
 
 -- Execute the migration function
 SELECT public.migrate_profile_roles();
+
+-- ============================================================================
+-- AI CONTENT CREATOR: Seed Content Types
+-- Created: 2026-01-04
+-- ============================================================================
+INSERT INTO public.ai_content_types (id, name, name_th, description, description_th, icon, color, prompt_template, suggested_time_slots)
+VALUES
+  ('morning-news', 'Morning News Summary', 'สรุปข่าวเช้า', 'Daily news summary in pixel art style', 'สรุปข่าวประจำวันแบบ Pixel Art', '📰', '#FFB347', 'Create a pixel art illustration about: {topic}', ARRAY['morning']),
+  ('food', 'Food & Recipe', 'อาหารและสูตร', 'Delicious food in pixel art', 'อาหารอร่อยแบบ Pixel Art', '🍜', '#FF6B6B', 'Create a pixel art of delicious {topic}', ARRAY['lunch', 'evening']),
+  ('entertainment', 'Entertainment & Meme', 'ความบันเทิงและมีม', 'Fun entertainment content', 'คอนเทนต์สนุกๆ และมีม', '😂', '#C9B1FF', 'Create a funny pixel art meme about: {topic}', ARRAY['afternoon', 'evening']),
+  ('tech-tips', 'Tech Tips', 'เคล็ดลับเทคโนโลยี', 'Technology tips and tricks', 'เคล็ดลับเทคโนโลยี', '💻', '#4ECDC4', 'Create a pixel art illustration about tech tip: {topic}', ARRAY['afternoon']),
+  ('daily-motivation', 'Daily Motivation', 'คำคมประจำวัน', 'Inspirational quotes', 'คำคมสร้างแรงบันดาลใจ', '✨', '#FFD93D', 'Create an inspiring pixel art about: {topic}', ARRAY['morning']),
+  ('gaming', 'Gaming Content', 'คอนเทนต์เกม', 'Gaming news and reviews', 'ข่าวเกมและรีวิว', '🎮', '#6C5CE7', 'Create a pixel art about gaming: {topic}', ARRAY['evening'])
+ON CONFLICT (id) DO NOTHING;

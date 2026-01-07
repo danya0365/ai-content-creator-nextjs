@@ -1,6 +1,7 @@
 'use client';
 
-import { GeneratedContent } from '@/src/data/mock/mockContents';
+import { ContentDetailViewModel } from '@/src/presentation/presenters/content/ContentDetailPresenter';
+import { useContentDetailPresenter } from '@/src/presentation/presenters/content/useContentDetailPresenter';
 import { animated, config, useSpring } from '@react-spring/web';
 import Link from 'next/link';
 import { MainLayout } from '../layout/MainLayout';
@@ -10,29 +11,17 @@ import { DonutChart } from '../ui/SimpleChart';
 import { TrendIndicator } from '../ui/TrendIndicator';
 
 interface ContentDetailViewProps {
-  content?: GeneratedContent;
+  contentId: string;
+  initialViewModel?: ContentDetailViewModel;
 }
 
 /**
  * ContentDetailView - Full content detail page with stats and actions
+ * ✅ Clean View - All data comes from useContentDetailPresenter hook (Single Source of Truth)
  */
-export function ContentDetailView({ content }: ContentDetailViewProps) {
-  // Mock content for demo
-  const mockContent: GeneratedContent = content || {
-    id: 'demo-1',
-    title: 'สรุปข่าว AI ประจำวัน 🤖',
-    description: 'อัพเดทข่าวสาร AI ล่าสุดแบบ Pixel Art สุดน่ารัก พร้อมสรุปเข้าใจง่ายสำหรับทุกคน',
-    prompt: 'Create a cute pixel art illustration about AI news today',
-    imageUrl: '',
-    status: 'published',
-    timeSlot: 'morning',
-    contentTypeId: 'morning-news',
-    scheduledAt: new Date().toISOString(),
-    createdAt: new Date().toISOString(),
-    publishedAt: new Date().toISOString(),
-    likes: 1247,
-    shares: 312,
-  };
+export function ContentDetailView({ contentId, initialViewModel }: ContentDetailViewProps) {
+  // ✅ All state and data comes from hook
+  const [state, actions] = useContentDetailPresenter(contentId, initialViewModel);
 
   const headerSpring = useSpring({
     from: { opacity: 0, y: -20 },
@@ -54,6 +43,57 @@ export function ContentDetailView({ content }: ContentDetailViewProps) {
     config: config.gentle,
   });
 
+  // Loading state
+  if (state.loading && !state.viewModel) {
+    return (
+      <MainLayout showBubbles={false}>
+        <div className="h-full flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-violet-500 mx-auto mb-4"></div>
+            <p className="text-muted">กำลังโหลด...</p>
+          </div>
+        </div>
+      </MainLayout>
+    );
+  }
+
+  // Error state
+  if (state.error) {
+    return (
+      <MainLayout showBubbles={false}>
+        <div className="h-full flex items-center justify-center">
+          <div className="text-center">
+            <p className="text-red-400 mb-4">{state.error}</p>
+            <JellyButton onClick={() => actions.refresh(contentId)} variant="primary">
+              ลองใหม่
+            </JellyButton>
+          </div>
+        </div>
+      </MainLayout>
+    );
+  }
+
+  // Not found state
+  if (!state.viewModel?.content) {
+    return (
+      <MainLayout showBubbles={false}>
+        <div className="h-full flex items-center justify-center">
+          <div className="text-center">
+            <span className="text-5xl mb-4 block">🔍</span>
+            <h2 className="text-xl font-bold text-foreground mb-2">ไม่พบคอนเทนต์</h2>
+            <p className="text-muted mb-4">คอนเทนต์นี้อาจถูกลบไปแล้ว</p>
+            <Link href="/gallery">
+              <JellyButton variant="primary">กลับไปหน้า Gallery</JellyButton>
+            </Link>
+          </div>
+        </div>
+      </MainLayout>
+    );
+  }
+
+  // ✅ Single Source of Truth - All data comes from viewModel
+  const { content, contentTypeName, contentTypeIcon, engagementData } = state.viewModel;
+
   const statusColors = {
     draft: 'bg-gray-500/20 text-gray-400 border-gray-500/30',
     scheduled: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
@@ -68,13 +108,6 @@ export function ContentDetailView({ content }: ContentDetailViewProps) {
     failed: '❌',
   };
 
-  // Engagement data for chart
-  const engagementData = [
-    { label: 'Likes', value: mockContent.likes || 0, color: '#EC4899' },
-    { label: 'Shares', value: mockContent.shares || 0, color: '#8B5CF6' },
-    { label: 'Comments', value: 89, color: '#06B6D4' },
-  ];
-
   return (
     <MainLayout showBubbles={false}>
       <div className="h-full overflow-auto scrollbar-thin">
@@ -87,193 +120,155 @@ export function ContentDetailView({ content }: ContentDetailViewProps) {
                 Gallery
               </Link>
               <span>/</span>
-              <span className="text-foreground">{mockContent.title}</span>
+              <span className="text-foreground">{content.title}</span>
             </div>
 
-            {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
-              <div className="flex-1">
-                <div className="flex items-center gap-3 mb-2">
-                  <span className={`text-sm px-3 py-1 rounded-full border ${statusColors[mockContent.status]}`}>
-                    {statusIcons[mockContent.status]} {mockContent.status.toUpperCase()}
-                  </span>
-                  <span className="text-sm text-muted">{mockContent.timeSlot}</span>
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <span className="text-3xl">{contentTypeIcon}</span>
+                <div>
+                  <h1 className="text-2xl font-bold gradient-text-purple">{content.title}</h1>
+                  <p className="text-sm text-muted">{contentTypeName}</p>
                 </div>
-                <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-2">
-                  {mockContent.title}
-                </h1>
-                <p className="text-muted">{mockContent.description}</p>
               </div>
 
               <div className="flex gap-2">
-                <Link href={`/content/${mockContent.id}/edit`}>
+                <Link href={`/content/${content.id}/edit`}>
                   <JellyButton variant="secondary">
                     ✏️ แก้ไข
                   </JellyButton>
                 </Link>
                 <JellyButton variant="primary">
-                  ✨ Regenerate
+                  🚀 Publish
                 </JellyButton>
               </div>
             </div>
           </animated.div>
 
-          {/* Main Content Grid */}
+          {/* Main Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             
-            {/* Content Preview - 2 columns */}
+            {/* Main Content */}
             <animated.div style={contentSpring} className="lg:col-span-2 space-y-6">
               {/* Image Preview */}
-              <JellyCard className="glass-card p-6">
-                <div className="aspect-video rounded-xl bg-gradient-to-br from-violet-500/30 via-purple-500/20 to-fuchsia-500/30 flex items-center justify-center mb-4">
-                  <span className="text-8xl">🎨</span>
+              <JellyCard className="glass-card p-0 overflow-hidden">
+                <div className="aspect-video bg-gradient-to-br from-violet-500/30 via-purple-500/20 to-fuchsia-500/30 flex items-center justify-center">
+                  {content.imageUrl ? (
+                    <img 
+                      src={content.imageUrl} 
+                      alt={content.title}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <span className="text-6xl">🎨</span>
+                  )}
                 </div>
                 
-                {/* Action buttons */}
-                <div className="flex flex-wrap gap-2">
-                  <JellyButton variant="secondary" size="sm">
-                    📥 Download
-                  </JellyButton>
-                  <JellyButton variant="secondary" size="sm">
-                    📤 Share
-                  </JellyButton>
-                  <JellyButton variant="secondary" size="sm">
-                    🔗 Copy Link
-                  </JellyButton>
+                {/* Status Bar */}
+                <div className="p-4 flex items-center justify-between border-t border-border/30">
+                  <div className="flex items-center gap-3">
+                    <span className={`px-3 py-1 rounded-full text-sm border ${statusColors[content.status as keyof typeof statusColors]}`}>
+                      {statusIcons[content.status as keyof typeof statusIcons]} {content.status.toUpperCase()}
+                    </span>
+                    <span className="text-sm text-muted">
+                      {new Date(content.createdAt).toLocaleDateString('th-TH', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                      })}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-4 text-sm">
+                    <span className="text-pink-400">❤️ {content.likes?.toLocaleString() || 0}</span>
+                    <span className="text-violet-400">🔗 {content.shares?.toLocaleString() || 0}</span>
+                  </div>
                 </div>
+              </JellyCard>
+
+              {/* Description */}
+              <JellyCard className="glass-card p-5">
+                <h3 className="text-lg font-semibold text-foreground mb-3">📝 Description</h3>
+                <p className="text-muted leading-relaxed">{content.description}</p>
               </JellyCard>
 
               {/* AI Prompt */}
               <JellyCard className="glass-card p-5">
-                <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
-                  <span>🤖</span> AI Prompt
-                </h3>
-                <div className="glass-card p-4 rounded-xl text-sm text-muted">
-                  {mockContent.prompt}
-                </div>
-                <div className="flex gap-2 mt-4">
-                  <JellyButton variant="ghost" size="sm">
-                    📋 Copy
-                  </JellyButton>
-                  <JellyButton variant="ghost" size="sm">
-                    ♻️ Use Again
-                  </JellyButton>
-                </div>
-              </JellyCard>
-
-              {/* Hashtags */}
-              <JellyCard className="glass-card p-5">
-                <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
-                  <span>#</span> Hashtags
-                </h3>
-                <div className="flex flex-wrap gap-2">
-                  {['#PixelArt', '#AI', '#Content', '#Creative', '#Tech'].map((tag) => (
-                    <span
-                      key={tag}
-                      className="px-3 py-1 text-sm rounded-full bg-violet-500/20 text-violet-400 hover:bg-violet-500/30 cursor-pointer transition-colors"
-                    >
-                      {tag}
-                    </span>
-                  ))}
+                <h3 className="text-lg font-semibold text-foreground mb-3">🤖 AI Prompt</h3>
+                <div className="p-4 rounded-xl bg-gray-900/50 border border-gray-700/50 font-mono text-sm text-gray-300">
+                  {content.prompt}
                 </div>
               </JellyCard>
             </animated.div>
 
-            {/* Sidebar - Stats */}
+            {/* Sidebar */}
             <animated.div style={sidebarSpring} className="space-y-6">
               {/* Engagement Stats */}
               <JellyCard className="glass-card p-5">
-                <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
-                  <span>📊</span> Engagement
-                </h3>
-                
-                <div className="flex justify-center mb-4">
-                  <DonutChart
-                    data={engagementData}
-                    size={140}
-                    strokeWidth={16}
-                    centerValue={mockContent.likes! + mockContent.shares! + 89}
-                    centerLabel="Total"
-                  />
-                </div>
-
-                <div className="grid grid-cols-3 gap-2 text-center">
-                  <div className="glass-card p-3 rounded-xl">
-                    <div className="text-lg font-bold text-pink-400">{mockContent.likes}</div>
-                    <div className="text-xs text-muted">Likes</div>
-                  </div>
-                  <div className="glass-card p-3 rounded-xl">
-                    <div className="text-lg font-bold text-violet-400">{mockContent.shares}</div>
-                    <div className="text-xs text-muted">Shares</div>
-                  </div>
-                  <div className="glass-card p-3 rounded-xl">
-                    <div className="text-lg font-bold text-cyan-400">89</div>
-                    <div className="text-xs text-muted">Comments</div>
-                  </div>
+                <h3 className="text-lg font-semibold text-foreground mb-4">📊 Engagement</h3>
+                <DonutChart data={engagementData} />
+                <div className="mt-4 space-y-3">
+                  {engagementData.map((item) => (
+                    <div key={item.label} className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div 
+                          className="w-3 h-3 rounded-full"
+                          style={{ backgroundColor: item.color }}
+                        />
+                        <span className="text-sm text-muted">{item.label}</span>
+                      </div>
+                      <span className="text-sm font-medium text-foreground">
+                        {item.value.toLocaleString()}
+                      </span>
+                    </div>
+                  ))}
                 </div>
               </JellyCard>
 
               {/* Performance */}
               <JellyCard className="glass-card p-5">
-                <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
-                  <span>📈</span> Performance
-                </h3>
-                
+                <h3 className="text-lg font-semibold text-foreground mb-4">📈 Performance</h3>
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted">Engagement Rate</span>
-                    <TrendIndicator value={124} previousValue={100} size="sm" />
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted">Reach</span>
-                    <span className="text-sm font-bold text-foreground">12.4K</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted">Impressions</span>
-                    <span className="text-sm font-bold text-foreground">45.2K</span>
-                  </div>
-                </div>
-              </JellyCard>
-
-              {/* Details */}
-              <JellyCard className="glass-card p-5">
-                <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
-                  <span>📝</span> Details
-                </h3>
-                
-                <div className="space-y-3 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-muted">Content Type</span>
-                    <span className="text-foreground">{mockContent.contentTypeId}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted">Created</span>
-                    <span className="text-foreground">
-                      {new Date(mockContent.createdAt).toLocaleDateString('th-TH')}
-                    </span>
-                  </div>
-                  {mockContent.publishedAt && (
-                    <div className="flex justify-between">
-                      <span className="text-muted">Published</span>
-                      <span className="text-foreground">
-                        {new Date(mockContent.publishedAt).toLocaleDateString('th-TH')}
-                      </span>
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-sm text-muted">Engagement Rate</span>
+                      <TrendIndicator value={12.5} />
                     </div>
-                  )}
+                    <div className="h-2 rounded-full bg-gray-700/50 overflow-hidden">
+                      <div 
+                        className="h-full rounded-full bg-gradient-to-r from-violet-500 to-fuchsia-500"
+                        style={{ width: '68%' }}
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-sm text-muted">Click Rate</span>
+                      <TrendIndicator value={8.3} />
+                    </div>
+                    <div className="h-2 rounded-full bg-gray-700/50 overflow-hidden">
+                      <div 
+                        className="h-full rounded-full bg-gradient-to-r from-pink-500 to-rose-500"
+                        style={{ width: '45%' }}
+                      />
+                    </div>
+                  </div>
                 </div>
               </JellyCard>
 
-              {/* Danger Zone */}
-              <JellyCard className="glass-card p-5 border border-red-500/20">
-                <h3 className="text-lg font-semibold text-red-400 mb-3 flex items-center gap-2">
-                  <span>⚠️</span> Danger Zone
-                </h3>
-                <p className="text-xs text-muted mb-3">
-                  การลบคอนเทนต์จะไม่สามารถกู้คืนได้
-                </p>
-                <JellyButton variant="secondary" size="sm" className="w-full text-red-400 border-red-500/30 hover:bg-red-500/10">
-                  🗑️ Delete Content
-                </JellyButton>
+              {/* Quick Actions */}
+              <JellyCard className="glass-card p-5">
+                <h3 className="text-lg font-semibold text-foreground mb-4">⚡ Quick Actions</h3>
+                <div className="space-y-2">
+                  <JellyButton variant="secondary" className="w-full justify-start">
+                    📅 Schedule
+                  </JellyButton>
+                  <JellyButton variant="secondary" className="w-full justify-start">
+                    📋 Duplicate
+                  </JellyButton>
+                  <JellyButton variant="ghost" className="w-full justify-start text-red-400 hover:bg-red-500/10">
+                    🗑️ Delete
+                  </JellyButton>
+                </div>
               </JellyCard>
             </animated.div>
           </div>

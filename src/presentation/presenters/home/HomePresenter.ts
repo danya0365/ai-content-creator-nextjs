@@ -1,37 +1,42 @@
 /**
  * HomePresenter
  * Handles business logic for Home page
- * Following Clean Architecture pattern
+ * ✅ Uses dependency injection for repository
  */
 
 import { CONTENT_TYPES, ContentType, TIME_SLOTS, TimeSlotConfig } from '@/src/data/master/contentTypes';
-import { GeneratedContent, getContentStats, getRecentPublishedContents } from '@/src/data/mock/mockContents';
+import { Content, ContentStats, IContentRepository } from '@/src/application/repositories/IContentRepository';
 import { Metadata } from 'next';
 
 export interface HomeViewModel {
-  stats: {
-    totalContents: number;
-    publishedCount: number;
-    scheduledCount: number;
-    draftCount: number;
-    totalLikes: number;
-    totalShares: number;
-  };
+  stats: ContentStats;
   contentTypes: ContentType[];
   timeSlots: TimeSlotConfig[];
-  recentContents: GeneratedContent[];
+  recentContents: Content[];
 }
 
 /**
  * Presenter for Home page
+ * ✅ Receives repository via constructor injection
  */
 export class HomePresenter {
+  constructor(
+    private readonly repository: IContentRepository
+  ) {}
+
   /**
    * Get view model for the page
    */
   async getViewModel(): Promise<HomeViewModel> {
-    const stats = getContentStats();
-    const recentContents = getRecentPublishedContents(5);
+    const [stats, allContents] = await Promise.all([
+      this.repository.getStats(),
+      this.repository.getAll(),
+    ]);
+
+    // Get recent published contents
+    const recentContents = allContents
+      .filter((c) => c.status === 'published')
+      .slice(0, 5);
 
     return {
       stats,

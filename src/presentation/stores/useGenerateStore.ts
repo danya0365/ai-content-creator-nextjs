@@ -71,6 +71,10 @@ export const useGenerateStore = create<GenerateStore>((set) => ({
         likes: 0,
         shares: 0,
         createdAt: result.content.createdAt,
+        // New unified Content fields
+        comments: 0,
+        tags: result.content.tags || [],
+        emoji: result.content.emoji,
       };
 
       set({

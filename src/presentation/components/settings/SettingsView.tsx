@@ -1,8 +1,8 @@
 'use client';
 
-import { AppSettings, SettingsViewModel } from '@/src/presentation/presenters/settings/SettingsPresenter';
+import { AppSettings } from '@/src/presentation/presenters/settings/SettingsPresenter';
+import { UserProfile, useSettingsPresenter } from '@/src/presentation/presenters/settings/useSettingsPresenter';
 import { animated, config, useSpring } from '@react-spring/web';
-import { useState } from 'react';
 import { MainLayout } from '../layout/MainLayout';
 import { JellyButton } from '../ui/JellyButton';
 import { JellyCard, JellyWrapper } from '../ui/JellyCard';
@@ -81,10 +81,12 @@ function SettingRow({ label, description, children }: SettingRowProps) {
   );
 }
 
-/**
- * ProfileSection - User profile section with avatar, stats
- */
-function ProfileSection({ delay }: { delay: number }) {
+interface ProfileSectionProps {
+  userProfile: UserProfile | null;
+  delay: number;
+}
+
+function ProfileSection({ userProfile, delay }: ProfileSectionProps) {
   const springProps = useSpring({
     from: { opacity: 0, y: 20 },
     to: { opacity: 1, y: 0 },
@@ -92,19 +94,18 @@ function ProfileSection({ delay }: { delay: number }) {
     config: config.gentle,
   });
 
-  // Mock user data
-  const user = {
-    name: 'ผู้สร้างคอนเทนต์',
-    email: 'creator@example.com',
-    bio: 'สร้างคอนเทนต์ Pixel Art ที่น่ารักด้วย AI',
-    avatar: '👤',
-    stats: {
-      totalContents: 156,
-      published: 89,
-      likes: 2847,
-      shares: 523,
-    },
-  };
+  // Loading state
+  if (!userProfile) {
+    return (
+      <animated.div style={springProps}>
+        <JellyCard className="glass-card p-6">
+          <div className="flex items-center justify-center h-32">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-violet-500"></div>
+          </div>
+        </JellyCard>
+      </animated.div>
+    );
+  }
 
   return (
     <animated.div style={springProps}>
@@ -113,7 +114,7 @@ function ProfileSection({ delay }: { delay: number }) {
           {/* Avatar */}
           <div className="relative">
             <div className="w-24 h-24 rounded-full bg-gradient-to-br from-violet-500 to-fuchsia-500 flex items-center justify-center text-4xl shadow-lg shadow-purple-500/25">
-              {user.avatar}
+              {userProfile.avatar}
             </div>
             <button className="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-violet-600 text-white flex items-center justify-center text-sm hover:bg-violet-500 transition-colors shadow-lg">
               📷
@@ -122,26 +123,26 @@ function ProfileSection({ delay }: { delay: number }) {
 
           {/* Info */}
           <div className="flex-1 text-center sm:text-left">
-            <h2 className="text-xl font-bold text-foreground mb-1">{user.name}</h2>
-            <p className="text-sm text-muted mb-2">{user.email}</p>
-            <p className="text-sm text-muted/80 mb-4">{user.bio}</p>
+            <h2 className="text-xl font-bold text-foreground mb-1">{userProfile.name}</h2>
+            <p className="text-sm text-muted mb-2">{userProfile.email}</p>
+            <p className="text-sm text-muted/80 mb-4">{userProfile.bio}</p>
 
             {/* Stats */}
             <div className="flex gap-4 justify-center sm:justify-start">
               <div className="text-center">
-                <div className="text-lg font-bold text-foreground">{user.stats.totalContents}</div>
+                <div className="text-lg font-bold text-foreground">{userProfile.stats.totalContents}</div>
                 <div className="text-xs text-muted">คอนเทนต์</div>
               </div>
               <div className="text-center">
-                <div className="text-lg font-bold text-green-400">{user.stats.published}</div>
+                <div className="text-lg font-bold text-green-400">{userProfile.stats.published}</div>
                 <div className="text-xs text-muted">เผยแพร่</div>
               </div>
               <div className="text-center">
-                <div className="text-lg font-bold text-pink-400">{user.stats.likes}</div>
+                <div className="text-lg font-bold text-pink-400">{userProfile.stats.likes}</div>
                 <div className="text-xs text-muted">Likes</div>
               </div>
               <div className="text-center">
-                <div className="text-lg font-bold text-blue-400">{user.stats.shares}</div>
+                <div className="text-lg font-bold text-blue-400">{userProfile.stats.shares}</div>
                 <div className="text-xs text-muted">Shares</div>
               </div>
             </div>
@@ -158,47 +159,53 @@ function ProfileSection({ delay }: { delay: number }) {
 }
 
 interface SettingsViewProps {
-  initialViewModel?: SettingsViewModel;
+  initialViewModel?: import('@/src/presentation/presenters/settings/SettingsPresenter').SettingsViewModel;
 }
 
 /**
  * SettingsView component
  * Settings page with jelly animations
+ * ✅ Clean View - All logic moved to useSettingsPresenter hook
  */
 export function SettingsView({ initialViewModel }: SettingsViewProps) {
-  const viewModel = initialViewModel || {
-    settings: {
-      geminiApiKey: '',
-      autoSchedule: true,
-      defaultTimeSlot: 'morning',
-      contentQuality: 'high',
-      language: 'th',
-      notifications: {
-        onGenerate: true,
-        onPublish: true,
-        onSchedule: true,
-      },
-    } as AppSettings,
-    availableTimeSlots: [],
-  };
-
-  const [settings, setSettings] = useState(viewModel.settings);
-  const [isSaving, setIsSaving] = useState(false);
-  const [showApiKey, setShowApiKey] = useState(false);
-
-  const handleSave = async () => {
-    setIsSaving(true);
-    // Simulate saving
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    setIsSaving(false);
-    console.log('Settings saved:', settings);
-  };
+  // ✅ All state and logic comes from hook
+  const [state, actions] = useSettingsPresenter(initialViewModel);
 
   const headerSpring = useSpring({
     from: { opacity: 0, y: -10 },
     to: { opacity: 1, y: 0 },
     config: config.gentle,
   });
+
+  // Loading state
+  if (state.loading && !state.viewModel) {
+    return (
+      <MainLayout showBubbles={false}>
+        <div className="h-full flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-violet-500 mx-auto mb-4"></div>
+            <p className="text-muted">กำลังโหลด...</p>
+          </div>
+        </div>
+      </MainLayout>
+    );
+  }
+
+  // Error state
+  if (state.error) {
+    return (
+      <MainLayout showBubbles={false}>
+        <div className="h-full flex items-center justify-center">
+          <div className="text-center">
+            <p className="text-red-400 mb-4">{state.error}</p>
+            <JellyButton onClick={actions.refresh} variant="primary">
+              ลองใหม่
+            </JellyButton>
+          </div>
+        </div>
+      </MainLayout>
+    );
+  }
 
   return (
     <MainLayout showBubbles={false}>
@@ -212,12 +219,12 @@ export function SettingsView({ initialViewModel }: SettingsViewProps) {
               <p className="text-sm text-muted">ตั้งค่าและปรับแต่งการทำงาน</p>
             </div>
             <JellyButton
-              onClick={handleSave}
-              disabled={isSaving}
+              onClick={actions.saveSettings}
+              disabled={state.isSaving}
               variant="primary"
               size="lg"
             >
-              {isSaving ? (
+              {state.isSaving ? (
                 <>
                   <span className="animate-spin">⏳</span>
                   <span>กำลังบันทึก...</span>
@@ -232,25 +239,25 @@ export function SettingsView({ initialViewModel }: SettingsViewProps) {
           </animated.div>
 
           {/* Profile Section */}
-          <ProfileSection delay={50} />
+          <ProfileSection userProfile={state.userProfile} delay={50} />
 
           {/* API Settings */}
           <SettingsSection title="API Configuration" icon="🔑" delay={100}>
             <SettingRow label="Gemini API Key" description="ใช้สำหรับสร้างคอนเทนต์ด้วย AI">
               <div className="flex items-center gap-2">
                 <input
-                  type={showApiKey ? 'text' : 'password'}
-                  value={settings.geminiApiKey}
-                  onChange={(e) => setSettings((s) => ({ ...s, geminiApiKey: e.target.value }))}
+                  type={state.showApiKey ? 'text' : 'password'}
+                  value={state.settings.geminiApiKey}
+                  onChange={(e) => actions.updateSettings({ geminiApiKey: e.target.value })}
                   placeholder="Enter API key..."
                   className="w-48 px-3 py-2 rounded-lg glass-card text-sm text-foreground placeholder-muted focus:outline-none focus:ring-2 focus:ring-violet-500/50"
                 />
                 <JellyButton
-                  onClick={() => setShowApiKey(!showApiKey)}
+                  onClick={actions.toggleApiKeyVisibility}
                   variant="ghost"
                   size="sm"
                 >
-                  {showApiKey ? '🙈' : '👁️'}
+                  {state.showApiKey ? '🙈' : '👁️'}
                 </JellyButton>
               </div>
             </SettingRow>
@@ -260,8 +267,8 @@ export function SettingsView({ initialViewModel }: SettingsViewProps) {
           <SettingsSection title="Content Generation" icon="✨" delay={150}>
             <SettingRow label="คุณภาพคอนเทนต์" description="ระดับความละเอียดของรูปภาพ">
               <select
-                value={settings.contentQuality}
-                onChange={(e) => setSettings((s) => ({ ...s, contentQuality: e.target.value as AppSettings['contentQuality'] }))}
+                value={state.settings.contentQuality}
+                onChange={(e) => actions.updateSettings({ contentQuality: e.target.value as AppSettings['contentQuality'] })}
                 className="px-3 py-2 rounded-lg glass-card text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-violet-500/50"
               >
                 <option value="standard">Standard</option>
@@ -272,11 +279,11 @@ export function SettingsView({ initialViewModel }: SettingsViewProps) {
 
             <SettingRow label="ช่วงเวลาเริ่มต้น" description="ช่วงเวลาที่ใช้เป็นค่าเริ่มต้นสำหรับ Schedule">
               <select
-                value={settings.defaultTimeSlot}
-                onChange={(e) => setSettings((s) => ({ ...s, defaultTimeSlot: e.target.value }))}
+                value={state.settings.defaultTimeSlot}
+                onChange={(e) => actions.updateSettings({ defaultTimeSlot: e.target.value })}
                 className="px-3 py-2 rounded-lg glass-card text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-violet-500/50"
               >
-                {viewModel.availableTimeSlots.map((slot) => (
+                {state.viewModel?.availableTimeSlots.map((slot) => (
                   <option key={slot.id} value={slot.id}>
                     {slot.name}
                   </option>
@@ -289,8 +296,8 @@ export function SettingsView({ initialViewModel }: SettingsViewProps) {
           <SettingsSection title="Schedule" icon="📅" delay={200}>
             <SettingRow label="Auto Schedule" description="จัดตาราง Schedule อัตโนมัติหลังสร้างคอนเทนต์">
               <ToggleSwitch
-                enabled={settings.autoSchedule}
-                onChange={(enabled) => setSettings((s) => ({ ...s, autoSchedule: enabled }))}
+                enabled={state.settings.autoSchedule}
+                onChange={(enabled) => actions.updateSettings({ autoSchedule: enabled })}
               />
             </SettingRow>
           </SettingsSection>
@@ -299,29 +306,20 @@ export function SettingsView({ initialViewModel }: SettingsViewProps) {
           <SettingsSection title="Notifications" icon="🔔" delay={250}>
             <SettingRow label="เมื่อสร้างคอนเทนต์สำเร็จ" description="แจ้งเตือนเมื่อ AI สร้างคอนเทนต์เสร็จ">
               <ToggleSwitch
-                enabled={settings.notifications.onGenerate}
-                onChange={(enabled) => setSettings((s) => ({ 
-                  ...s, 
-                  notifications: { ...s.notifications, onGenerate: enabled } 
-                }))}
+                enabled={state.settings.notifications.onGenerate}
+                onChange={(enabled) => actions.updateNotification('onGenerate', enabled)}
               />
             </SettingRow>
             <SettingRow label="เมื่อโพสต์คอนเทนต์" description="แจ้งเตือนเมื่อโพสต์คอนเทนต์ตาม Schedule">
               <ToggleSwitch
-                enabled={settings.notifications.onPublish}
-                onChange={(enabled) => setSettings((s) => ({ 
-                  ...s, 
-                  notifications: { ...s.notifications, onPublish: enabled } 
-                }))}
+                enabled={state.settings.notifications.onPublish}
+                onChange={(enabled) => actions.updateNotification('onPublish', enabled)}
               />
             </SettingRow>
             <SettingRow label="เมื่อมี Schedule ใหม่" description="แจ้งเตือนเมื่อมี Schedule ใหม่ถูกเพิ่ม">
               <ToggleSwitch
-                enabled={settings.notifications.onSchedule}
-                onChange={(enabled) => setSettings((s) => ({ 
-                  ...s, 
-                  notifications: { ...s.notifications, onSchedule: enabled } 
-                }))}
+                enabled={state.settings.notifications.onSchedule}
+                onChange={(enabled) => actions.updateNotification('onSchedule', enabled)}
               />
             </SettingRow>
           </SettingsSection>
@@ -330,8 +328,8 @@ export function SettingsView({ initialViewModel }: SettingsViewProps) {
           <SettingsSection title="Language & Display" icon="🌐" delay={300}>
             <SettingRow label="ภาษา" description="เลือกภาษาที่ใช้แสดงผล">
               <select
-                value={settings.language}
-                onChange={(e) => setSettings((s) => ({ ...s, language: e.target.value as 'th' | 'en' }))}
+                value={state.settings.language}
+                onChange={(e) => actions.updateSettings({ language: e.target.value as 'th' | 'en' })}
                 className="px-3 py-2 rounded-lg glass-card text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-violet-500/50"
               >
                 <option value="th">🇹🇭 ไทย</option>
@@ -344,6 +342,7 @@ export function SettingsView({ initialViewModel }: SettingsViewProps) {
           <SettingsSection title="Danger Zone" icon="⚠️" delay={350}>
             <SettingRow label="ล้างข้อมูลทั้งหมด" description="ลบคอนเทนต์และ Schedule ทั้งหมด">
               <JellyButton
+                onClick={actions.clearAllData}
                 variant="ghost"
                 size="sm"
                 className="bg-red-500/20 text-red-400 hover:bg-red-500/30"

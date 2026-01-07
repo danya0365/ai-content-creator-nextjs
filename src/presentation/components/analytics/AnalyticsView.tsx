@@ -1,20 +1,25 @@
 'use client';
 
+import { AnalyticsViewModel } from '@/src/presentation/presenters/analytics/AnalyticsPresenter';
+import { useAnalyticsPresenter } from '@/src/presentation/presenters/analytics/useAnalyticsPresenter';
 import { animated, config, useSpring } from '@react-spring/web';
-import { useState } from 'react';
 import { MainLayout } from '../layout/MainLayout';
 import { JellyButton } from '../ui/JellyButton';
 import { JellyCard } from '../ui/JellyCard';
 import { BarChart, DonutChart, LineChart } from '../ui/SimpleChart';
 import { ProgressBar, TrendIndicator } from '../ui/TrendIndicator';
 
-type DateRange = 'week' | 'month' | 'year';
+interface AnalyticsViewProps {
+  initialViewModel?: AnalyticsViewModel;
+}
 
 /**
  * AnalyticsView - Analytics dashboard with charts and insights
+ * ✅ Clean View - All logic moved to useAnalyticsPresenter hook
  */
-export function AnalyticsView() {
-  const [dateRange, setDateRange] = useState<DateRange>('week');
+export function AnalyticsView({ initialViewModel }: AnalyticsViewProps) {
+  // ✅ All state and logic comes from hook
+  const [state, actions] = useAnalyticsPresenter(initialViewModel);
 
   const headerSpring = useSpring({
     from: { opacity: 0, y: -20 },
@@ -22,47 +27,50 @@ export function AnalyticsView() {
     config: config.gentle,
   });
 
-  // Mock data
-  const stats = {
-    totalContents: 156,
-    totalLikes: 12847,
-    totalShares: 3421,
-    totalViews: 89234,
-    avgEngagement: 8.4,
+  // Loading state
+  if (state.loading && !state.viewModel) {
+    return (
+      <MainLayout showBubbles={false}>
+        <div className="h-full flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-violet-500 mx-auto mb-4"></div>
+            <p className="text-muted">กำลังโหลด...</p>
+          </div>
+        </div>
+      </MainLayout>
+    );
+  }
+
+  // Error state
+  if (state.error) {
+    return (
+      <MainLayout showBubbles={false}>
+        <div className="h-full flex items-center justify-center">
+          <div className="text-center">
+            <p className="text-red-400 mb-4">{state.error}</p>
+            <JellyButton onClick={actions.refresh} variant="primary">
+              ลองใหม่
+            </JellyButton>
+          </div>
+        </div>
+      </MainLayout>
+    );
+  }
+
+  // ✅ Single Source of Truth - All data comes from viewModel via hook
+  const viewModel = state.viewModel;
+  const stats = viewModel?.stats || {
+    totalContents: 0,
+    publishedCount: 0,
+    scheduledCount: 0,
+    draftCount: 0,
+    totalLikes: 0,
+    totalShares: 0,
   };
-
-  const weeklyData = [
-    { label: 'จ', value: 142 },
-    { label: 'อ', value: 189 },
-    { label: 'พ', value: 156 },
-    { label: 'พฤ', value: 234 },
-    { label: 'ศ', value: 312 },
-    { label: 'ส', value: 278 },
-    { label: 'อา', value: 198 },
-  ];
-
-  const monthlyData = [
-    { label: 'W1', value: 850 },
-    { label: 'W2', value: 1200 },
-    { label: 'W3', value: 980 },
-    { label: 'W4', value: 1450 },
-  ];
-
-  const contentTypeData = [
-    { label: 'Morning News', value: 35, color: '#FFB347' },
-    { label: 'Food', value: 25, color: '#FF6B6B' },
-    { label: 'Tech Tips', value: 20, color: '#4ECDC4' },
-    { label: 'Entertainment', value: 12, color: '#C9B1FF' },
-    { label: 'Motivation', value: 8, color: '#45B7D1' },
-  ];
-
-  const topPerformers = [
-    { title: 'สรุปข่าว AI วันนี้ 🤖', likes: 1247, shares: 312, type: 'morning-news' },
-    { title: 'ก๋วยเตี๋ยวเรือสูตรเด็ด 🍜', likes: 987, shares: 256, type: 'food' },
-    { title: 'เคล็ดลับ CSS Grid 💻', likes: 876, shares: 198, type: 'tech-tips' },
-    { title: 'มีมโปรแกรมเมอร์ตลก 😂', likes: 823, shares: 312, type: 'entertainment' },
-    { title: 'คำคมเติมพลัง ✨', likes: 765, shares: 145, type: 'daily-motivation' },
-  ];
+  const weeklyData = viewModel?.weeklyData || [];
+  const monthlyData = viewModel?.monthlyData || [];
+  const contentTypeData = viewModel?.contentTypeData || [];
+  const topPerformers = viewModel?.topPerformers || [];
 
   return (
     <MainLayout showBubbles={false}>
@@ -78,17 +86,17 @@ export function AnalyticsView() {
             
             {/* Date Range */}
             <div className="flex gap-1 p-1 glass-card rounded-lg">
-              {(['week', 'month', 'year'] as DateRange[]).map((range) => (
+              {(['today', 'week', 'month', 'year'] as const).map((range) => (
                 <button
                   key={range}
-                  onClick={() => setDateRange(range)}
+                  onClick={() => actions.setDateRange(range)}
                   className={`px-4 py-2 text-sm rounded-md transition-all ${
-                    dateRange === range
+                    state.dateRange === range
                       ? 'bg-violet-600 text-white'
                       : 'text-muted hover:text-foreground'
                   }`}
                 >
-                  {range === 'week' ? 'สัปดาห์' : range === 'month' ? 'เดือน' : 'ปี'}
+                  {range === 'today' ? 'วันนี้' : range === 'week' ? 'สัปดาห์' : range === 'month' ? 'เดือน' : 'ปี'}
                 </button>
               ))}
             </div>
@@ -121,17 +129,17 @@ export function AnalyticsView() {
               delay={200}
             />
             <StatCard
-              label="Views"
-              value={`${(stats.totalViews / 1000).toFixed(1)}K`}
-              icon="👁️"
+              label="Published"
+              value={stats.publishedCount}
+              icon="✅"
               color="#06B6D4"
               trend={32.1}
               delay={250}
             />
             <StatCard
-              label="Engagement"
-              value={`${stats.avgEngagement}%`}
-              icon="📈"
+              label="Scheduled"
+              value={stats.scheduledCount}
+              icon="📅"
               color="#10B981"
               trend={5.2}
               delay={300}

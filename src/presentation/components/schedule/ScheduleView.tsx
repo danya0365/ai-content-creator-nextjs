@@ -1,10 +1,10 @@
 'use client';
 
+import { Content } from '@/src/application/repositories/IContentRepository';
 import { TimeSlotConfig } from '@/src/data/master/contentTypes';
-import { GeneratedContent } from '@/src/data/mock/mockContents';
 import { ScheduleDay, ScheduleViewModel } from '@/src/presentation/presenters/schedule/SchedulePresenter';
+import { useSchedulePresenter } from '@/src/presentation/presenters/schedule/useSchedulePresenter';
 import { animated, config, useSpring } from '@react-spring/web';
-import { useState } from 'react';
 import { MainLayout } from '../layout/MainLayout';
 import { JellyButton } from '../ui/JellyButton';
 import { JellyCard } from '../ui/JellyCard';
@@ -53,7 +53,7 @@ function DayColumn({ day, isSelected, onClick, delay }: DayColumnProps) {
 
 interface TimeSlotRowProps {
   slot: TimeSlotConfig;
-  contents: GeneratedContent[];
+  contents: Content[];
   onAddContent: () => void;
 }
 
@@ -118,9 +118,13 @@ interface ScheduleViewProps {
 /**
  * ScheduleView component
  * Calendar view with jelly animations
+ * ✅ Clean View - All logic moved to useSchedulePresenter hook
  */
 export function ScheduleView({ initialViewModel }: ScheduleViewProps) {
-  const viewModel = initialViewModel || {
+  // ✅ All state and logic comes from hook
+  const [state, actions] = useSchedulePresenter(initialViewModel);
+  
+  const viewModel = state.viewModel || {
     currentWeek: [],
     timeSlots: [],
     contentTypes: [],
@@ -128,20 +132,41 @@ export function ScheduleView({ initialViewModel }: ScheduleViewProps) {
     totalScheduled: 0,
   };
 
-  const [selectedDayIndex, setSelectedDayIndex] = useState(0);
-  const selectedDay = viewModel.currentWeek[selectedDayIndex];
-
   const headerSpring = useSpring({
     from: { opacity: 0, y: -10 },
     to: { opacity: 1, y: 0 },
     config: config.gentle,
   });
 
-  // Get contents for selected day by time slot
-  const getContentsForSlot = (slot: TimeSlotConfig): GeneratedContent[] => {
-    if (!selectedDay) return [];
-    return selectedDay.contents.filter((c) => c.timeSlot === slot.id);
-  };
+  // Loading state
+  if (state.loading && !state.viewModel) {
+    return (
+      <MainLayout showBubbles={false}>
+        <div className="h-full flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-violet-500 mx-auto mb-4"></div>
+            <p className="text-muted">กำลังโหลด...</p>
+          </div>
+        </div>
+      </MainLayout>
+    );
+  }
+
+  // Error state
+  if (state.error) {
+    return (
+      <MainLayout showBubbles={false}>
+        <div className="h-full flex items-center justify-center">
+          <div className="text-center">
+            <p className="text-red-400 mb-4">{state.error}</p>
+            <JellyButton onClick={actions.refresh} variant="primary">
+              ลองใหม่
+            </JellyButton>
+          </div>
+        </div>
+      </MainLayout>
+    );
+  }
 
   return (
     <MainLayout showBubbles={false}>
@@ -168,26 +193,26 @@ export function ScheduleView({ initialViewModel }: ScheduleViewProps) {
               <DayColumn
                 key={day.dateString}
                 day={day}
-                isSelected={selectedDayIndex === index}
-                onClick={() => setSelectedDayIndex(index)}
+                isSelected={state.selectedDayIndex === index}
+                onClick={() => actions.selectDay(index)}
                 delay={100 + index * 50}
               />
             ))}
           </div>
 
           {/* Selected day info */}
-          {selectedDay && (
+          {state.selectedDay && (
             <JellyCard className="glass-card p-4">
               <div className="flex items-center justify-between mb-4">
                 <div>
                   <h2 className="text-lg font-semibold text-foreground">
-                    {selectedDay.isToday ? 'วันนี้' : `${selectedDay.dayOfWeek}ที่ ${selectedDay.dayNumber}`}
+                    {state.selectedDay.isToday ? 'วันนี้' : `${state.selectedDay.dayOfWeek}ที่ ${state.selectedDay.dayNumber}`}
                   </h2>
                   <p className="text-sm text-muted">
-                    {selectedDay.contents.length} คอนเทนต์ที่กำหนดไว้
+                    {state.selectedDay.contents.length} คอนเทนต์ที่กำหนดไว้
                   </p>
                 </div>
-                {selectedDay.isToday && (
+                {state.selectedDay.isToday && (
                   <span className="px-3 py-1 rounded-full bg-green-500/20 text-green-400 text-xs font-medium">
                     Today
                   </span>
@@ -200,7 +225,7 @@ export function ScheduleView({ initialViewModel }: ScheduleViewProps) {
                   <TimeSlotRow
                     key={slot.id}
                     slot={slot}
-                    contents={getContentsForSlot(slot)}
+                    contents={actions.getContentsForSlot(slot)}
                     onAddContent={() => console.log('Add content for', slot.id)}
                   />
                 ))}

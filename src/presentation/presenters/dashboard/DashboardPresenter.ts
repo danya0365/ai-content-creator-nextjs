@@ -1,39 +1,25 @@
 /**
  * DashboardPresenter
  * Handles business logic for Dashboard page
- * Following Clean Architecture pattern
+ * ✅ Uses dependency injection for repository
  */
 
 import {
-    CONTENT_TYPES,
-    ContentType,
-    TIME_SLOTS,
-    TimeSlotConfig,
-    getContentTypesByTimeSlot,
-    getCurrentTimeSlot,
+  CONTENT_TYPES,
+  ContentType,
+  TIME_SLOTS,
+  TimeSlotConfig,
+  getContentTypesByTimeSlot,
+  getCurrentTimeSlot,
 } from '@/src/data/master/contentTypes';
-import {
-    GeneratedContent,
-    getContentStats,
-    getContentsByStatus,
-    getRecentPublishedContents,
-} from '@/src/data/mock/mockContents';
+import { Content, ContentStats, IContentRepository } from '@/src/application/repositories/IContentRepository';
 import { Metadata } from 'next';
 
-export interface DashboardStats {
-  totalContents: number;
-  publishedCount: number;
-  scheduledCount: number;
-  draftCount: number;
-  totalLikes: number;
-  totalShares: number;
-}
-
 export interface DashboardViewModel {
-  stats: DashboardStats;
-  recentContents: GeneratedContent[];
-  scheduledContents: GeneratedContent[];
-  draftContents: GeneratedContent[];
+  stats: ContentStats;
+  recentContents: Content[];
+  scheduledContents: Content[];
+  draftContents: Content[];
   contentTypes: ContentType[];
   timeSlots: TimeSlotConfig[];
   currentTimeSlot: TimeSlotConfig | null;
@@ -42,16 +28,29 @@ export interface DashboardViewModel {
 
 /**
  * Presenter for Dashboard page
+ * ✅ Receives repository via constructor injection
  */
 export class DashboardPresenter {
+  constructor(
+    private readonly repository: IContentRepository
+  ) {}
+
   /**
    * Get view model for the page
    */
   async getViewModel(): Promise<DashboardViewModel> {
-    const stats = getContentStats();
-    const recentContents = getRecentPublishedContents(6);
-    const scheduledContents = getContentsByStatus('scheduled');
-    const draftContents = getContentsByStatus('draft');
+    // Get data in parallel for better performance
+    const [stats, allContents] = await Promise.all([
+      this.repository.getStats(),
+      this.repository.getAll(),
+    ]);
+
+    const recentContents = allContents
+      .filter((c) => c.status === 'published')
+      .slice(0, 6);
+
+    const scheduledContents = allContents.filter((c) => c.status === 'scheduled');
+    const draftContents = allContents.filter((c) => c.status === 'draft');
     const currentTimeSlot = getCurrentTimeSlot();
     
     // Get suggested content types based on current time

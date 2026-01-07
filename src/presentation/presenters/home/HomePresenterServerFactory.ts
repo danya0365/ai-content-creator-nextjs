@@ -1,14 +1,16 @@
 /**
  * HomePresenterServerFactory
  * Factory for creating HomePresenter instances on the server side
- * Following Clean Architecture pattern
+ * ✅ Injects the appropriate repository based on env config
  */
 
+import { getContentRepository } from '@/src/lib/getRepository';
 import { HomePresenter } from './HomePresenter';
 
 export class HomePresenterServerFactory {
   static create(): HomePresenter {
-    return new HomePresenter();
+    const repository = getContentRepository();
+    return new HomePresenter(repository);
   }
 }
 

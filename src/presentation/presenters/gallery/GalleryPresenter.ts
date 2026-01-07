@@ -1,22 +1,20 @@
 /**
  * GalleryPresenter
  * Handles business logic for Gallery page
+ * ✅ Uses dependency injection for repository
  */
 
 import {
-    CONTENT_TYPES,
-    ContentType,
+  CONTENT_TYPES,
+  ContentType,
 } from '@/src/data/master/contentTypes';
-import {
-    GeneratedContent,
-    MOCK_CONTENTS,
-} from '@/src/data/mock/mockContents';
+import { Content, IContentRepository, ContentFilter as RepoContentFilter } from '@/src/application/repositories/IContentRepository';
 import { Metadata } from 'next';
 
 export type ContentFilter = 'all' | 'published' | 'scheduled' | 'draft';
 
 export interface GalleryViewModel {
-  contents: GeneratedContent[];
+  contents: Content[];
   contentTypes: ContentType[];
   filter: ContentFilter;
   totalCount: number;
@@ -24,17 +22,24 @@ export interface GalleryViewModel {
 
 /**
  * Presenter for Gallery page
+ * ✅ Receives repository via constructor injection
  */
 export class GalleryPresenter {
+  constructor(
+    private readonly repository: IContentRepository
+  ) {}
+
   /**
    * Get view model for the page
    */
   async getViewModel(filter: ContentFilter = 'all'): Promise<GalleryViewModel> {
-    let contents = [...MOCK_CONTENTS];
-    
+    // Build filter for repository
+    const repoFilter: RepoContentFilter = {};
     if (filter !== 'all') {
-      contents = contents.filter((c) => c.status === filter);
+      repoFilter.status = filter;
     }
+
+    const contents = await this.repository.getAll(repoFilter);
 
     // Sort by created date (newest first)
     contents.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());

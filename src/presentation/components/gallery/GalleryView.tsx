@@ -1,15 +1,14 @@
 'use client';
 
-import { GeneratedContent } from '@/src/data/mock/mockContents';
+import { Content } from '@/src/application/repositories/IContentRepository';
 import { ContentFilter, GalleryViewModel } from '@/src/presentation/presenters/gallery/GalleryPresenter';
+import { useGalleryPresenter, ViewMode } from '@/src/presentation/presenters/gallery/useGalleryPresenter';
 import { animated, config, useSpring } from '@react-spring/web';
-import { useMemo, useState } from 'react';
 import { MainLayout } from '../layout/MainLayout';
 import { JellyButton } from '../ui/JellyButton';
 import { JellyCard } from '../ui/JellyCard';
 
 // Types
-type ViewMode = 'grid' | 'list';
 type SortOption = 'newest' | 'oldest' | 'likes' | 'shares';
 
 interface FilterButtonProps {
@@ -33,7 +32,7 @@ function FilterButton({ label, count, isActive, onClick }: FilterButtonProps) {
 }
 
 interface ContentDetailModalProps {
-  content: GeneratedContent;
+  content: Content;
   onClose: () => void;
 }
 
@@ -125,7 +124,7 @@ function ContentDetailModal({ content, onClose }: ContentDetailModalProps) {
 }
 
 interface GalleryCardProps {
-  content: GeneratedContent;
+  content: Content;
   onClick: () => void;
   delay: number;
 }
@@ -181,7 +180,7 @@ function GalleryCard({ content, onClick, delay }: GalleryCardProps) {
  * GalleryListCard - List view card with more details
  */
 interface GalleryListCardProps {
-  content: GeneratedContent;
+  content: Content;
   onClick: () => void;
   delay: number;
 }
@@ -300,62 +299,54 @@ interface GalleryViewProps {
 /**
  * GalleryView component
  * Content gallery with Grid/List toggle and sorting
+ * ✅ Clean View - All logic moved to useGalleryPresenter hook
  */
 export function GalleryView({ initialViewModel }: GalleryViewProps) {
-  const viewModel = initialViewModel || {
+  // ✅ All state and logic comes from hook
+  const [state, actions] = useGalleryPresenter(initialViewModel);
+  
+  const viewModel = state.viewModel || {
     contents: [],
     contentTypes: [],
     filter: 'all' as ContentFilter,
     totalCount: 0,
   };
 
-  const [filter, setFilter] = useState<ContentFilter>(viewModel.filter);
-  const [selectedContent, setSelectedContent] = useState<GeneratedContent | null>(null);
-  const [viewMode, setViewMode] = useState<ViewMode>('grid');
-  const [sortOption, setSortOption] = useState<SortOption>('newest');
-
-  // Filter and sort contents
-  const filteredAndSortedContents = useMemo(() => {
-    let contents = filter === 'all'
-      ? viewModel.contents
-      : viewModel.contents.filter((c) => c.status === filter);
-
-    // Sort
-    switch (sortOption) {
-      case 'newest':
-        contents = [...contents].sort((a, b) => 
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-        );
-        break;
-      case 'oldest':
-        contents = [...contents].sort((a, b) => 
-          new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
-        );
-        break;
-      case 'likes':
-        contents = [...contents].sort((a, b) => (b.likes || 0) - (a.likes || 0));
-        break;
-      case 'shares':
-        contents = [...contents].sort((a, b) => (b.shares || 0) - (a.shares || 0));
-        break;
-    }
-
-    return contents;
-  }, [viewModel.contents, filter, sortOption]);
-
-  // Get counts for each filter
-  const counts = useMemo(() => ({
-    all: viewModel.contents.length,
-    published: viewModel.contents.filter((c) => c.status === 'published').length,
-    scheduled: viewModel.contents.filter((c) => c.status === 'scheduled').length,
-    draft: viewModel.contents.filter((c) => c.status === 'draft').length,
-  }), [viewModel.contents]);
-
   const headerSpring = useSpring({
     from: { opacity: 0, y: -10 },
     to: { opacity: 1, y: 0 },
     config: config.gentle,
   });
+
+  // Loading state
+  if (state.loading && !state.viewModel) {
+    return (
+      <MainLayout showBubbles={false}>
+        <div className="h-full flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-violet-500 mx-auto mb-4"></div>
+            <p className="text-muted">กำลังโหลด...</p>
+          </div>
+        </div>
+      </MainLayout>
+    );
+  }
+
+  // Error state
+  if (state.error) {
+    return (
+      <MainLayout showBubbles={false}>
+        <div className="h-full flex items-center justify-center">
+          <div className="text-center">
+            <p className="text-red-400 mb-4">{state.error}</p>
+            <JellyButton onClick={actions.refresh} variant="primary">
+              ลองใหม่
+            </JellyButton>
+          </div>
+        </div>
+      </MainLayout>
+    );
+  }
 
   return (
     <MainLayout showBubbles={false}>
@@ -374,40 +365,40 @@ export function GalleryView({ initialViewModel }: GalleryViewProps) {
               
               {/* View controls */}
               <div className="flex items-center gap-2 md:gap-3">
-                <SortSelector sort={sortOption} onChange={setSortOption} />
-                <ViewModeToggle mode={viewMode} onChange={setViewMode} />
+                <SortSelector sort={state.sortBy} onChange={actions.setSortBy} />
+                <ViewModeToggle mode={state.viewMode} onChange={actions.setViewMode} />
               </div>
             </div>
             
             {/* Filters */}
             <div className="flex gap-1.5 md:gap-2 flex-wrap overflow-x-auto pb-1 scrollbar-hide">
-              <FilterButton label="ทั้งหมด" value="all" count={counts.all} isActive={filter === 'all'} onClick={() => setFilter('all')} />
-              <FilterButton label="Published" value="published" count={counts.published} isActive={filter === 'published'} onClick={() => setFilter('published')} />
-              <FilterButton label="Scheduled" value="scheduled" count={counts.scheduled} isActive={filter === 'scheduled'} onClick={() => setFilter('scheduled')} />
-              <FilterButton label="Draft" value="draft" count={counts.draft} isActive={filter === 'draft'} onClick={() => setFilter('draft')} />
+              <FilterButton label="ทั้งหมด" value="all" count={state.counts.all} isActive={state.filter === 'all'} onClick={() => actions.setFilter('all')} />
+              <FilterButton label="Published" value="published" count={state.counts.published} isActive={state.filter === 'published'} onClick={() => actions.setFilter('published')} />
+              <FilterButton label="Scheduled" value="scheduled" count={state.counts.scheduled} isActive={state.filter === 'scheduled'} onClick={() => actions.setFilter('scheduled')} />
+              <FilterButton label="Draft" value="draft" count={state.counts.draft} isActive={state.filter === 'draft'} onClick={() => actions.setFilter('draft')} />
             </div>
           </animated.div>
 
           {/* Content Grid/List */}
-          {filteredAndSortedContents.length > 0 ? (
-            viewMode === 'grid' ? (
+          {state.filteredAndSortedContents.length > 0 ? (
+            state.viewMode === 'grid' ? (
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 md:gap-4">
-                {filteredAndSortedContents.map((content, index) => (
+                {state.filteredAndSortedContents.map((content, index) => (
                   <GalleryCard
                     key={content.id}
                     content={content}
-                    onClick={() => setSelectedContent(content)}
+                    onClick={() => actions.selectContent(content)}
                     delay={50 + index * 30}
                   />
                 ))}
               </div>
             ) : (
               <div className="space-y-3">
-                {filteredAndSortedContents.map((content, index) => (
+                {state.filteredAndSortedContents.map((content, index) => (
                   <GalleryListCard
                     key={content.id}
                     content={content}
-                    onClick={() => setSelectedContent(content)}
+                    onClick={() => actions.selectContent(content)}
                     delay={50 + index * 30}
                   />
                 ))}
@@ -427,10 +418,10 @@ export function GalleryView({ initialViewModel }: GalleryViewProps) {
       </div>
 
       {/* Detail Modal */}
-      {selectedContent && (
+      {state.selectedContent && (
         <ContentDetailModal
-          content={selectedContent}
-          onClose={() => setSelectedContent(null)}
+          content={state.selectedContent}
+          onClose={() => actions.selectContent(null)}
         />
       )}
     </MainLayout>

@@ -1,6 +1,7 @@
 /**
  * SchedulePresenter
  * Handles business logic for Schedule page
+ * ✅ Uses dependency injection for repository
  */
 
 import {
@@ -9,10 +10,7 @@ import {
     TIME_SLOTS,
     TimeSlotConfig,
 } from '@/src/data/master/contentTypes';
-import {
-    GeneratedContent,
-    MOCK_CONTENTS,
-} from '@/src/data/mock/mockContents';
+import { Content, IContentRepository } from '@/src/application/repositories/IContentRepository';
 import { Metadata } from 'next';
 
 export interface ScheduleDay {
@@ -21,14 +19,14 @@ export interface ScheduleDay {
   dayOfWeek: string;
   dayNumber: number;
   isToday: boolean;
-  contents: GeneratedContent[];
+  contents: Content[];
 }
 
 export interface ScheduleViewModel {
   currentWeek: ScheduleDay[];
   timeSlots: TimeSlotConfig[];
   contentTypes: ContentType[];
-  scheduledContents: GeneratedContent[];
+  scheduledContents: Content[];
   totalScheduled: number;
 }
 
@@ -36,13 +34,18 @@ const DAY_NAMES = ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส'];
 
 /**
  * Presenter for Schedule page
+ * ✅ Receives repository via constructor injection
  */
 export class SchedulePresenter {
+  constructor(
+    private readonly repository: IContentRepository
+  ) {}
+
   /**
    * Get view model for the page
    */
   async getViewModel(): Promise<ScheduleViewModel> {
-    const scheduledContents = MOCK_CONTENTS.filter((c) => c.status === 'scheduled');
+    const scheduledContents = await this.repository.getScheduled();
     
     // Generate current week
     const today = new Date();

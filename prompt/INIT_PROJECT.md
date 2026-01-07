@@ -18,6 +18,6 @@ MainLayout ต้องให้ออกแบบให้ เป็น Full sc
 
 3. ออกแบบ Reuse Component ของ MainLayout
 
-ใช้ effect crsytal bubble animation ด้วย react-spring
+ใช้ effect crystal bubble animation ด้วย react-spring
 
 4. จากนั้นสร้างหน้าแรก สวยๆ คอนเทนต์ ตาม Concept เว็บ AI Content Creator

@@ -1,8 +1,9 @@
 'use client';
 
+import { Content } from '@/src/application/repositories/IContentRepository';
 import { ContentType } from '@/src/data/master/contentTypes';
-import { GeneratedContent } from '@/src/data/mock/mockContents';
 import { DashboardViewModel } from '@/src/presentation/presenters/dashboard/DashboardPresenter';
+import { useDashboardPresenter } from '@/src/presentation/presenters/dashboard/useDashboardPresenter';
 import { useGenerateStore } from '@/src/presentation/stores/useGenerateStore';
 import { animated, config, useSpring } from '@react-spring/web';
 import Link from 'next/link';
@@ -64,7 +65,7 @@ function StatCard({ value, label, icon, color, delay, trend, sparklineData }: St
 }
 
 interface ContentCardProps {
-  content: GeneratedContent;
+  content: Content;
   delay: number;
 }
 
@@ -162,10 +163,14 @@ interface DashboardViewProps {
 /**
  * DashboardView component
  * Main dashboard for content management - With Jelly Animations
+ * ✅ Uses useDashboardPresenter hook following CREATE_PAGE_PATTERN
  */
 export function DashboardView({ initialViewModel }: DashboardViewProps) {
-  // Use initial data or fallback
-  const viewModel = initialViewModel || {
+  // ✅ Use custom hook for state management
+  const [state, actions] = useDashboardPresenter(initialViewModel);
+  
+  // Get viewModel from hook state or use fallback
+  const viewModel = state.viewModel || {
     stats: { totalContents: 0, publishedCount: 0, scheduledCount: 0, draftCount: 0, totalLikes: 0, totalShares: 0 },
     recentContents: [],
     scheduledContents: [],
@@ -184,6 +189,36 @@ export function DashboardView({ initialViewModel }: DashboardViewProps) {
     to: { opacity: 1, y: 0 },
     config: config.gentle,
   });
+
+  // Show loading state
+  if (state.loading && !state.viewModel) {
+    return (
+      <MainLayout showBubbles={false}>
+        <div className="h-full flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-violet-500 mx-auto mb-4"></div>
+            <p className="text-muted">กำลังโหลดข้อมูล...</p>
+          </div>
+        </div>
+      </MainLayout>
+    );
+  }
+
+  // Show error state
+  if (state.error) {
+    return (
+      <MainLayout showBubbles={false}>
+        <div className="h-full flex items-center justify-center">
+          <div className="text-center">
+            <p className="text-red-400 mb-4">{state.error}</p>
+            <JellyButton onClick={actions.refresh} variant="primary">
+              ลองใหม่อีกครั้ง
+            </JellyButton>
+          </div>
+        </div>
+      </MainLayout>
+    );
+  }
 
   return (
     <MainLayout showBubbles={false}>

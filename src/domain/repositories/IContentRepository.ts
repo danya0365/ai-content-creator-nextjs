@@ -1,0 +1,106 @@
+/**
+ * Content Repository Interface
+ * Defines the contract for content data access
+ */
+
+import { TimeSlot } from '@/src/data/master/contentTypes';
+
+export interface Content {
+  id: string;
+  contentTypeId: string;
+  title: string;
+  description: string;
+  imageUrl: string;
+  prompt: string;
+  timeSlot: TimeSlot;
+  scheduledAt: string;
+  publishedAt: string | null;
+  status: 'draft' | 'scheduled' | 'published' | 'failed';
+  likes: number;
+  shares: number;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface CreateContentDTO {
+  contentTypeId: string;
+  title: string;
+  description: string;
+  imageUrl?: string;
+  prompt: string;
+  timeSlot: TimeSlot;
+  scheduledAt?: string;
+  status?: Content['status'];
+}
+
+export interface UpdateContentDTO {
+  title?: string;
+  description?: string;
+  imageUrl?: string;
+  prompt?: string;
+  timeSlot?: TimeSlot;
+  scheduledAt?: string;
+  status?: Content['status'];
+  likes?: number;
+  shares?: number;
+}
+
+export interface ContentFilter {
+  status?: Content['status'];
+  timeSlot?: TimeSlot;
+  contentTypeId?: string;
+}
+
+export interface ContentStats {
+  totalContents: number;
+  publishedCount: number;
+  scheduledCount: number;
+  draftCount: number;
+  totalLikes: number;
+  totalShares: number;
+}
+
+/**
+ * IContentRepository - Content data access interface
+ */
+export interface IContentRepository {
+  /**
+   * Get all contents with optional filter
+   */
+  getAll(filter?: ContentFilter): Promise<Content[]>;
+
+  /**
+   * Get content by ID
+   */
+  getById(id: string): Promise<Content | null>;
+
+  /**
+   * Get recent published contents
+   */
+  getRecentPublished(limit?: number): Promise<Content[]>;
+
+  /**
+   * Get scheduled contents
+   */
+  getScheduled(): Promise<Content[]>;
+
+  /**
+   * Get content statistics
+   */
+  getStats(): Promise<ContentStats>;
+
+  /**
+   * Create new content
+   */
+  create(data: CreateContentDTO): Promise<Content>;
+
+  /**
+   * Update existing content
+   */
+  update(id: string, data: UpdateContentDTO): Promise<Content>;
+
+  /**
+   * Delete content
+   */
+  delete(id: string): Promise<void>;
+}
