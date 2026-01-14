@@ -4,16 +4,26 @@
  * ✅ Injects the appropriate repository based on env config
  */
 
-import { getContentRepository } from '@/src/lib/getRepository';
+import { mockContentRepository } from '@/src/infrastructure/repositories/mock/MockContentRepository';
 import { ContentEditPresenter } from './ContentEditPresenter';
+// import { SupabaseContentRepository } from '@/src/infrastructure/repositories/SupabaseContentRepository';
+// import { createClient } from '@/src/infrastructure/supabase/server';
 
 export class ContentEditPresenterServerFactory {
-  static create(): ContentEditPresenter {
-    const repository = getContentRepository();
+  static async create(): Promise<ContentEditPresenter> {
+    // ✅ Use Mock Repository for development
+    const repository = mockContentRepository;
+    
+    // ⏳ TODO: Switch to Supabase Repository when backend is ready
+    /*
+    const supabase = await createClient();
+    const repository = new SupabaseContentRepository(supabase);
+    */
+
     return new ContentEditPresenter(repository);
   }
 }
 
-export function createServerContentEditPresenter(): ContentEditPresenter {
-  return ContentEditPresenterServerFactory.create();
+export async function createServerContentEditPresenter(): Promise<ContentEditPresenter> {
+  return await ContentEditPresenterServerFactory.create();
 }

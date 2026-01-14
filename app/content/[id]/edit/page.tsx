@@ -18,7 +18,7 @@ export async function generateMetadata({
   params,
 }: ContentEditPageProps): Promise<Metadata> {
   const resolvedParams = await params;
-  const presenter = createServerContentEditPresenter();
+  const presenter = await createServerContentEditPresenter();
   return presenter.generateMetadata(resolvedParams.id);
 }
 
@@ -28,7 +28,7 @@ export async function generateMetadata({
  */
 export default async function ContentEditPage({ params }: ContentEditPageProps) {
   const resolvedParams = await params;
-  const presenter = createServerContentEditPresenter();
+  const presenter = await createServerContentEditPresenter();
 
   try {
     const viewModel = await presenter.getViewModel(resolvedParams.id);

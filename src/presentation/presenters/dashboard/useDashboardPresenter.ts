@@ -6,12 +6,9 @@
 
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
-import { DashboardViewModel } from './DashboardPresenter';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { DashboardPresenter, DashboardViewModel } from './DashboardPresenter';
 import { createClientDashboardPresenter } from './DashboardPresenterClientFactory';
-
-// Initialize presenter instance once (singleton pattern)
-const presenter = createClientDashboardPresenter();
 
 export interface DashboardPresenterState {
   viewModel: DashboardViewModel | null;
@@ -30,8 +27,16 @@ export interface DashboardPresenterActions {
  * Provides state management and actions for Dashboard operations
  */
 export function useDashboardPresenter(
-  initialViewModel?: DashboardViewModel
+  initialViewModel?: DashboardViewModel,
+  presenterOverride?: DashboardPresenter
 ): [DashboardPresenterState, DashboardPresenterActions] {
+  // ✅ Create presenter inside hook with useMemo
+  // Accept override for easier testing (Dependency Injection)
+  const presenter = useMemo(
+    () => presenterOverride ?? createClientDashboardPresenter(),
+    [presenterOverride]
+  );
+
   const [viewModel, setViewModel] = useState<DashboardViewModel | null>(
     initialViewModel || null
   );
@@ -55,7 +60,7 @@ export function useDashboardPresenter(
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [presenter]);
 
   /**
    * Refresh data (alias for loadData)

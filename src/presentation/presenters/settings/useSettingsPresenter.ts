@@ -6,11 +6,9 @@
 
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
-import { AppSettings, SettingsViewModel, UserProfile } from './SettingsPresenter';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { AppSettings, SettingsPresenter, SettingsViewModel, UserProfile } from './SettingsPresenter';
 import { createClientSettingsPresenter } from './SettingsPresenterClientFactory';
-
-const presenter = createClientSettingsPresenter();
 
 // ✅ Re-export UserProfile type from Presenter for Single Source of Truth
 export type { UserProfile } from './SettingsPresenter';
@@ -53,8 +51,16 @@ const defaultSettings: AppSettings = {
 };
 
 export function useSettingsPresenter(
-  initialViewModel?: SettingsViewModel
+  initialViewModel?: SettingsViewModel,
+  presenterOverride?: SettingsPresenter
 ): [SettingsPresenterState, SettingsPresenterActions] {
+  // ✅ Create presenter inside hook with useMemo
+  // Accept override for easier testing (Dependency Injection)
+  const presenter = useMemo(
+    () => presenterOverride ?? createClientSettingsPresenter(),
+    [presenterOverride]
+  );
+
   const [viewModel, setViewModel] = useState<SettingsViewModel | null>(initialViewModel || null);
   const [loading, setLoading] = useState(!initialViewModel);
   const [error, setError] = useState<string | null>(null);
@@ -78,7 +84,7 @@ export function useSettingsPresenter(
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [presenter]);
 
   const refresh = useCallback(async () => {
     await loadData();

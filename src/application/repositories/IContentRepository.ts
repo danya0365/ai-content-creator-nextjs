@@ -71,6 +71,13 @@ export interface ContentStats {
   totalShares: number;
 }
 
+export interface PaginatedResult<T> {
+  data: T[];
+  total: number;
+  page: number;
+  perPage: number;
+}
+
 /**
  * IContentRepository - Content data access interface
  */
@@ -79,6 +86,11 @@ export interface IContentRepository {
    * Get all contents with optional filter
    */
   getAll(filter?: ContentFilter): Promise<Content[]>;
+
+  /**
+   * Get paginated contents
+   */
+  getPaginated(page: number, perPage: number, filter?: ContentFilter): Promise<PaginatedResult<Content>>;
 
   /**
    * Get content by ID
@@ -113,5 +125,5 @@ export interface IContentRepository {
   /**
    * Delete content
    */
-  delete(id: string): Promise<void>;
+  delete(id: string): Promise<boolean>;
 }

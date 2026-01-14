@@ -11,7 +11,7 @@ export const fetchCache = "force-no-store";
  * Generate metadata for the gallery page
  */
 export async function generateMetadata(): Promise<Metadata> {
-  const presenter = createServerGalleryPresenter();
+  const presenter = await createServerGalleryPresenter();
   return presenter.generateMetadata();
 }
 
@@ -20,7 +20,7 @@ export async function generateMetadata(): Promise<Metadata> {
  * Uses presenter pattern following Clean Architecture
  */
 export default async function GalleryPage() {
-  const presenter = createServerGalleryPresenter();
+  const presenter = await createServerGalleryPresenter();
 
   try {
     const viewModel = await presenter.getViewModel('all');

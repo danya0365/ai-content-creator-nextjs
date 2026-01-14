@@ -11,7 +11,7 @@ export const fetchCache = "force-no-store";
  * Generate metadata for the analytics page
  */
 export async function generateMetadata(): Promise<Metadata> {
-  const presenter = createServerAnalyticsPresenter();
+  const presenter = await createServerAnalyticsPresenter();
   return presenter.generateMetadata();
 }
 
@@ -20,7 +20,7 @@ export async function generateMetadata(): Promise<Metadata> {
  * Uses presenter pattern following Clean Architecture
  */
 export default async function AnalyticsPage() {
-  const presenter = createServerAnalyticsPresenter();
+  const presenter = await createServerAnalyticsPresenter();
 
   try {
     const viewModel = await presenter.getViewModel();

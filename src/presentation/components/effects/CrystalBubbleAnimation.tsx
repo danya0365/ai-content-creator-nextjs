@@ -27,7 +27,7 @@ function generateBubbles(count: number): Bubble[] {
     size: Math.random() * 150 + 50,
     x: Math.random() * 100,
     y: Math.random() * 100,
-    duration: Math.random() * 15000 + 10000,
+    duration: Math.random() * 5000 + 10000,
     delay: Math.random() * 3000,
     color: BUBBLE_COLORS[Math.floor(Math.random() * BUBBLE_COLORS.length)],
   }));

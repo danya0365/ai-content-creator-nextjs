@@ -11,7 +11,7 @@ export const fetchCache = "force-no-store";
  * Generate metadata for the schedule page
  */
 export async function generateMetadata(): Promise<Metadata> {
-  const presenter = createServerSchedulePresenter();
+  const presenter = await createServerSchedulePresenter();
   return presenter.generateMetadata();
 }
 
@@ -20,7 +20,7 @@ export async function generateMetadata(): Promise<Metadata> {
  * Uses presenter pattern following Clean Architecture
  */
 export default async function SchedulePage() {
-  const presenter = createServerSchedulePresenter();
+  const presenter = await createServerSchedulePresenter();
 
   try {
     const viewModel = await presenter.getViewModel();

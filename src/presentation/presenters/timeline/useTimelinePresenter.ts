@@ -7,10 +7,8 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { TimelineFilter, TimelineGroup, TimelineStatusFilter, TimelineViewModel } from './TimelinePresenter';
+import { TimelineFilter, TimelineGroup, TimelinePresenter, TimelineStatusFilter, TimelineViewModel } from './TimelinePresenter';
 import { createClientTimelinePresenter } from './TimelinePresenterClientFactory';
-
-const presenter = createClientTimelinePresenter();
 
 export interface TimelinePresenterState {
   viewModel: TimelineViewModel | null;
@@ -33,8 +31,16 @@ export interface TimelinePresenterActions {
 }
 
 export function useTimelinePresenter(
-  initialViewModel?: TimelineViewModel
+  initialViewModel?: TimelineViewModel,
+  presenterOverride?: TimelinePresenter
 ): [TimelinePresenterState, TimelinePresenterActions] {
+  // ✅ Create presenter inside hook with useMemo
+  // Accept override for easier testing (Dependency Injection)
+  const presenter = useMemo(
+    () => presenterOverride ?? createClientTimelinePresenter(),
+    [presenterOverride]
+  );
+
   const [viewModel, setViewModel] = useState<TimelineViewModel | null>(initialViewModel || null);
   const [loading, setLoading] = useState(!initialViewModel);
   const [error, setError] = useState<string | null>(null);
@@ -72,7 +78,7 @@ export function useTimelinePresenter(
     } finally {
       setLoading(false);
     }
-  }, [filter, statusFilter]);
+  }, [filter, statusFilter, presenter]);
 
   const refresh = useCallback(async () => {
     await loadData();

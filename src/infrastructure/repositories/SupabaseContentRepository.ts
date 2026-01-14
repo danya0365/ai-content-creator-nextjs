@@ -9,33 +9,16 @@ import {
   ContentStats,
   CreateContentDTO,
   IContentRepository,
+  PaginatedResult,
   UpdateContentDTO,
 } from '@/src/application/repositories/IContentRepository';
-import { createClient } from '@/src/lib/supabase';
+import { Database } from '@/src/domain/types/supabase';
+import { SupabaseClient } from '@supabase/supabase-js';
 
-// Supabase row type (snake_case from database)
-interface SupabaseContentRow {
-  id: string;
-  profile_id: string | null;
-  content_type_id: string;
-  title: string;
-  description: string | null;
-  image_url: string | null;
-  prompt: string | null;
-  time_slot: string | null;
-  scheduled_at: string | null;
-  published_at: string | null;
-  status: string;
-  likes: number;
-  shares: number;
-  views: number;
-  created_at: string;
-  updated_at: string;
-  // New fields
-  comments: number;
-  tags: string[];
-  emoji: string | null;
-}
+// Supabase row types
+type SupabaseContentRow = Database['public']['Tables']['ai_contents']['Row'];
+type SupabaseContentInsert = Database['public']['Tables']['ai_contents']['Insert'];
+type SupabaseContentUpdate = Database['public']['Tables']['ai_contents']['Update'];
 
 // Map database row to domain model
 function mapRowToContent(row: SupabaseContentRow): Content {
@@ -49,11 +32,11 @@ function mapRowToContent(row: SupabaseContentRow): Content {
     timeSlot: row.time_slot as Content['timeSlot'],
     scheduledAt: row.scheduled_at || '',
     publishedAt: row.published_at,
-    status: row.status as Content['status'],
-    likes: row.likes,
-    shares: row.shares,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
+    status: (row.status || 'draft') as Content['status'],
+    likes: row.likes || 0,
+    shares: row.shares || 0,
+    createdAt: row.created_at || '',
+    updatedAt: row.updated_at || '',
     // New fields
     comments: row.comments || 0,
     tags: row.tags || [],
@@ -61,24 +44,38 @@ function mapRowToContent(row: SupabaseContentRow): Content {
   };
 }
 
-// Map domain model to database row (for insert/update)
-function mapContentToRow(data: CreateContentDTO | UpdateContentDTO): Record<string, unknown> {
-  const row: Record<string, unknown> = {};
+// Map Create DTO to Insert row
+function mapCreateToRow(data: CreateContentDTO): SupabaseContentInsert {
+  return {
+    content_type_id: data.contentTypeId,
+    title: data.title,
+    description: data.description,
+    image_url: data.imageUrl,
+    prompt: data.prompt,
+    time_slot: data.timeSlot,
+    scheduled_at: data.scheduledAt,
+    status: data.status,
+    tags: data.tags,
+    emoji: data.emoji,
+  };
+}
 
-  if ('contentTypeId' in data && data.contentTypeId) row.content_type_id = data.contentTypeId;
-  if ('title' in data && data.title) row.title = data.title;
-  if ('description' in data && data.description !== undefined) row.description = data.description;
-  if ('imageUrl' in data && data.imageUrl !== undefined) row.image_url = data.imageUrl;
-  if ('prompt' in data && data.prompt !== undefined) row.prompt = data.prompt;
-  if ('timeSlot' in data && data.timeSlot) row.time_slot = data.timeSlot;
-  if ('scheduledAt' in data && data.scheduledAt !== undefined) row.scheduled_at = data.scheduledAt;
-  if ('status' in data && data.status) row.status = data.status;
-  if ('likes' in data && data.likes !== undefined) row.likes = data.likes;
-  if ('shares' in data && data.shares !== undefined) row.shares = data.shares;
-  // New fields
-  if ('comments' in data && data.comments !== undefined) row.comments = data.comments;
-  if ('tags' in data && data.tags !== undefined) row.tags = data.tags;
-  if ('emoji' in data && data.emoji !== undefined) row.emoji = data.emoji;
+// Map Update DTO to Update row
+function mapUpdateToRow(data: UpdateContentDTO): SupabaseContentUpdate {
+  const row: SupabaseContentUpdate = {};
+
+  if (data.title !== undefined) row.title = data.title;
+  if (data.description !== undefined) row.description = data.description;
+  if (data.imageUrl !== undefined) row.image_url = data.imageUrl;
+  if (data.prompt !== undefined) row.prompt = data.prompt;
+  if (data.timeSlot !== undefined) row.time_slot = data.timeSlot;
+  if (data.scheduledAt !== undefined) row.scheduled_at = data.scheduledAt;
+  if (data.status !== undefined) row.status = data.status;
+  if (data.likes !== undefined) row.likes = data.likes;
+  if (data.shares !== undefined) row.shares = data.shares;
+  if (data.comments !== undefined) row.comments = data.comments;
+  if (data.tags !== undefined) row.tags = data.tags;
+  if (data.emoji !== undefined) row.emoji = data.emoji;
 
   return row;
 }
@@ -87,7 +84,7 @@ function mapContentToRow(data: CreateContentDTO | UpdateContentDTO): Record<stri
  * SupabaseContentRepository - Supabase implementation
  */
 export class SupabaseContentRepository implements IContentRepository {
-  private supabase = createClient();
+  constructor(private readonly supabase: SupabaseClient<Database>) {}
 
   async getAll(filter?: ContentFilter): Promise<Content[]> {
     let query = this.supabase
@@ -192,8 +189,49 @@ export class SupabaseContentRepository implements IContentRepository {
     };
   }
 
+  async getPaginated(page: number, perPage: number, filter?: ContentFilter): Promise<PaginatedResult<Content>> {
+    // Basic implementation for pagination if needed
+    const start = (page - 1) * perPage;
+    const end = start + perPage - 1;
+
+    let query = this.supabase
+      .from('ai_contents')
+      .select('*', { count: 'exact' })
+      .order('created_at', { ascending: false })
+      .range(start, end);
+
+    if (filter?.status) {
+      query = query.eq('status', filter.status);
+    }
+    if (filter?.timeSlot) {
+      query = query.eq('time_slot', filter.timeSlot);
+    }
+    if (filter?.contentTypeId) {
+      query = query.eq('content_type_id', filter.contentTypeId);
+    }
+
+    const { data, error, count } = await query;
+
+    if (error) {
+      console.error('Error fetching paginated contents:', error);
+      return {
+        data: [],
+        total: 0,
+        page,
+        perPage,
+      };
+    }
+
+    return {
+      data: (data || []).map(mapRowToContent),
+      total: count || 0,
+      page,
+      perPage,
+    };
+  }
+
   async create(data: CreateContentDTO): Promise<Content> {
-    const row = mapContentToRow(data);
+    const row = mapCreateToRow(data);
 
     const { data: created, error } = await this.supabase
       .from('ai_contents')
@@ -210,7 +248,7 @@ export class SupabaseContentRepository implements IContentRepository {
   }
 
   async update(id: string, data: UpdateContentDTO): Promise<Content> {
-    const row = mapContentToRow(data);
+    const row = mapUpdateToRow(data);
 
     const { data: updated, error } = await this.supabase
       .from('ai_contents')
@@ -227,7 +265,7 @@ export class SupabaseContentRepository implements IContentRepository {
     return mapRowToContent(updated);
   }
 
-  async delete(id: string): Promise<void> {
+  async delete(id: string): Promise<boolean> {
     const { error } = await this.supabase
       .from('ai_contents')
       .delete()
@@ -235,7 +273,8 @@ export class SupabaseContentRepository implements IContentRepository {
 
     if (error) {
       console.error('Error deleting content:', error);
-      throw new Error('Failed to delete content');
+      return false;
     }
+    return true;
   }
 }

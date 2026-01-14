@@ -8,14 +8,12 @@
 
 import { Content } from '@/src/application/repositories/IContentRepository';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ContentFilter, GalleryViewModel } from './GalleryPresenter';
+import { ContentFilter, GalleryPresenter, GalleryViewModel } from './GalleryPresenter';
 import { createClientGalleryPresenter } from './GalleryPresenterClientFactory';
 
 // Define types
 export type GallerySortBy = 'newest' | 'oldest' | 'likes' | 'shares';
 export type ViewMode = 'grid' | 'list';
-
-const presenter = createClientGalleryPresenter();
 
 export interface GalleryPresenterState {
   viewModel: GalleryViewModel | null;
@@ -49,8 +47,16 @@ export interface GalleryPresenterActions {
 }
 
 export function useGalleryPresenter(
-  initialViewModel?: GalleryViewModel
+  initialViewModel?: GalleryViewModel,
+  presenterOverride?: GalleryPresenter
 ): [GalleryPresenterState, GalleryPresenterActions] {
+  // ✅ Create presenter inside hook with useMemo
+  // Accept override for easier testing (Dependency Injection)
+  const presenter = useMemo(
+    () => presenterOverride ?? createClientGalleryPresenter(),
+    [presenterOverride]
+  );
+
   const [viewModel, setViewModel] = useState<GalleryViewModel | null>(initialViewModel || null);
   const [loading, setLoading] = useState(!initialViewModel);
   const [error, setError] = useState<string | null>(null);
@@ -116,7 +122,7 @@ export function useGalleryPresenter(
     } finally {
       setLoading(false);
     }
-  }, [filter]);
+  }, [filter, presenter]);
 
   const refresh = useCallback(async () => {
     await loadData();

@@ -5,11 +5,9 @@
 
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
-import { HomeViewModel } from './HomePresenter';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { HomePresenter, HomeViewModel } from './HomePresenter';
 import { createClientHomePresenter } from './HomePresenterClientFactory';
-
-const presenter = createClientHomePresenter();
 
 export interface HomePresenterState {
   viewModel: HomeViewModel | null;
@@ -24,8 +22,16 @@ export interface HomePresenterActions {
 }
 
 export function useHomePresenter(
-  initialViewModel?: HomeViewModel
+  initialViewModel?: HomeViewModel,
+  presenterOverride?: HomePresenter
 ): [HomePresenterState, HomePresenterActions] {
+  // ✅ Create presenter inside hook with useMemo
+  // Accept override for easier testing (Dependency Injection)
+  const presenter = useMemo(
+    () => presenterOverride ?? createClientHomePresenter(),
+    [presenterOverride]
+  );
+
   const [viewModel, setViewModel] = useState<HomeViewModel | null>(initialViewModel || null);
   const [loading, setLoading] = useState(!initialViewModel);
   const [error, setError] = useState<string | null>(null);
@@ -41,7 +47,7 @@ export function useHomePresenter(
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [presenter]);
 
   const refresh = useCallback(async () => {
     await loadData();

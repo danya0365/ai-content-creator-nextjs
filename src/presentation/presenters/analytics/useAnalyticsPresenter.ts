@@ -6,11 +6,9 @@
 
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
-import { AnalyticsViewModel } from './AnalyticsPresenter';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { AnalyticsPresenter, AnalyticsViewModel } from './AnalyticsPresenter';
 import { createClientAnalyticsPresenter } from './AnalyticsPresenterClientFactory';
-
-const presenter = createClientAnalyticsPresenter();
 
 // Date range type (moved from View)
 export type DateRange = 'today' | 'week' | 'month' | 'year';
@@ -32,9 +30,19 @@ export interface AnalyticsPresenterActions {
 }
 
 export function useAnalyticsPresenter(
-  initialViewModel?: AnalyticsViewModel
+  initialViewModel?: AnalyticsViewModel,
+  presenterOverride?: AnalyticsPresenter
 ): [AnalyticsPresenterState, AnalyticsPresenterActions] {
-  const [viewModel, setViewModel] = useState<AnalyticsViewModel | null>(initialViewModel || null);
+  // ✅ Create presenter inside hook with useMemo
+  // Accept override for easier testing (Dependency Injection)
+  const presenter = useMemo(
+    () => presenterOverride ?? createClientAnalyticsPresenter(),
+    [presenterOverride]
+  );
+
+  const [viewModel, setViewModel] = useState<AnalyticsViewModel | null>(
+    initialViewModel || null
+  );
   const [loading, setLoading] = useState(!initialViewModel);
   const [error, setError] = useState<string | null>(null);
   
@@ -52,7 +60,7 @@ export function useAnalyticsPresenter(
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [presenter]);
 
   const refresh = useCallback(async () => {
     await loadData();

@@ -11,7 +11,7 @@ export const fetchCache = "force-no-store";
  * Generate metadata for the timeline page
  */
 export async function generateMetadata(): Promise<Metadata> {
-  const presenter = createServerTimelinePresenter();
+  const presenter = await createServerTimelinePresenter();
   return presenter.generateMetadata();
 }
 
@@ -20,7 +20,7 @@ export async function generateMetadata(): Promise<Metadata> {
  * Uses presenter pattern following Clean Architecture
  */
 export default async function TimelinePage() {
-  const presenter = createServerTimelinePresenter();
+  const presenter = await createServerTimelinePresenter();
 
   try {
     const viewModel = await presenter.getViewModel();

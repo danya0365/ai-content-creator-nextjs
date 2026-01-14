@@ -4,17 +4,26 @@
  * ✅ Injects the appropriate repository based on env config
  */
 
-import { getContentRepository } from '@/src/lib/getRepository';
+import { mockContentRepository } from '@/src/infrastructure/repositories/mock/MockContentRepository';
 import { DashboardPresenter } from './DashboardPresenter';
+// import { SupabaseContentRepository } from '@/src/infrastructure/repositories/SupabaseContentRepository';
+// import { createClient } from '@/src/infrastructure/supabase/server';
 
 export class DashboardPresenterServerFactory {
-  static create(): DashboardPresenter {
-    // Get repository based on NEXT_PUBLIC_DATA_SOURCE env
-    const repository = getContentRepository();
+  static async create(): Promise<DashboardPresenter> {
+    // ✅ Use Mock Repository for development
+    const repository = mockContentRepository;
+    
+    // ⏳ TODO: Switch to Supabase Repository when backend is ready
+    /*
+    const supabase = await createClient();
+    const repository = new SupabaseContentRepository(supabase);
+    */
+
     return new DashboardPresenter(repository);
   }
 }
 
-export function createServerDashboardPresenter(): DashboardPresenter {
-  return DashboardPresenterServerFactory.create();
+export async function createServerDashboardPresenter(): Promise<DashboardPresenter> {
+  return await DashboardPresenterServerFactory.create();
 }

@@ -7,11 +7,9 @@
 'use client';
 
 import { Content } from '@/src/application/repositories/IContentRepository';
-import { useCallback, useEffect, useState } from 'react';
-import { ContentEditViewModel } from './ContentEditPresenter';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { ContentEditPresenter, ContentEditViewModel } from './ContentEditPresenter';
 import { createClientContentEditPresenter } from './ContentEditPresenterClientFactory';
-
-const presenter = createClientContentEditPresenter();
 
 // Form data interface
 export interface ContentFormData {
@@ -72,8 +70,16 @@ export interface ContentEditPresenterActions {
 
 export function useContentEditPresenter(
   contentId: string,
-  initialViewModel?: ContentEditViewModel
+  initialViewModel?: ContentEditViewModel,
+  presenterOverride?: ContentEditPresenter
 ): [ContentEditPresenterState, ContentEditPresenterActions] {
+  // ✅ Create presenter inside hook with useMemo
+  // Accept override for easier testing (Dependency Injection)
+  const presenter = useMemo(
+    () => presenterOverride ?? createClientContentEditPresenter(),
+    [presenterOverride]
+  );
+
   // ✅ No fallbackContent - use null when not loaded
   const content = initialViewModel?.content || null;
   
@@ -114,7 +120,7 @@ export function useContentEditPresenter(
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [presenter]);
 
   const refresh = useCallback(async (id: string) => {
     await loadData(id);

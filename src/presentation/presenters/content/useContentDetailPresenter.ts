@@ -5,11 +5,9 @@
 
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
-import { ContentDetailViewModel } from './ContentDetailPresenter';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { ContentDetailPresenter, ContentDetailViewModel } from './ContentDetailPresenter';
 import { createClientContentDetailPresenter } from './ContentDetailPresenterClientFactory';
-
-const presenter = createClientContentDetailPresenter();
 
 export interface ContentDetailPresenterState {
   viewModel: ContentDetailViewModel | null;
@@ -21,12 +19,21 @@ export interface ContentDetailPresenterActions {
   loadData: (id: string) => Promise<void>;
   setError: (error: string | null) => void;
   refresh: (id: string) => Promise<void>;
+  deleteContent: () => Promise<void>;
 }
 
 export function useContentDetailPresenter(
   contentId: string,
-  initialViewModel?: ContentDetailViewModel
+  initialViewModel?: ContentDetailViewModel,
+  presenterOverride?: ContentDetailPresenter
 ): [ContentDetailPresenterState, ContentDetailPresenterActions] {
+  // ✅ Create presenter inside hook with useMemo
+  // Accept override for easier testing (Dependency Injection)
+  const presenter = useMemo(
+    () => presenterOverride ?? createClientContentDetailPresenter(),
+    [presenterOverride]
+  );
+
   const [viewModel, setViewModel] = useState<ContentDetailViewModel | null>(initialViewModel || null);
   const [loading, setLoading] = useState(!initialViewModel);
   const [error, setError] = useState<string | null>(null);
@@ -42,7 +49,19 @@ export function useContentDetailPresenter(
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [contentId, presenter]);
+
+  const deleteContent = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      await presenter.deleteContent(contentId);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unknown error');
+    } finally {
+      setLoading(false);
+    }
+  }, [contentId, presenter]);
 
   const refresh = useCallback(async (id: string) => {
     await loadData(id);
@@ -56,6 +75,6 @@ export function useContentDetailPresenter(
 
   return [
     { viewModel, loading, error },
-    { loadData, setError, refresh },
+    { loadData, setError, refresh, deleteContent },
   ];
 }

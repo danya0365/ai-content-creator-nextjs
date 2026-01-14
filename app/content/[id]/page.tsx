@@ -18,7 +18,7 @@ export async function generateMetadata({
   params,
 }: ContentDetailPageProps): Promise<Metadata> {
   const resolvedParams = await params;
-  const presenter = createServerContentDetailPresenter();
+  const presenter = await createServerContentDetailPresenter();
   return presenter.generateMetadata(resolvedParams.id);
 }
 
@@ -28,7 +28,7 @@ export async function generateMetadata({
  */
 export default async function ContentDetailPage({ params }: ContentDetailPageProps) {
   const resolvedParams = await params;
-  const presenter = createServerContentDetailPresenter();
+  const presenter = await createServerContentDetailPresenter();
 
   try {
     const viewModel = await presenter.getViewModel(resolvedParams.id);

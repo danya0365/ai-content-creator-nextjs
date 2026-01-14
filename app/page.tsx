@@ -11,7 +11,7 @@ export const fetchCache = "force-no-store";
  * Generate metadata for the home page
  */
 export async function generateMetadata(): Promise<Metadata> {
-  const presenter = createServerHomePresenter();
+  const presenter = await createServerHomePresenter();
   return presenter.generateMetadata();
 }
 
@@ -20,7 +20,7 @@ export async function generateMetadata(): Promise<Metadata> {
  * Uses presenter pattern following Clean Architecture
  */
 export default async function HomePage() {
-  const presenter = createServerHomePresenter();
+  const presenter = await createServerHomePresenter();
 
   try {
     const viewModel = await presenter.getViewModel();

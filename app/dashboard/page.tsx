@@ -11,7 +11,7 @@ export const fetchCache = "force-no-store";
  * Generate metadata for the dashboard page
  */
 export async function generateMetadata(): Promise<Metadata> {
-  const presenter = createServerDashboardPresenter();
+  const presenter = await createServerDashboardPresenter();
   return presenter.generateMetadata();
 }
 
@@ -20,7 +20,7 @@ export async function generateMetadata(): Promise<Metadata> {
  * Uses presenter pattern following Clean Architecture
  */
 export default async function DashboardPage() {
-  const presenter = createServerDashboardPresenter();
+  const presenter = await createServerDashboardPresenter();
 
   try {
     const viewModel = await presenter.getViewModel();

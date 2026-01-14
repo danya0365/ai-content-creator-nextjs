@@ -9,10 +9,8 @@
 import { Content } from '@/src/application/repositories/IContentRepository';
 import { TimeSlotConfig } from '@/src/data/master/contentTypes';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ScheduleDay, ScheduleViewModel } from './SchedulePresenter';
+import { ScheduleDay, SchedulePresenter, ScheduleViewModel } from './SchedulePresenter';
 import { createClientSchedulePresenter } from './SchedulePresenterClientFactory';
-
-const presenter = createClientSchedulePresenter();
 
 export interface SchedulePresenterState {
   viewModel: ScheduleViewModel | null;
@@ -33,8 +31,16 @@ export interface SchedulePresenterActions {
 }
 
 export function useSchedulePresenter(
-  initialViewModel?: ScheduleViewModel
+  initialViewModel?: ScheduleViewModel,
+  presenterOverride?: SchedulePresenter
 ): [SchedulePresenterState, SchedulePresenterActions] {
+  // ✅ Create presenter inside hook with useMemo
+  // Accept override for easier testing (Dependency Injection)
+  const presenter = useMemo(
+    () => presenterOverride ?? createClientSchedulePresenter(),
+    [presenterOverride]
+  );
+
   const [viewModel, setViewModel] = useState<ScheduleViewModel | null>(initialViewModel || null);
   const [loading, setLoading] = useState(!initialViewModel);
   const [error, setError] = useState<string | null>(null);
@@ -58,7 +64,7 @@ export function useSchedulePresenter(
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [presenter]);
 
   const refresh = useCallback(async () => {
     await loadData();
