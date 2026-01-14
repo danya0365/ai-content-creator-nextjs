@@ -1,6 +1,6 @@
 'use client';
 
-import { animated, config, useSpring, useTrail } from '@react-spring/web';
+import { animated, config, useSpring } from '@react-spring/web';
 import { useEffect, useMemo, useState } from 'react';
 
 interface Bubble {
@@ -45,7 +45,7 @@ function AnimatedBubble({ bubble }: AnimatedBubbleProps) {
       setTargetY(Math.random() * 100);
     }, bubble.duration);
 
-    // Initial animation trigger
+    // Initial animation delay
     const timeout = setTimeout(() => {
       setTargetY(Math.random() * 100);
     }, bubble.delay);
@@ -56,23 +56,24 @@ function AnimatedBubble({ bubble }: AnimatedBubbleProps) {
     };
   }, [bubble.duration, bubble.delay]);
 
-  const springProps = useSpring({
-    from: { y: bubble.y, opacity: 0, scale: 0.8 },
-    to: { y: targetY, opacity: 1, scale: 1 },
-    config: { duration: bubble.duration, ...config.molasses },
-    loop: false,
-  });
+  const [springProps] = useSpring(
+    () => ({
+      from: { y: bubble.y, opacity: 0, scale: 0.5 },
+      to: { y: targetY, opacity: 1, scale: 1 },
+      config: { duration: bubble.duration, ...config.molasses },
+    }),
+    [targetY, bubble]
+  );
 
-  const floatSpring = useSpring({
-    from: { x: bubble.x },
-    to: async (next) => {
-      while (true) {
-        await next({ x: bubble.x + (Math.random() * 10 - 5) });
-        await next({ x: bubble.x - (Math.random() * 10 - 5) });
-      }
-    },
-    config: { duration: 5000, ...config.gentle },
-  });
+  const [floatSpring] = useSpring(
+    () => ({
+      from: { x: bubble.x - 2 },
+      to: { x: bubble.x + 2 },
+      config: { duration: 5000 + Math.random() * 2000, ...config.gentle },
+      loop: { reverse: true },
+    }),
+    [bubble]
+  );
 
   return (
     <animated.div
@@ -103,21 +104,20 @@ interface CrystalBubbleAnimationProps {
  * Creates floating glass-like bubbles using react-spring
  */
 export function CrystalBubbleAnimation({ bubbleCount = 8 }: CrystalBubbleAnimationProps) {
+  const [mounted, setMounted] = useState(false);
+  
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const bubbles = useMemo(() => generateBubbles(bubbleCount), [bubbleCount]);
 
-  const trail = useTrail(bubbles.length, {
-    from: { opacity: 0 },
-    to: { opacity: 1 },
-    config: config.slow,
-    delay: 500,
-  });
+  if (!mounted) return null;
 
   return (
     <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
-      {trail.map((style, index) => (
-        <animated.div key={bubbles[index].id} style={style}>
-          <AnimatedBubble bubble={bubbles[index]} />
-        </animated.div>
+      {bubbles.map((bubble) => (
+        <AnimatedBubble key={bubble.id} bubble={bubble} />
       ))}
     </div>
   );

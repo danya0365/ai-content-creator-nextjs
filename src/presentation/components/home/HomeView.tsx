@@ -251,12 +251,14 @@ export function HomeView({ initialViewModel }: HomeViewProps) {
         <JellyCard className="glass-card p-6 text-center">
           <h3 className="text-xl font-bold gradient-text-purple mb-2">พร้อมเริ่มสร้างคอนเทนต์?</h3>
           <p className="text-sm text-muted mb-4">เริ่มต้นสร้าง Pixel Art content อัตโนมัติได้เลย</p>
-          <Link href="/dashboard">
-            <JellyButton variant="primary" size="lg">
-              <span>🚀</span>
-              <span>ไปหน้า Dashboard</span>
-            </JellyButton>
-          </Link>
+          <div className="flex justify-center">
+            <Link href="/dashboard">
+              <JellyButton variant="primary" size="lg">
+                <span>🚀</span>
+                <span>ไปหน้า Dashboard</span>
+              </JellyButton>
+            </Link>
+          </div>
         </JellyCard>
       </div>
     </MainLayout>
