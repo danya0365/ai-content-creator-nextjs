@@ -2,6 +2,15 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   // ============================================
+  // Turbopack Configuration
+  // ============================================
+  // ระบุ root directory ชัดเจนเพื่อป้องกันปัญหา
+  // "Can't resolve 'tailwindcss'" เมื่อมี lockfile อื่นๆ อยู่
+  turbopack: {
+    root: __dirname,
+  },
+
+  // ============================================
   // Standalone Output สำหรับ Docker
   // ============================================
   // เมื่อเปิดใช้งาน Next.js จะสร้าง output ที่รวม
@@ -28,6 +37,10 @@ const nextConfig: NextConfig = {
       {
         protocol: 'http',
         hostname: '127.0.0.1',
+      },
+      {
+        protocol: 'https',
+        hostname: 'placehold.co',
       },
     ],
   },
