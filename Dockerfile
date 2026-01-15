@@ -16,7 +16,7 @@
 # Stage 1: Dependencies
 # ============================================
 # ติดตั้ง dependencies ทั้งหมด
-FROM node:20-alpine AS deps
+FROM node:22-alpine AS deps
 
 # alpine = Linux version เล็กมาก (~5MB)
 # ทำให้ image เบา boot เร็ว
@@ -28,21 +28,17 @@ RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
 # Copy ไฟล์ที่จำเป็นสำหรับ install dependencies
-COPY package.json package-lock.json* yarn.lock* ./
+COPY package.json package-lock.json* ./
 
 # ติดตั้ง dependencies
 # --frozen-lockfile = ใช้ version ตาม lock file เท่านั้น
-RUN \
-  if [ -f yarn.lock ]; then yarn install --frozen-lockfile; \
-  elif [ -f package-lock.json ]; then npm ci; \
-  else npm install; \
-  fi
+RUN npm ci --legacy-peer-deps
 
 # ============================================
 # Stage 2: Builder
 # ============================================
 # Build แอปพลิเคชัน
-FROM node:20-alpine AS builder
+FROM node:22-alpine AS builder
 
 WORKDIR /app
 
@@ -57,14 +53,13 @@ ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
 
 # Build แอป
-# --turbopack ใช้ turborepo สำหรับ build เร็วขึ้น
 RUN npm run build
 
 # ============================================
 # Stage 3: Runner (Production)
 # ============================================
 # Image สุดท้ายที่จะใช้รัน production
-FROM node:20-alpine AS runner
+FROM node:22-alpine AS runner
 
 WORKDIR /app
 
