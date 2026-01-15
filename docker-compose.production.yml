@@ -1,0 +1,406 @@
+# ============================================
+# Docker Compose สำหรับ Production
+# ============================================
+#
+# Docker Compose คือเครื่องมือที่ช่วยจัดการ
+# หลาย containers พร้อมกัน
+#
+# การใช้งาน:
+# docker compose -f docker-compose.production.yml up -d
+#
+# ============================================
+
+# Version ของ Docker Compose format
+version: '3.8'
+
+# ============================================
+# Networks
+# ============================================
+# Network คือ "เครือข่าย" ที่ containers ใช้คุยกัน
+networks:
+  # Network สำหรับ Traefik (public facing)
+  traefik-public:
+    driver: bridge
+  # Network ภายใน สำหรับ services คุยกันเอง
+  internal:
+    driver: bridge
+
+# ============================================
+# Volumes
+# ============================================
+# Volumes คือ "ที่เก็บข้อมูล" ที่ไม่หายไปเมื่อ restart container
+volumes:
+  postgres_data:     # เก็บ database data
+  storage_data:      # เก็บ uploaded files
+  traefik_certs:     # เก็บ SSL certificates
+
+# ============================================
+# Services
+# ============================================
+services:
+  
+  # ==========================================
+  # Traefik - Reverse Proxy & SSL
+  # ==========================================
+  # Traefik คือ "ยาม" ที่รับ traffic จาก internet
+  # และส่งต่อไปยัง services ที่ถูกต้อง
+  # พร้อมจัดการ SSL certificates อัตโนมัติ
+  traefik:
+    image: traefik:v3.0
+    container_name: traefik
+    restart: unless-stopped
+    
+    # Security: ไม่ให้ container ได้สิทธิ์ root
+    security_opt:
+      - no-new-privileges:true
+    
+    ports:
+      - "80:80"     # HTTP
+      - "443:443"   # HTTPS
+    
+    volumes:
+      # ให้ Traefik เข้าถึง Docker socket เพื่อดู containers
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      # เก็บ SSL certificates
+      - traefik_certs:/letsencrypt
+    
+    command:
+      # ==========================================
+      # Traefik Configuration
+      # ==========================================
+      # Dashboard (ปิดใน production)
+      - "--api.dashboard=false"
+      
+      # Docker provider
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--providers.docker.network=traefik-public"
+      
+      # Entry points
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      
+      # Redirect HTTP → HTTPS
+      - "--entrypoints.web.http.redirections.entryPoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entryPoint.scheme=https"
+      
+      # Let's Encrypt SSL (อัตโนมัติและฟรี!)
+      - "--certificatesresolvers.letsencrypt.acme.tlschallenge=true"
+      - "--certificatesresolvers.letsencrypt.acme.email=${ACME_EMAIL:-admin@example.com}"
+      - "--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json"
+      
+      # Logging
+      - "--log.level=INFO"
+    
+    networks:
+      - traefik-public
+    
+    labels:
+      - "traefik.enable=true"
+
+  # ==========================================
+  # PostgreSQL Database
+  # ==========================================
+  # เก็บข้อมูลทั้งหมดของระบบ
+  supabase-db:
+    image: supabase/postgres:15.6.1.143
+    container_name: supabase-db
+    restart: unless-stopped
+    
+    # Health check - ตรวจสอบว่า database พร้อมใช้งาน
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -h localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: postgres
+    
+    volumes:
+      # เก็บ data ใน volume (ไม่หายเมื่อ restart)
+      - postgres_data:/var/lib/postgresql/data
+      # Init scripts (migrations)
+      - ./supabase/migrations:/docker-entrypoint-initdb.d
+    
+    networks:
+      - internal
+    
+    # จำกัด resources (สำหรับ 4GB RAM VPS)
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+        reservations:
+          memory: 512M
+
+  # ==========================================
+  # Supabase Auth (GoTrue)
+  # ==========================================
+  # จัดการ authentication: login, register, JWT
+  supabase-auth:
+    image: supabase/gotrue:v2.158.1
+    container_name: supabase-auth
+    restart: unless-stopped
+    
+    depends_on:
+      supabase-db:
+        condition: service_healthy
+    
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9999/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    
+    environment:
+      # API Settings
+      GOTRUE_API_HOST: 0.0.0.0
+      GOTRUE_API_PORT: 9999
+      API_EXTERNAL_URL: ${API_EXTERNAL_URL}
+      
+      # Database
+      GOTRUE_DB_DRIVER: postgres
+      GOTRUE_DB_DATABASE_URL: postgres://postgres:${POSTGRES_PASSWORD}@supabase-db:5432/postgres?search_path=auth
+      
+      # Site URL
+      GOTRUE_SITE_URL: ${SITE_URL}
+      GOTRUE_URI_ALLOW_LIST: ${ADDITIONAL_REDIRECT_URLS}
+      
+      # JWT
+      GOTRUE_JWT_SECRET: ${JWT_SECRET}
+      GOTRUE_JWT_EXP: 3600
+      GOTRUE_JWT_DEFAULT_GROUP_NAME: authenticated
+      
+      # External Settings
+      GOTRUE_EXTERNAL_EMAIL_ENABLED: true
+      GOTRUE_EXTERNAL_ANONYMOUS_USERS_ENABLED: false
+      
+      # SMTP (ถ้าต้องการส่ง email)
+      GOTRUE_SMTP_HOST: ${SMTP_HOST:-}
+      GOTRUE_SMTP_PORT: ${SMTP_PORT:-587}
+      GOTRUE_SMTP_USER: ${SMTP_USER:-}
+      GOTRUE_SMTP_PASS: ${SMTP_PASS:-}
+      GOTRUE_SMTP_ADMIN_EMAIL: ${SMTP_ADMIN_EMAIL:-}
+      GOTRUE_MAILER_AUTOCONFIRM: true
+    
+    networks:
+      - internal
+    
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+        reservations:
+          memory: 128M
+
+  # ==========================================
+  # Supabase REST (PostgREST)
+  # ==========================================
+  # สร้าง REST API จาก database อัตโนมัติ
+  supabase-rest:
+    image: postgrest/postgrest:v12.2.12
+    container_name: supabase-rest
+    restart: unless-stopped
+    
+    depends_on:
+      supabase-db:
+        condition: service_healthy
+    
+    environment:
+      PGRST_DB_URI: postgres://postgres:${POSTGRES_PASSWORD}@supabase-db:5432/postgres
+      PGRST_DB_SCHEMAS: public,graphql_public
+      PGRST_DB_ANON_ROLE: anon
+      PGRST_JWT_SECRET: ${JWT_SECRET}
+      PGRST_DB_USE_LEGACY_GUCS: false
+    
+    networks:
+      - internal
+    
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+        reservations:
+          memory: 128M
+
+  # ==========================================
+  # Supabase Realtime
+  # ==========================================
+  # WebSocket สำหรับ real-time updates
+  supabase-realtime:
+    image: supabase/realtime:v2.30.61
+    container_name: supabase-realtime
+    restart: unless-stopped
+    
+    depends_on:
+      supabase-db:
+        condition: service_healthy
+    
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4000/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    
+    environment:
+      PORT: 4000
+      DB_HOST: supabase-db
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      DB_NAME: postgres
+      DB_SSL: false
+      JWT_SECRET: ${JWT_SECRET}
+      REPLICATION_MODE: RLS
+      REPLICATION_POLL_INTERVAL: 100
+      SECURE_CHANNELS: true
+      SLOT_NAME: supabase_realtime_rls
+      TEMPORARY_SLOT: true
+      SECRET_KEY_BASE: ${SECRET_KEY_BASE}
+      ERL_AFLAGS: -proto_dist inet_tcp
+    
+    networks:
+      - internal
+    
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+        reservations:
+          memory: 128M
+
+  # ==========================================
+  # Supabase Storage
+  # ==========================================
+  # เก็บไฟล์: รูปภาพ, วิดีโอ, documents
+  supabase-storage:
+    image: supabase/storage-api:v1.21.1
+    container_name: supabase-storage
+    restart: unless-stopped
+    
+    depends_on:
+      supabase-db:
+        condition: service_healthy
+    
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/status"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    
+    environment:
+      ANON_KEY: ${ANON_KEY}
+      SERVICE_KEY: ${SERVICE_ROLE_KEY}
+      POSTGREST_URL: http://supabase-rest:3000
+      PGRST_JWT_SECRET: ${JWT_SECRET}
+      DATABASE_URL: postgres://postgres:${POSTGRES_PASSWORD}@supabase-db:5432/postgres
+      FILE_SIZE_LIMIT: 52428800
+      STORAGE_BACKEND: file
+      FILE_STORAGE_BACKEND_PATH: /var/lib/storage
+      TENANT_ID: stub
+      REGION: local
+      GLOBAL_S3_BUCKET: stub
+    
+    volumes:
+      - storage_data:/var/lib/storage
+    
+    networks:
+      - internal
+    
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+        reservations:
+          memory: 128M
+
+  # ==========================================
+  # Supabase Kong (API Gateway)
+  # ==========================================
+  # รวม APIs ทั้งหมดเข้าด้วยกัน
+  supabase-kong:
+    image: kong:3.8.0
+    container_name: supabase-kong
+    restart: unless-stopped
+    
+    depends_on:
+      - supabase-auth
+      - supabase-rest
+      - supabase-realtime
+      - supabase-storage
+    
+    environment:
+      KONG_DATABASE: "off"
+      KONG_DECLARATIVE_CONFIG: /home/kong/kong.yml
+      KONG_DNS_ORDER: LAST,A,CNAME
+      KONG_PLUGINS: request-transformer,cors,key-auth,acl
+      KONG_NGINX_PROXY_PROXY_BUFFER_SIZE: 160k
+      KONG_NGINX_PROXY_PROXY_BUFFERS: 64 160k
+      SUPABASE_ANON_KEY: ${ANON_KEY}
+      SUPABASE_SERVICE_KEY: ${SERVICE_ROLE_KEY}
+    
+    volumes:
+      - ./docker/kong.yml:/home/kong/kong.yml:ro
+    
+    ports:
+      - "8000:8000"
+    
+    networks:
+      - internal
+      - traefik-public
+    
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.supabase.rule=Host(`${SUPABASE_DOMAIN:-api.localhost}`)"
+      - "traefik.http.routers.supabase.entrypoints=websecure"
+      - "traefik.http.routers.supabase.tls.certresolver=letsencrypt"
+      - "traefik.http.services.supabase.loadbalancer.server.port=8000"
+    
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+        reservations:
+          memory: 128M
+
+  # ==========================================
+  # Next.js Application
+  # ==========================================
+  # แอปพลิเคชันหลักของเรา
+  nextjs-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: nextjs-app
+    restart: unless-stopped
+    
+    depends_on:
+      - supabase-kong
+    
+    environment:
+      NODE_ENV: production
+      NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${ANON_KEY}
+      SUPABASE_SERVICE_ROLE_KEY: ${SERVICE_ROLE_KEY}
+      NEXT_PUBLIC_APP_URL: ${SITE_URL}
+    
+    networks:
+      - internal
+      - traefik-public
+    
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.nextjs.rule=Host(`${APP_DOMAIN:-localhost}`)"
+      - "traefik.http.routers.nextjs.entrypoints=websecure"
+      - "traefik.http.routers.nextjs.tls.certresolver=letsencrypt"
+      - "traefik.http.services.nextjs.loadbalancer.server.port=3000"
+    
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M

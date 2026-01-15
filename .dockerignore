@@ -1,0 +1,58 @@
+# ============================================
+# .dockerignore
+# ============================================
+# ไฟล์นี้บอก Docker ว่าไม่ต้อง copy ไฟล์อะไรบ้าง
+# ช่วยให้ build เร็วขึ้นและ image เล็กลง
+# ============================================
+
+# Dependencies (จะ install ใหม่ใน Docker)
+node_modules
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+
+# Next.js build output (จะ build ใหม่ใน Docker)
+.next
+out
+
+# Git
+.git
+.gitignore
+
+# IDE / Editor
+.vscode
+.idea
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment files (sensitive data!)
+.env
+.env.local
+.env.*.local
+.env.production
+
+# Test files
+coverage
+.nyc_output
+
+# Documentation
+*.md
+!README.md
+
+# Docker files (ไม่จำเป็นใน image)
+Dockerfile*
+docker-compose*
+.dockerignore
+
+# Supabase local dev
+supabase/.branches
+supabase/.temp
+
+# Misc
+*.log
+*.pid
+*.seed
