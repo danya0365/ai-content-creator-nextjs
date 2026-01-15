@@ -381,6 +381,9 @@ services:
     depends_on:
       - supabase-kong
     
+    ports:
+      - "3000:3000"
+    
     environment:
       NODE_ENV: production
       NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL}
