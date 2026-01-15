@@ -80,7 +80,7 @@ main() {
     # Step 3: Pull latest Docker images
     # ==========================================
     log_info "Pulling latest Docker images..."
-    docker compose -f $COMPOSE_FILE pull || log_warning "Some images may not need updating"
+    docker compose --env-file .env.production -f $COMPOSE_FILE pull || log_warning "Some images may not need updating"
     log_success "Docker images updated"
     
     # ==========================================
@@ -89,10 +89,10 @@ main() {
     log_info "Building and restarting services..."
     
     # Build the Next.js app
-    docker compose -f $COMPOSE_FILE build nextjs-app
+    docker compose --env-file .env.production -f $COMPOSE_FILE build nextjs-app
     
     # Restart services with zero downtime approach
-    docker compose -f $COMPOSE_FILE up -d --no-deps --build nextjs-app
+    docker compose --env-file .env.production -f $COMPOSE_FILE up -d --no-deps --build nextjs-app
     
     log_success "Services restarted"
     
@@ -138,7 +138,7 @@ main() {
     # Step 8: Show status
     # ==========================================
     log_info "Container status:"
-    docker compose -f $COMPOSE_FILE ps
+    docker compose --env-file .env.production -f $COMPOSE_FILE ps
     
     echo ""
     echo "============================================"

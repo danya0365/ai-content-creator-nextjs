@@ -198,10 +198,10 @@ start_services() {
     log_info "Starting Docker Compose..."
     
     # Pull images first
-    docker compose -f $COMPOSE_FILE pull
+    docker compose --env-file .env.production -f $COMPOSE_FILE pull
     
     # Start services
-    docker compose -f $COMPOSE_FILE up -d
+    docker compose --env-file .env.production -f $COMPOSE_FILE up -d
     
     log_success "Services started!"
     

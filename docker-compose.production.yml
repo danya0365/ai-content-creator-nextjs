@@ -10,8 +10,8 @@
 #
 # ============================================
 
-# Version ของ Docker Compose format
-version: '3.8'
+# Note: version คือ obsolete ใน Docker Compose V2+
+# ใช้ได้เลยโดยไม่ต้องระบุ version
 
 # ============================================
 # Networks
@@ -231,7 +231,7 @@ services:
   # ==========================================
   # WebSocket สำหรับ real-time updates
   supabase-realtime:
-    image: supabase/realtime:v2.30.61
+    image: supabase/realtime:v2.30.6
     container_name: supabase-realtime
     restart: unless-stopped
     
