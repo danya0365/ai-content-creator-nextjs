@@ -1,27 +1,24 @@
 /**
  * GeminiImageService
  * Service for generating Pixel Art images using Google Gemini Imagen API
+ * 
+ * ✅ Implements IImageService for provider switching
+ * ✅ Single Responsibility: Only generates images, does NOT upload
  */
 
-import { createClient } from '@supabase/supabase-js';
+import {
+  GenerateImageRequest,
+  GenerateImageResponse,
+  IImageService,
+} from '@/src/application/services/IImageService';
 
-export interface GenerateImageRequest {
-  imagePrompt: string;
-  contentId?: string;
-  userId?: string;
-}
-
-export interface GenerateImageResponse {
-  success: boolean;
-  imageUrl?: string;
-  error?: string;
-}
+const AI_CONTENTS_BUCKET = 'ai-contents';
 
 /**
  * GeminiImageService class
- * Generates pixel art images and uploads to Supabase Storage
+ * Implements IImageService for provider switching
  */
-export class GeminiImageService {
+export class GeminiImageService implements IImageService {
   private apiKey: string;
   private baseUrl = 'https://generativelanguage.googleapis.com/v1beta';
 
@@ -31,11 +28,15 @@ export class GeminiImageService {
 
   /**
    * Generate a pixel art image using Gemini Imagen API
+   * Returns base64 data - caller is responsible for uploading
    */
   async generateImage(request: GenerateImageRequest): Promise<GenerateImageResponse> {
     if (!this.apiKey) {
-      console.warn('No Gemini API key provided, using placeholder image');
-      return this.getPlaceholderResponse();
+      console.warn('No Gemini API key provided');
+      return {
+        success: false,
+        error: 'No Gemini API key provided',
+      };
     }
 
     try {
@@ -69,38 +70,33 @@ export class GeminiImageService {
       if (!response.ok) {
         const errorText = await response.text();
         console.error('Gemini Imagen API error:', errorText);
-        
-        // Fallback to Gemini Flash for text-to-image description
-        return await this.fallbackToFlash(request);
+        return {
+          success: false,
+          error: `Imagen API error: ${response.status}`,
+        };
       }
 
       const data = await response.json();
       
       if (!data.predictions?.[0]?.bytesBase64Encoded) {
         console.error('No image data in response');
-        return await this.fallbackToFlash(request);
-      }
-
-      // Upload to Supabase Storage
-      const imageUrl = await this.uploadToStorage(
-        data.predictions[0].bytesBase64Encoded,
-        request.contentId || `img-${Date.now()}`
-      );
-
-      if (!imageUrl) {
         return {
           success: false,
-          error: 'Failed to upload image to storage',
+          error: 'No image data in API response',
         };
       }
 
       return {
         success: true,
-        imageUrl,
+        base64Data: data.predictions[0].bytesBase64Encoded,
       };
     } catch (error) {
-      console.error('Image generation error:', error);
-      return await this.fallbackToFlash(request);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.error('Image generation error:', errorMessage);
+      return {
+        success: false,
+        error: errorMessage,
+      };
     }
   }
 
@@ -122,86 +118,9 @@ export class GeminiImageService {
   }
 
   /**
-   * Fallback to generating a placeholder when Imagen is unavailable
+   * Get bucket name for AI contents
    */
-  private async fallbackToFlash(request: GenerateImageRequest): Promise<GenerateImageResponse> {
-    console.log('Using fallback placeholder for image');
-    
-    // Return a placeholder image URL
-    // In production, you might want to use a service like placeholder.com
-    // or generate an SVG placeholder
-    const placeholderUrl = this.generatePlaceholderUrl(request.imagePrompt);
-    
-    return {
-      success: true,
-      imageUrl: placeholderUrl,
-    };
-  }
-
-  /**
-   * Generate a placeholder URL for development/fallback
-   */
-  private generatePlaceholderUrl(prompt: string): string {
-    // Use a placeholder service or local static image
-    // This creates a simple placeholder with the prompt text
-    const encodedText = encodeURIComponent(prompt.substring(0, 50));
-    return `https://placehold.co/512x512/4A90A4/ffffff?text=${encodedText}`;
-  }
-
-  /**
-   * Upload base64 image to Supabase Storage
-   */
-  private async uploadToStorage(
-    base64Data: string,
-    fileName: string
-  ): Promise<string | null> {
-    try {
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-      const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-      if (!supabaseUrl || !supabaseServiceKey) {
-        console.error('Missing Supabase configuration');
-        return this.generatePlaceholderUrl(fileName);
-      }
-
-      const supabase = createClient(supabaseUrl, supabaseServiceKey);
-
-      // Convert base64 to buffer
-      const buffer = Buffer.from(base64Data, 'base64');
-      const filePath = `generated/${Date.now()}-${fileName}.png`;
-
-      // Upload to storage
-      const { data, error } = await supabase.storage
-        .from('ai-contents')
-        .upload(filePath, buffer, {
-          contentType: 'image/png',
-          upsert: true,
-        });
-
-      if (error) {
-        console.error('Storage upload error:', error);
-        return null;
-      }
-
-      // Get public URL
-      const { data: urlData } = supabase.storage
-        .from('ai-contents')
-        .getPublicUrl(data.path);
-
-      return urlData.publicUrl;
-    } catch (error) {
-      console.error('Upload to storage error:', error);
-      return null;
-    }
-  }
-
-  /**
-   * Placeholder response when API is unavailable
-   */
-  private getPlaceholderResponse(): GenerateImageResponse {
-    return {
-      success: true,
-      imageUrl: 'https://placehold.co/512x512/4A90A4/ffffff?text=Pixel+Art',
-    };
+  static getBucketName(): string {
+    return AI_CONTENTS_BUCKET;
   }
 }

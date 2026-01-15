@@ -55,12 +55,6 @@ export function MainHeader() {
 
       {/* Right section */}
       <div className="flex items-center gap-3">
-        {/* Generate button */}
-        <button className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white text-sm font-semibold shadow-lg shadow-purple-500/25 hover:shadow-purple-500/40 transition-all duration-300">
-          <span>✨</span>
-          <span>Generate</span>
-        </button>
-
         {/* Theme Toggle */}
         <ThemeToggle />
 

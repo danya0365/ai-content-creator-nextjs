@@ -4,13 +4,20 @@
  * 
  * This endpoint should be called by a cron scheduler (Vercel Cron, external cron, etc.)
  * to automatically generate content based on the current time slot.
+ * 
+ * ✅ Uses AIServiceFactory for provider switching
+ * ✅ Uses SupabaseContentRepository for single source of truth
  */
 
+import { CreateContentDTO } from '@/src/application/repositories/IContentRepository';
 import { getContentTypesByTimeSlot, getCurrentTimeSlot } from '@/src/data/master/contentTypes';
-import { GeminiContentService } from '@/src/infrastructure/ai/GeminiContentService';
-import { GeminiImageService } from '@/src/infrastructure/ai/GeminiImageService';
-import { createClient } from '@supabase/supabase-js';
+import { AIServiceFactory } from '@/src/infrastructure/ai/AIServiceFactory';
+import { SupabaseContentRepository } from '@/src/infrastructure/repositories/SupabaseContentRepository';
+import { SupabaseStorageRepository } from '@/src/infrastructure/repositories/SupabaseStorageRepository';
+import { createAdminClient } from '@/src/infrastructure/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
+
+const AI_CONTENTS_BUCKET = 'ai-contents';
 
 // Sample topics for auto-generation
 const SAMPLE_TOPICS = {
@@ -100,25 +107,14 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Get API key
-    const apiKey = process.env.GEMINI_API_KEY || '';
+    // ✅ Use admin client and repositories (single source of truth)
+    const supabase = createAdminClient();
+    const contentRepo = new SupabaseContentRepository(supabase);
+    const storageRepo = new SupabaseStorageRepository(supabase);
 
-    // Initialize services
-    const contentService = new GeminiContentService(apiKey);
-    const imageService = new GeminiImageService(apiKey);
-
-    // Setup Supabase client
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-    if (!supabaseUrl || !supabaseServiceKey) {
-      return NextResponse.json(
-        { error: 'Missing Supabase configuration' },
-        { status: 500 }
-      );
-    }
-
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    // ✅ Use AIServiceFactory for easy provider switching
+    const contentService = AIServiceFactory.createContentService();
+    const imageService = AIServiceFactory.createImageService();
 
     // Pick a random content type from available ones
     const selectedContentType = contentTypes[Math.floor(Math.random() * contentTypes.length)];
@@ -139,59 +135,76 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Generate pixel art image
-    const imageResult = await imageService.generateImage({
-      imagePrompt: contentResult.imagePrompt,
-      contentId: `cron-${Date.now()}`,
-    });
+    // Generate image
+    let imageUrl = '';
+    if (contentResult.imagePrompt) {
+      const imageResult = await imageService.generateImage({
+        imagePrompt: contentResult.imagePrompt,
+      });
+
+      // Upload to storage if generation was successful
+      if (imageResult.success) {
+        if (imageResult.base64Data) {
+          // Upload base64 data
+          try {
+            imageUrl = await storageRepo.uploadBase64(
+              imageResult.base64Data,
+              `cron-${Date.now()}`,
+              AI_CONTENTS_BUCKET,
+              'generated'
+            );
+          } catch (uploadError) {
+            console.error('Failed to upload image:', uploadError);
+          }
+        } else if (imageResult.imageUrl) {
+          // Use direct URL (for mock/placeholder services)
+          imageUrl = imageResult.imageUrl;
+        }
+      }
+    }
 
     // Calculate scheduled time
     const now = new Date();
     const scheduledAt = new Date(now);
     scheduledAt.setMinutes(scheduledAt.getMinutes() + 5); // Schedule 5 minutes from now
 
-    // Save to database
-    const { data: savedContent, error: saveError } = await supabase
-      .from('ai_contents')
-      .insert({
-        content_type_id: selectedContentType.id,
-        title: contentResult.title,
-        description: contentResult.description,
-        image_url: imageResult.imageUrl || null,
-        prompt: contentResult.imagePrompt,
-        time_slot: currentTimeSlot.id,
-        scheduled_at: scheduledAt.toISOString(),
-        status: 'scheduled',
-        tags: contentResult.hashtags,
-        emoji: selectedContentType.icon,
-      })
-      .select()
-      .single();
+    // ✅ Save to database using repository (single source of truth)
+    const createDto: CreateContentDTO = {
+      contentTypeId: selectedContentType.id,
+      title: contentResult.title || `${topic} 🎨`,
+      description: contentResult.description || '',
+      imageUrl: imageUrl,
+      prompt: contentResult.imagePrompt || '',
+      timeSlot: currentTimeSlot.id as 'morning' | 'lunch' | 'afternoon' | 'evening',
+      scheduledAt: scheduledAt.toISOString(),
+      status: 'scheduled',
+      tags: contentResult.hashtags || [],
+      emoji: selectedContentType.icon,
+    };
 
-    if (saveError) {
-      console.error('Error saving content:', saveError);
-      return NextResponse.json(
-        { error: 'Failed to save content', details: saveError.message },
-        { status: 500 }
-      );
-    }
+    const savedContent = await contentRepo.create(createDto);
 
     return NextResponse.json({
       success: true,
       message: `Generated ${selectedContentType.nameTh} content for ${currentTimeSlot.nameTh}`,
+      providers: {
+        content: process.env.AI_PROVIDER || 'gemini',
+        image: process.env.AI_IMAGE_PROVIDER || 'mock',
+      },
       content: {
         id: savedContent.id,
         title: savedContent.title,
         contentType: selectedContentType.nameTh,
         timeSlot: currentTimeSlot.nameTh,
-        imageUrl: savedContent.image_url,
-        scheduledAt: savedContent.scheduled_at,
+        imageUrl: savedContent.imageUrl,
+        scheduledAt: savedContent.scheduledAt,
       },
     });
   } catch (error) {
-    console.error('Cron generate error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error('[Cron Generate] ❌ Error:', errorMessage);
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: errorMessage },
       { status: 500 }
     );
   }

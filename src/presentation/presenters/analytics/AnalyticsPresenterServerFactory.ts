@@ -1,24 +1,18 @@
 /**
  * AnalyticsPresenterServerFactory
  * Factory for creating AnalyticsPresenter instances on the server side
- * ✅ Injects the appropriate repository based on env config
+ * ✅ Uses Supabase Repository for production
  */
 
-import { mockContentRepository } from '@/src/infrastructure/repositories/mock/MockContentRepository';
+import { SupabaseContentRepository } from '@/src/infrastructure/repositories/SupabaseContentRepository';
+import { createClient } from '@/src/infrastructure/supabase/server';
 import { AnalyticsPresenter } from './AnalyticsPresenter';
-// import { SupabaseContentRepository } from '@/src/infrastructure/repositories/SupabaseContentRepository';
-// import { createClient } from '@/src/infrastructure/supabase/server';
 
 export class AnalyticsPresenterServerFactory {
   static async create(): Promise<AnalyticsPresenter> {
-    // ✅ Use Mock Repository for development
-    const repository = mockContentRepository;
-    
-    // ⏳ TODO: Switch to Supabase Repository when backend is ready
-    /*
+    // ✅ Use Supabase Repository for production
     const supabase = await createClient();
     const repository = new SupabaseContentRepository(supabase);
-    */
 
     return new AnalyticsPresenter(repository);
   }

@@ -1,18 +1,18 @@
+/**
+ * SettingsPresenterClientFactory
+ * Factory for creating SettingsPresenter instances on the client side
+ * ✅ Uses ApiContentRepository for production (calls API routes)
+ */
+
 'use client';
 
-import { mockContentRepository } from '@/src/infrastructure/repositories/mock/MockContentRepository';
+import { ApiContentRepository } from '@/src/infrastructure/repositories/api/ApiContentRepository';
 import { SettingsPresenter } from './SettingsPresenter';
-// import { SupabaseContentRepository } from '@/src/infrastructure/repositories/SupabaseContentRepository';
-// import { getSupabaseClient } from '@/src/infrastructure/supabase/client';
 
 export class SettingsPresenterClientFactory {
   static create(): SettingsPresenter {
-    // ✅ Use Mock Repository for development
-    const repository = mockContentRepository;
-    
-    // ⏳ TODO: Switch to Supabase Repository when backend is ready
-    // const supabase = getSupabaseClient();
-    // const repository = new SupabaseContentRepository(supabase);
+    // ✅ Use API Repository for client-side
+    const repository = new ApiContentRepository();
 
     return new SettingsPresenter(repository);
   }
