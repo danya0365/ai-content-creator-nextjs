@@ -86,6 +86,75 @@ export type Database = {
           },
         ]
       }
+      ai_weekly_reports: {
+        Row: {
+          avg_likes_per_content: number | null
+          avg_shares_per_content: number | null
+          content_afternoon: number | null
+          content_by_type: Json | null
+          content_evening: number | null
+          content_lunch: number | null
+          content_morning: number | null
+          created_at: string | null
+          full_report: Json | null
+          id: string
+          period_end: string
+          period_start: string
+          top_performing_content: Json | null
+          total_drafts: number | null
+          total_failed: number | null
+          total_generated: number | null
+          total_likes: number | null
+          total_published: number | null
+          total_shares: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          avg_likes_per_content?: number | null
+          avg_shares_per_content?: number | null
+          content_afternoon?: number | null
+          content_by_type?: Json | null
+          content_evening?: number | null
+          content_lunch?: number | null
+          content_morning?: number | null
+          created_at?: string | null
+          full_report?: Json | null
+          id?: string
+          period_end: string
+          period_start: string
+          top_performing_content?: Json | null
+          total_drafts?: number | null
+          total_failed?: number | null
+          total_generated?: number | null
+          total_likes?: number | null
+          total_published?: number | null
+          total_shares?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          avg_likes_per_content?: number | null
+          avg_shares_per_content?: number | null
+          content_afternoon?: number | null
+          content_by_type?: Json | null
+          content_evening?: number | null
+          content_lunch?: number | null
+          content_morning?: number | null
+          created_at?: string | null
+          full_report?: Json | null
+          id?: string
+          period_end?: string
+          period_start?: string
+          top_performing_content?: Json | null
+          total_drafts?: number | null
+          total_failed?: number | null
+          total_generated?: number | null
+          total_likes?: number | null
+          total_published?: number | null
+          total_shares?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       profile_roles: {
         Row: {
           granted_at: string | null

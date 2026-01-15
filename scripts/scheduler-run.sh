@@ -16,7 +16,7 @@
 # Configuration
 # ==========================================
 APP_DIR="/opt/app/ai-content-creator-nextjs"
-API_URL="http://localhost:3000/api/cron/scheduler"
+API_URL="http://localhost:3000/api/cron/run"
 LOG_FILE="/var/log/scheduler.log"
 
 # Load environment variables

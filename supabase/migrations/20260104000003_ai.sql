@@ -89,6 +89,10 @@ CREATE POLICY "ai_contents_admin_all" ON public.ai_contents
     public.get_active_profile_role() = 'admin'::public.profile_role
   );
 
+-- Contents: Public can view all (for anonymous API access)
+CREATE POLICY "ai_contents_public_read" ON public.ai_contents
+  FOR SELECT USING (true);
+
 -- ============================================================================
 -- CREATE AI CONTENTS STORAGE BUCKET
 -- ============================================================================

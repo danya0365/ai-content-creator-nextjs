@@ -4,6 +4,7 @@
  * ✅ Uses dependency injection for repository
  */
 
+import { Content, ContentStats, IContentRepository } from '@/src/application/repositories/IContentRepository';
 import {
   CONTENT_TYPES,
   ContentType,
@@ -12,7 +13,6 @@ import {
   getContentTypesByTimeSlot,
   getCurrentTimeSlot,
 } from '@/src/data/master/contentTypes';
-import { Content, ContentStats, IContentRepository } from '@/src/application/repositories/IContentRepository';
 import { Metadata } from 'next';
 
 export interface DashboardViewModel {
@@ -45,8 +45,9 @@ export class DashboardPresenter {
       this.repository.getAll(),
     ]);
 
-    const recentContents = allContents
-      .filter((c) => c.status === 'published')
+    // Recent contents = latest 6, regardless of status (sorted by createdAt)
+    const recentContents = [...allContents]
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
       .slice(0, 6);
 
     const scheduledContents = allContents.filter((c) => c.status === 'scheduled');

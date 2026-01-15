@@ -98,27 +98,28 @@ export const SCHEDULED_TASKS: ScheduledTask[] = [
   },
 
   // ==========================================
-  // Example: Publish scheduled content (every 5 minutes)
+  // Publish scheduled content (every 5 minutes)
   // ==========================================
-  // {
-  //   name: 'publish-scheduled-content',
-  //   description: 'Publish content that is scheduled for now',
-  //   handler: '/api/cron/publish',
-  //   frequency: 'everyFiveMinutes',
-  //   enabled: false,
-  // },
+  {
+    name: 'publish-scheduled-content',
+    description: 'Publish content that is scheduled for now',
+    handler: '/api/cron/publish',
+    frequency: 'everyFiveMinutes',
+    enabled: true,
+  },
 
   // ==========================================
-  // Example: Custom cron expression
+  // Weekly Report (Monday 9:00 AM)
   // ==========================================
-  // {
-  //   name: 'weekly-report',
-  //   description: 'Generate weekly analytics report',
-  //   handler: '/api/cron/weekly-report',
-  //   frequency: 'cron',
-  //   cronExpression: '0 9 * * 1', // Monday 9:00 AM
-  //   enabled: false,
-  // },
+  {
+    name: 'weekly-report',
+    description: 'Generate weekly analytics report',
+    handler: '/api/cron/weekly-report',
+    frequency: 'cron',
+    cronExpression: '0 9 * * 1', // Monday 9:00 AM
+    enabled: true,
+    timezone: 'Asia/Bangkok',
+  },
 ];
 
 /**
