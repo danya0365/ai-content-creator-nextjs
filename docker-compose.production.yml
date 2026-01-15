@@ -122,8 +122,8 @@ services:
     volumes:
       # เก็บ data ใน volume (ไม่หายเมื่อ restart)
       - postgres_data:/var/lib/postgresql/data
-      # Init scripts (migrations)
-      - ./supabase/migrations:/docker-entrypoint-initdb.d
+      # Init script for Supabase roles (ต้อง run ก่อน migrations)
+      - ./docker/init-supabase.sql:/docker-entrypoint-initdb.d/00-init-supabase.sql:ro
     
     networks:
       - internal
