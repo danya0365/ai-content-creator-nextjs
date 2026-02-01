@@ -80,7 +80,6 @@
 
 ```bash
 ssh -p 2222 acuser01@203.151.166.65
-# ใส่ password: !DYv/q;#D3OFR^Z*e4
 ```
 
 ### 2.2 รัน Setup Script
@@ -252,8 +251,8 @@ GitHub Secrets คือที่เก็บข้อมูลลับ (passwo
 |-------------|-------|----------|
 | `VPS_HOST` | `203.151.166.65` | IP ของ VPS |
 | `VPS_PORT` | `2222` | SSH Port |
-| `VPS_USERNAME` | `acuser01` | SSH Username |
-| `VPS_PASSWORD` | `!DYv/q;#D3OFR^Z*e4` | SSH Password |
+| `VPS_USERNAME` | `******` | SSH Username |
+| `VPS_PASSWORD` | `******` | SSH Password |
 | `NEXT_PUBLIC_SUPABASE_URL` | `http://203.151.166.65:8000` | Supabase API URL |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | (ค่าที่ generate) | Anon Key |
 | `SUPABASE_SERVICE_ROLE_KEY` | (ค่าที่ generate) | Service Role Key |

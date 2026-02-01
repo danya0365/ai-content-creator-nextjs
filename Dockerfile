@@ -49,6 +49,8 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
 # ตั้งค่า Environment สำหรับ build
+ARG BUILD_COMMIT_SHA
+ENV VERCEL_GIT_COMMIT_SHA=$BUILD_COMMIT_SHA
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
 

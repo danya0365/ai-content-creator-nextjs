@@ -14,7 +14,10 @@ export function MainFooter() {
         <span>© {currentYear}</span>
         <span className="text-foreground/60">AI Content Creator</span>
         <span className="hidden sm:inline">•</span>
-        <span className="hidden sm:inline">Powered by Gemini AI</span>
+        <span className="whitespace-nowrap">
+          v{process.env.NEXT_PUBLIC_APP_VERSION || '1.0.0'}
+          {process.env.NEXT_PUBLIC_COMMIT_SHA && ` (${process.env.NEXT_PUBLIC_COMMIT_SHA.slice(0, 7)})`}
+        </span>
       </div>
 
       {/* Social Links */}

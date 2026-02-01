@@ -89,10 +89,10 @@ main() {
     log_info "Building and restarting services..."
     
     # Build the Next.js app
-    docker compose --env-file .env.production -f $COMPOSE_FILE build nextjs-app
+    BUILD_COMMIT_SHA=$BUILD_COMMIT_SHA docker compose --env-file .env.production -f $COMPOSE_FILE build nextjs-app
     
     # Restart services with zero downtime approach
-    docker compose --env-file .env.production -f $COMPOSE_FILE up -d --no-deps --build nextjs-app
+    BUILD_COMMIT_SHA=$BUILD_COMMIT_SHA docker compose --env-file .env.production -f $COMPOSE_FILE up -d --no-deps --build nextjs-app
     
     log_success "Services restarted"
     

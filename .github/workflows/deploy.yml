@@ -124,7 +124,7 @@ jobs:
             
             # Run deployment script
             echo "🔄 Running deployment..."
-            ./scripts/deploy.sh
+            BUILD_COMMIT_SHA=${{ github.sha }} ./scripts/deploy.sh
             
             echo "============================================"
             echo "✅ Deployment complete!"
