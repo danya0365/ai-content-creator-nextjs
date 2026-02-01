@@ -29,7 +29,7 @@ on:
 # Environment Variables
 # ==========================================
 env:
-  NODE_VERSION: '20'
+  NODE_VERSION: '22'
 
 # ==========================================
 # Jobs
@@ -62,7 +62,7 @@ jobs:
       # Step 3: Install dependencies
       # ==========================================
       - name: 📚 Install dependencies
-        run: yarn install --frozen-lockfile
+        run: yarn install --frozen-lockfile --ignore-engines
 
       # ==========================================
       # Step 4: Type check
