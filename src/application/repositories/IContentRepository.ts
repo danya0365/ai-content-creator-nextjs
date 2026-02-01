@@ -47,6 +47,7 @@ export interface UpdateContentDTO {
   prompt?: string;
   timeSlot?: TimeSlot;
   scheduledAt?: string;
+  publishedAt?: string; // For publishing content
   status?: Content['status'];
   likes?: number;
   shares?: number;

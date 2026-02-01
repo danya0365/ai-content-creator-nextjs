@@ -1,33 +1,22 @@
 /**
  * GeminiContentService
  * Service for generating content using Google Gemini API
+ * 
+ * ✅ Implements IContentService for provider switching
+ * ✅ Single Responsibility: Only generates text content via Gemini API
  */
 
+import {
+  GenerateContentRequest,
+  GenerateContentResponse,
+  IContentService,
+} from '@/src/application/services/IContentService';
 import { ContentType } from '@/src/data/master/contentTypes';
-
-export interface GenerateContentRequest {
-  contentType: ContentType;
-  topic: string;
-  timeSlot: string;
-  language?: 'th' | 'en';
-}
-
-export interface GenerateContentResponse {
-  title: string;
-  description: string;
-  prompt: string;
-  imagePrompt: string;
-  hashtags: string[];
-  success: boolean;
-  error?: string;
-}
 
 /**
  * Generate content prompt based on type and topic
  */
-function buildPrompt(request: GenerateContentRequest): string {
-  const { contentType, topic, timeSlot, language = 'th' } = request;
-
+function buildPrompt(contentType: ContentType, topic: string, timeSlot: string, language: string): string {
   const timeContext = {
     morning: 'เช้าวันใหม่ที่สดใส',
     lunch: 'ช่วงพักเที่ยง',
@@ -61,8 +50,9 @@ Format your response as JSON:
 
 /**
  * GeminiContentService class
+ * Implements IContentService for provider switching
  */
-export class GeminiContentService {
+export class GeminiContentService implements IContentService {
   private apiKey: string;
   private baseUrl = 'https://generativelanguage.googleapis.com/v1beta';
 
@@ -75,14 +65,18 @@ export class GeminiContentService {
    */
   async generateContent(request: GenerateContentRequest): Promise<GenerateContentResponse> {
     if (!this.apiKey) {
-      return this.getMockResponse(request);
+      return {
+        success: false,
+        error: 'No Gemini API key provided',
+      };
     }
 
     try {
-      const prompt = buildPrompt(request);
+      const { contentType, topic, timeSlot, language = 'th' } = request;
+      const prompt = buildPrompt(contentType, topic, timeSlot, language);
 
       const response = await fetch(
-        `${this.baseUrl}/models/gemini-1.5-flash:generateContent?key=${this.apiKey}`,
+        `${this.baseUrl}/models/gemini-2.0-flash:generateContent?key=${this.apiKey}`,
         {
           method: 'POST',
           headers: {
@@ -105,7 +99,12 @@ export class GeminiContentService {
       );
 
       if (!response.ok) {
-        throw new Error(`Gemini API error: ${response.status}`);
+        const errorText = await response.text();
+        console.error('Gemini API error:', errorText);
+        return {
+          success: false,
+          error: `Gemini API error: ${response.status}`,
+        };
       }
 
       const data = await response.json();
@@ -114,36 +113,29 @@ export class GeminiContentService {
       // Parse JSON from response
       const jsonMatch = textContent.match(/\{[\s\S]*\}/);
       if (!jsonMatch) {
-        throw new Error('Failed to parse Gemini response');
+        return {
+          success: false,
+          error: 'Failed to parse Gemini response',
+        };
       }
 
       const parsed = JSON.parse(jsonMatch[0]);
 
       return {
+        success: true,
         title: parsed.title || `${request.topic} 🎨`,
         description: parsed.description || `AI generated content about ${request.topic}`,
-        prompt: buildPrompt(request),
+        prompt: prompt,
         imagePrompt: parsed.imagePrompt || `Cute pixel art illustration of ${request.topic}`,
         hashtags: parsed.hashtags || ['#pixelart', '#ai', '#content'],
-        success: true,
       };
     } catch (error) {
-      console.error('Gemini API error:', error);
-      return this.getMockResponse(request);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.error('Gemini API error:', errorMessage);
+      return {
+        success: false,
+        error: errorMessage,
+      };
     }
-  }
-
-  /**
-   * Fallback mock response when API is unavailable
-   */
-  private getMockResponse(request: GenerateContentRequest): GenerateContentResponse {
-    return {
-      title: `${request.topic} 🎨`,
-      description: `คอนเทนต์สุดน่ารักเกี่ยวกับ ${request.topic} สร้างด้วย AI`,
-      prompt: buildPrompt(request),
-      imagePrompt: `Create a cute retro pixel art illustration about ${request.topic}. Style: 16-bit SNES era, bright colors, detailed backgrounds.`,
-      hashtags: ['#PixelArt', '#AIContent', '#Creative', '#Digital', '#Retro'],
-      success: true,
-    };
   }
 }

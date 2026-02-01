@@ -1,6 +1,28 @@
+import { execSync } from 'child_process';
 import type { NextConfig } from "next";
 
+const getCommitSha = () => {
+  try {
+    return process.env.VERCEL_GIT_COMMIT_SHA || execSync('git rev-parse HEAD').toString().trim();
+  } catch (e) {
+    return '';
+  }
+};
+
 const nextConfig: NextConfig = {
+  env: {
+    NEXT_PUBLIC_APP_VERSION: process.env.npm_package_version || '1.0.0', 
+    NEXT_PUBLIC_COMMIT_SHA: getCommitSha(),
+  },
+  // ============================================
+  // Turbopack Configuration
+  // ============================================
+  // ระบุ root directory ชัดเจนเพื่อป้องกันปัญหา
+  // "Can't resolve 'tailwindcss'" เมื่อมี lockfile อื่นๆ อยู่
+  turbopack: {
+    root: __dirname,
+  },
+
   // ============================================
   // Standalone Output สำหรับ Docker
   // ============================================
@@ -28,6 +50,10 @@ const nextConfig: NextConfig = {
       {
         protocol: 'http',
         hostname: '127.0.0.1',
+      },
+      {
+        protocol: 'https',
+        hostname: 'placehold.co',
       },
     ],
   },
