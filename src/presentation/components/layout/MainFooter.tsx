@@ -6,6 +6,9 @@
  */
 export function MainFooter() {
   const currentYear = new Date().getFullYear();
+  const version = process.env.NEXT_PUBLIC_APP_VERSION || '1.0.0';
+  const commitSha = process.env.NEXT_PUBLIC_COMMIT_SHA || '';
+  const shortSha = commitSha.slice(0, 7);
 
   return (
     <footer className="h-12 px-6 flex items-center justify-between border-t border-border/30 bg-surface/20 backdrop-blur-sm">
@@ -14,10 +17,7 @@ export function MainFooter() {
         <span>© {currentYear}</span>
         <span className="text-foreground/60">AI Content Creator</span>
         <span className="hidden sm:inline">•</span>
-        <span className="whitespace-nowrap">
-          v{process.env.NEXT_PUBLIC_APP_VERSION || '1.0.0'}
-          {process.env.NEXT_PUBLIC_COMMIT_SHA && ` (${process.env.NEXT_PUBLIC_COMMIT_SHA.slice(0, 7)})`}
-        </span>
+        <span className="whitespace-nowrap">v{version} {shortSha && `(${shortSha})`}</span>
       </div>
 
       {/* Social Links */}
