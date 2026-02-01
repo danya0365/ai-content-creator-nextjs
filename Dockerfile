@@ -32,7 +32,7 @@ COPY package.json yarn.lock* ./
 
 # ติดตั้ง dependencies
 # --frozen-lockfile = ใช้ version ตาม lock file เท่านั้น
-RUN yarn install --frozen-lockfile
+RUN yarn install --frozen-lockfile --ignore-engines
 
 # ============================================
 # Stage 2: Builder
