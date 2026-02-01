@@ -46,7 +46,7 @@ services:
   # และส่งต่อไปยัง services ที่ถูกต้อง
   # พร้อมจัดการ SSL certificates อัตโนมัติ
   traefik:
-    image: traefik:v3.0
+    image: traefik:v2.11
     container_name: traefik
     restart: unless-stopped
     
@@ -91,6 +91,9 @@ services:
       
       # Logging
       - "--log.level=INFO"
+    
+    environment:
+      - DOCKER_API_VERSION=1.44
     
     networks:
       - traefik-public
@@ -363,9 +366,9 @@ services:
     deploy:
       resources:
         limits:
-          memory: 256M
+          memory: 512M
         reservations:
-          memory: 128M
+          memory: 256M
 
   # ==========================================
   # Next.js Application
