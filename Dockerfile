@@ -28,11 +28,11 @@ RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
 # Copy ไฟล์ที่จำเป็นสำหรับ install dependencies
-COPY package.json package-lock.json* ./
+COPY package.json yarn.lock* ./
 
 # ติดตั้ง dependencies
 # --frozen-lockfile = ใช้ version ตาม lock file เท่านั้น
-RUN npm ci --legacy-peer-deps
+RUN yarn install --frozen-lockfile
 
 # ============================================
 # Stage 2: Builder
@@ -55,7 +55,7 @@ ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
 
 # Build แอป
-RUN npm run build
+RUN yarn build
 
 # ============================================
 # Stage 3: Runner (Production)
