@@ -29,9 +29,12 @@ export interface AuthProfile {
     notifications: boolean;
     theme: 'light' | 'dark' | 'auto';
   };
+  privacySettings?: Record<string, unknown>;
   socialLinks?: Record<string, string>;
   verificationStatus: 'pending' | 'verified' | 'rejected';
   isActive: boolean;
+  lastLogin?: string;
+  loginCount: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -87,6 +90,7 @@ export interface UpdateProfileData {
     notifications?: boolean;
     theme?: 'light' | 'dark' | 'auto';
   };
+  privacySettings?: Record<string, unknown>;
   socialLinks?: Record<string, string>;
 }
 

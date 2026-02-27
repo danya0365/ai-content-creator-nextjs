@@ -37,9 +37,12 @@ export class SupabaseProfileRepository implements IProfileRepository {
         notifications: preferences.notifications ?? true,
         theme: (preferences.theme as 'light' | 'dark' | 'auto') || 'auto',
       },
+      privacySettings: (profile.privacy_settings as Record<string, unknown>) || undefined,
       socialLinks: (profile.social_links as Record<string, string>) || undefined,
       verificationStatus: profile.verification_status as 'pending' | 'verified' | 'rejected',
       isActive: profile.is_active,
+      lastLogin: profile.last_login || undefined,
+      loginCount: profile.login_count ?? 0,
       createdAt: profile.created_at || dayjs().toISOString(),
       updatedAt: profile.updated_at || dayjs().toISOString(),
     };
@@ -116,6 +119,10 @@ export class SupabaseProfileRepository implements IProfileRepository {
 
     if (data.preferences) {
       updateData.preferences = data.preferences as unknown as Database['public']['Tables']['profiles']['Update']['preferences'];
+    }
+
+    if (data.privacySettings) {
+      updateData.privacy_settings = data.privacySettings as unknown as Database['public']['Tables']['profiles']['Update']['privacy_settings'];
     }
 
     if (data.socialLinks) {
