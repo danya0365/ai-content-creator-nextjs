@@ -23,6 +23,7 @@ export interface TimelineEntry {
   title: string;
   description: string;
   contentTypeId: string;
+  imageUrl: string;
   status: TimelineStatus;
   category: TimelineCategory;
   createdAt: string;
@@ -126,6 +127,7 @@ function mapContentToTimelineEntry(content: Content): TimelineEntry {
     title: content.title,
     description: content.description,
     contentTypeId: content.contentTypeId,
+    imageUrl: content.imageUrl,
     status: content.status as TimelineStatus,
     category: categoryMap[content.contentTypeId] || 'news',
     createdAt: content.createdAt,

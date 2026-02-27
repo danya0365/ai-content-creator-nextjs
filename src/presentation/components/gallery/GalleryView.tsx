@@ -7,6 +7,7 @@ import { animated, config, useSpring } from '@react-spring/web';
 import { MainLayout } from '../layout/MainLayout';
 import { JellyButton } from '../ui/JellyButton';
 import { JellyCard } from '../ui/JellyCard';
+import { SmartImage } from '../ui/SmartImage';
 
 // Types
 type SortOption = 'newest' | 'oldest' | 'likes' | 'shares';
@@ -76,8 +77,16 @@ function ContentDetailModal({ content, onClose }: ContentDetailModalProps) {
           ✕
         </JellyButton>
 
-        <div className="w-full aspect-square rounded-xl bg-gradient-to-br from-violet-500/30 via-purple-500/20 to-fuchsia-500/30 mb-4 flex items-center justify-center">
-          <span className="text-6xl">🎨</span>
+        <div className="w-full aspect-square rounded-xl bg-gradient-to-br from-violet-500/30 via-purple-500/20 to-fuchsia-500/30 mb-4 flex items-center justify-center overflow-hidden relative">
+          <SmartImage
+            src={content.imageUrl}
+            alt={content.title}
+            fill
+            className="object-cover"
+            sizes="(max-width: 768px) 100vw, 500px"
+            emojiClassName="text-6xl"
+            containerClassName="w-full h-full flex items-center justify-center absolute inset-0"
+          />
         </div>
 
         <div className="space-y-4">
@@ -148,8 +157,15 @@ function GalleryCard({ content, onClick, delay }: GalleryCardProps) {
     <animated.div style={spring}>
       <JellyCard onClick={onClick} className="glass-card-hover p-4 group">
         <div className="w-full aspect-square rounded-xl bg-gradient-to-br from-violet-500/20 via-purple-500/10 to-fuchsia-500/20 mb-3 flex items-center justify-center overflow-hidden relative">
-          <span className="text-4xl group-hover:scale-125 transition-transform duration-500">🎨</span>
-          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+          <SmartImage
+            src={content.imageUrl}
+            alt={content.title}
+            fill
+            className="object-cover group-hover:scale-110 transition-transform duration-500"
+            sizes="(max-width: 768px) 50vw, 33vw"
+            containerClassName="w-full h-full flex items-center justify-center absolute inset-0"
+          />
+          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center pointer-events-none z-10">
             <span className="text-white text-sm font-medium">View Details</span>
           </div>
         </div>
@@ -205,8 +221,16 @@ function GalleryListCard({ content, onClick, delay }: GalleryListCardProps) {
       <JellyCard onClick={onClick} className="glass-card-hover p-4 group">
         <div className="flex gap-4">
           {/* Thumbnail */}
-          <div className="w-20 h-20 flex-shrink-0 rounded-xl bg-gradient-to-br from-violet-500/20 via-purple-500/10 to-fuchsia-500/20 flex items-center justify-center">
-            <span className="text-2xl group-hover:scale-110 transition-transform">🎨</span>
+          <div className="w-20 h-20 flex-shrink-0 rounded-xl bg-gradient-to-br from-violet-500/20 via-purple-500/10 to-fuchsia-500/20 flex items-center justify-center overflow-hidden relative">
+            <SmartImage
+              src={content.imageUrl}
+              alt={content.title}
+              fill
+              className="object-cover group-hover:scale-110 transition-transform duration-500"
+              sizes="80px"
+              emojiClassName="text-2xl group-hover:scale-110 transition-transform"
+              containerClassName="w-full h-full flex items-center justify-center absolute inset-0"
+            />
           </div>
 
           {/* Content */}

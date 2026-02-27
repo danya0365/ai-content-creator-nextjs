@@ -1,18 +1,19 @@
 'use client';
 
 import {
-  TIMELINE_CATEGORIES,
-  TimelineEntry,
-  TimelineFilter,
-  TimelineGroup,
-  TimelineStatusFilter,
-  TimelineViewModel,
+    TIMELINE_CATEGORIES,
+    TimelineEntry,
+    TimelineFilter,
+    TimelineGroup,
+    TimelineStatusFilter,
+    TimelineViewModel,
 } from '@/src/presentation/presenters/timeline/TimelinePresenter';
 import { useTimelinePresenter } from '@/src/presentation/presenters/timeline/useTimelinePresenter';
 import { animated, config, useSpring } from '@react-spring/web';
 import { MainLayout } from '../layout/MainLayout';
 import { JellyButton } from '../ui/JellyButton';
 import { JellyCard } from '../ui/JellyCard';
+import { SmartImage } from '../ui/SmartImage';
 
 interface FilterButtonProps {
   label: string;
@@ -90,6 +91,21 @@ function TimelineCard({ entry, isLeft }: TimelineCardProps) {
         <h3 className="text-lg font-semibold text-foreground mb-2 group-hover:text-violet-400 transition-colors line-clamp-2">
           {entry.title}
         </h3>
+
+        {/* Image */}
+        {entry.imageUrl && (
+          <div className="w-full aspect-video rounded-xl bg-gradient-to-br from-violet-500/10 to-fuchsia-500/10 mb-4 flex items-center justify-center overflow-hidden relative">
+            <SmartImage
+              src={entry.imageUrl}
+              alt={entry.title}
+              fill
+              className="object-cover group-hover:scale-105 transition-transform duration-500"
+              sizes="(max-width: 768px) 100vw, 400px"
+              emojiClassName="text-4xl"
+              containerClassName="w-full h-full flex items-center justify-center absolute inset-0"
+            />
+          </div>
+        )}
 
         {/* Description */}
         <p className="text-sm text-muted mb-4 line-clamp-2">

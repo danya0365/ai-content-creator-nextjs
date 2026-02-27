@@ -13,6 +13,7 @@ import { AiAssistantWidget } from '../ui/AiAssistantWidget';
 import { JellyButton } from '../ui/JellyButton';
 import { JellyCard } from '../ui/JellyCard';
 import { MiniSparkline } from '../ui/SimpleChart';
+import { SmartImage } from '../ui/SmartImage';
 import { TrendIndicator } from '../ui/TrendIndicator';
 import { ActivityFeed } from './ActivityFeed';
 import { EngagementChart } from './EngagementChart';
@@ -88,8 +89,16 @@ function ContentCard({ content, delay }: ContentCardProps) {
     <animated.div style={springProps}>
       <JellyCard className="glass-card-hover p-4 group">
         {/* Image placeholder */}
-        <div className="w-full aspect-square rounded-xl bg-gradient-to-br from-violet-500/20 to-fuchsia-500/20 mb-3 flex items-center justify-center overflow-hidden">
-          <span className="text-4xl group-hover:scale-110 transition-transform duration-300">🎨</span>
+        <div className="w-full aspect-square rounded-xl bg-gradient-to-br from-violet-500/20 to-fuchsia-500/20 mb-3 flex items-center justify-center overflow-hidden relative">
+          <SmartImage
+            src={content.imageUrl}
+            alt={content.title}
+            fill
+            className="object-cover group-hover:scale-110 transition-transform duration-300"
+            sizes="(max-width: 768px) 50vw, 33vw"
+            containerClassName="w-full h-full flex items-center justify-center absolute inset-0"
+            emojiClassName="text-4xl group-hover:scale-110 transition-transform duration-300"
+          />
         </div>
         
         {/* Content info */}
@@ -361,7 +370,17 @@ export function DashboardView({ initialViewModel }: DashboardViewProps) {
                   <div className="space-y-2">
                     {viewModel.scheduledContents.slice(0, 3).map((content) => (
                       <JellyCard key={content.id} className="glass-card p-3 flex items-center gap-3">
-                        <span className="text-xl">🎨</span>
+                        <div className="w-10 h-10 flex-shrink-0 rounded-lg bg-gradient-to-br from-violet-500/20 to-fuchsia-500/20 overflow-hidden relative">
+                          <SmartImage
+                            src={content.imageUrl}
+                            alt={content.title}
+                            fill
+                            className="object-cover"
+                            sizes="40px"
+                            emojiClassName="text-xl"
+                            containerClassName="w-full h-full flex items-center justify-center absolute inset-0"
+                          />
+                        </div>
                         <div className="flex-1 min-w-0">
                           <div className="text-xs font-medium text-foreground truncate">{content.title}</div>
                           <div className="text-xs text-muted">{content.timeSlot}</div>
