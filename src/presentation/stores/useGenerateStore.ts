@@ -42,39 +42,63 @@ export const useGenerateStore = create<GenerateStore>((set) => ({
     set({ isGenerating: true, error: null });
 
     try {
-      // Call the generate API
-      const response = await fetch('/api/generate', {
+      // Step 1: Call the new AI Generation API (No DB touch)
+      const aiResponse = await fetch('/api/ai/generate', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contentTypeId: data.contentTypeId,
+          topic: data.topic,
+          timeSlot: data.timeSlot,
+        }),
       });
 
-      const result = await response.json();
+      const aiResult = await aiResponse.json();
 
-      if (!response.ok || !result.success) {
-        throw new Error(result.error || 'Failed to generate content');
+      if (!aiResponse.ok || !aiResult.success) {
+        throw new Error(aiResult.error || 'Failed to generate AI content');
       }
 
-      const newContent: GeneratedContent = {
-        id: result.content.id,
-        contentTypeId: result.content.contentTypeId,
-        title: result.content.title,
-        description: result.content.description,
-        imageUrl: result.content.imageUrl || '/generated/placeholder.png',
-        prompt: result.content.prompt,
-        timeSlot: result.content.timeSlot,
-        scheduledAt: result.content.scheduledAt,
-        publishedAt: null,
+      // Step 2: Prepare payload for Database insertion
+      const scheduledAt = `${data.scheduledDate}T${data.scheduledTime}:00.000Z`;
+      
+      const createPayload = {
+        ...aiResult.content,
+        scheduledAt,
         status: 'scheduled',
-        likes: 0,
-        shares: 0,
-        createdAt: result.content.createdAt,
-        // New unified Content fields
-        comments: 0,
-        tags: result.content.tags || [],
-        emoji: result.content.emoji,
+      };
+
+      // Step 3: Call the DB Contents API to save
+      const dbResponse = await fetch('/api/contents', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(createPayload),
+      });
+
+      const dbResult = await dbResponse.json();
+
+      if (!dbResponse.ok) {
+        throw new Error(dbResult.error || 'Failed to save content to database');
+      }
+
+      // Format response to match store
+      const newContent: GeneratedContent = {
+        id: dbResult.id,
+        contentTypeId: dbResult.contentTypeId,
+        title: dbResult.title,
+        description: dbResult.description,
+        imageUrl: dbResult.imageUrl || '/generated/placeholder.png',
+        prompt: dbResult.prompt,
+        timeSlot: dbResult.timeSlot,
+        scheduledAt: dbResult.scheduledAt,
+        publishedAt: dbResult.publishedAt,
+        status: dbResult.status,
+        likes: dbResult.likes || 0,
+        shares: dbResult.shares || 0,
+        createdAt: dbResult.createdAt,
+        comments: dbResult.comments || 0,
+        tags: dbResult.tags || [],
+        emoji: dbResult.emoji,
       };
 
       set({
@@ -83,12 +107,12 @@ export const useGenerateStore = create<GenerateStore>((set) => ({
         isModalOpen: false,
       });
 
-      console.log('Generated content via API:', newContent);
+      console.log('Successfully generated and saved content:', newContent);
 
     } catch (error) {
       set({
         isGenerating: false,
-        error: error instanceof Error ? error.message : 'Failed to generate content',
+        error: error instanceof Error ? error.message : 'Failed to process request',
       });
       throw error;
     }

@@ -10,9 +10,9 @@
  */
 
 import {
-  GenerateImageRequest,
-  GenerateImageResponse,
-  IImageService,
+    GenerateImageRequest,
+    GenerateImageResponse,
+    IImageService,
 } from '@/src/application/services/IImageService';
 
 /**
@@ -34,7 +34,7 @@ export class PollinationsImageService implements IImageService {
       // URL encode the prompt
       const encodedPrompt = encodeURIComponent(enhancedPrompt);
       
-      // Pollinations image URL
+      // Pollinations image URL 
       const imageUrl = `${this.baseUrl}/${encodedPrompt}?width=512&height=512&model=flux&nologo=true&seed=${Date.now()}`;
 
       console.log('[PollinationsImageService] Generating image from:', imageUrl);

@@ -26,7 +26,9 @@ export interface IStorageRepository {
     base64Data: string,
     fileName: string,
     bucket: string,
-    folder?: string
+    folder?: string,
+    contentType?: string,
+    extension?: string
   ): Promise<string>;
 
   /**

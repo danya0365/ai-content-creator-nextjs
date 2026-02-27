@@ -14,6 +14,8 @@ export interface GenerateImageResponse {
   base64Data?: string;
   imageUrl?: string; // For services that return URLs directly
   error?: string;
+  contentType?: string; // e.g. 'image/svg+xml'
+  extension?: string; // e.g. 'svg'
 }
 
 /**

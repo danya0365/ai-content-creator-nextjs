@@ -1,39 +1,34 @@
 /**
- * Generate Content API Route
- * POST /api/generate
+ * AI Content Generation API Route
+ * POST /api/ai/generate
  * 
- * Generates content with AI text and pixel art image
- * Uses AIServiceFactory for provider switching
+ * Exclusively handles AI content generation (text + image) 
+ * via AIServiceFactory and uploads the result to Supabase Storage.
+ * DOES NOT save to the database.
  */
 
-import { CreateContentDTO } from '@/src/application/repositories/IContentRepository';
 import { CONTENT_TYPES, TimeSlot } from '@/src/data/master/contentTypes';
 import { AIServiceFactory } from '@/src/infrastructure/ai/AIServiceFactory';
-import { SupabaseContentRepository } from '@/src/infrastructure/repositories/SupabaseContentRepository';
 import { SupabaseStorageRepository } from '@/src/infrastructure/repositories/SupabaseStorageRepository';
 import { createAdminClient } from '@/src/infrastructure/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 
 const AI_CONTENTS_BUCKET = 'ai-contents';
 
-interface GenerateRequest {
+interface AIGenerateRequest {
   contentTypeId: string;
   topic: string;
   timeSlot: TimeSlot;
-  scheduledDate: string;
-  scheduledTime: string;
   generateImage?: boolean; // Optional: whether to generate image
-  saveToDb?: boolean; // Optional: whether to save to database
 }
 
 export async function POST(request: NextRequest) {
   try {
-    // Initialize Supabase admin client (bypasses RLS) and repositories
+    // Initialize Supabase admin client for storage uploads
     const supabase = createAdminClient();
-    const contentRepo = new SupabaseContentRepository(supabase);
     const storageRepo = new SupabaseStorageRepository(supabase);
 
-    const body: GenerateRequest = await request.json();
+    const body: AIGenerateRequest = await request.json();
 
     // Validate request
     if (!body.contentTypeId || !body.topic) {
@@ -51,7 +46,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // ✅ Use AIServiceFactory for easy provider switching
+    // Use AIServiceFactory for provider switching
     const contentService = AIServiceFactory.createContentService();
     const imageService = AIServiceFactory.createImageService();
 
@@ -80,16 +75,18 @@ export async function POST(request: NextRequest) {
       // Upload to storage if generation was successful
       if (imageResult.success) {
         if (imageResult.base64Data) {
-          // Upload base64 data
+          // Upload base64 data to Supabase Storage
           try {
             imageUrl = await storageRepo.uploadBase64(
               imageResult.base64Data,
               `gen-${Date.now()}`,
               AI_CONTENTS_BUCKET,
-              'generated'
+              'generated',
+              imageResult.contentType,
+              imageResult.extension
             );
           } catch (uploadError) {
-            console.error('Failed to upload image:', uploadError);
+            console.error('[AI Generate API] Failed to upload image:', uploadError);
           }
         } else if (imageResult.imageUrl) {
           // Use direct URL (for mock/placeholder services)
@@ -98,62 +95,26 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Build scheduled datetime
-    const scheduledAt = `${body.scheduledDate}T${body.scheduledTime}:00.000Z`;
-
-    // Save to database using repository if requested (default: true)
-    if (body.saveToDb !== false) {
-      const createDto: CreateContentDTO = {
+    // Return pure generated payload back to the client
+    return NextResponse.json({
+      success: true,
+      content: {
         contentTypeId: body.contentTypeId,
         title: result.title || `${body.topic} 🎨`,
         description: result.description || '',
         imageUrl: imageUrl || '',
-        prompt: result.imagePrompt || '',
+        prompt: result.imagePrompt || result.prompt || '',
         timeSlot: body.timeSlot,
-        scheduledAt,
-        status: 'scheduled',
         tags: result.hashtags || [],
         emoji: contentType.icon,
-      };
-
-      const savedContent = await contentRepo.create(createDto);
-
-      return NextResponse.json({
-        success: true,
-        content: savedContent,
-      });
-    }
-
-    // Return generated content without saving
-    const generatedContent = {
-      id: `content-${Date.now()}`,
-      contentTypeId: body.contentTypeId,
-      title: result.title,
-      description: result.description,
-      imageUrl,
-      prompt: result.prompt,
-      imagePrompt: result.imagePrompt,
-      hashtags: result.hashtags,
-      timeSlot: body.timeSlot,
-      scheduledAt,
-      publishedAt: null,
-      status: 'scheduled' as const,
-      likes: 0,
-      shares: 0,
-      createdAt: new Date().toISOString(),
-    };
-
-    return NextResponse.json({
-      success: true,
-      content: generatedContent,
+      }
     });
+
   } catch (error) {
-    // ✅ Enhanced error logging
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     const errorStack = error instanceof Error ? error.stack : '';
     
-    console.error('[Generate API] ❌ Error:', errorMessage);
-    console.error('[Generate API] Stack:', errorStack);
+    console.error('[AI Generate API] ❌ Error:', errorMessage);
     
     return NextResponse.json(
       { 
@@ -164,4 +125,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-

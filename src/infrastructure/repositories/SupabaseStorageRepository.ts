@@ -4,8 +4,8 @@
  */
 
 import {
-    IStorageRepository,
-    UploadFileDTO,
+  IStorageRepository,
+  UploadFileDTO,
 } from '@/src/application/repositories/IStorageRepository';
 import { SupabaseClient } from '@supabase/supabase-js';
 
@@ -41,15 +41,17 @@ export class SupabaseStorageRepository implements IStorageRepository {
     base64Data: string,
     fileName: string,
     bucket: string,
-    folder = 'generated'
+    folder = 'generated',
+    contentType = 'image/png',
+    extension = 'png'
   ): Promise<string> {
     const buffer = Buffer.from(base64Data, 'base64');
-    const filePath = `${folder}/${Date.now()}-${fileName}.png`;
+    const filePath = `${folder}/${Date.now()}-${fileName}.${extension}`;
 
     const { data: uploadData, error } = await this.supabase.storage
       .from(bucket)
       .upload(filePath, buffer, {
-        contentType: 'image/png',
+        contentType: contentType,
         upsert: true,
       });
 
