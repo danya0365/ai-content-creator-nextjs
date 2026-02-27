@@ -1,13 +1,17 @@
 'use client';
 
 import { Content } from '@/src/application/repositories/IContentRepository';
-import { TimeSlotConfig } from '@/src/data/master/contentTypes';
+import { TimeSlot, TimeSlotConfig } from '@/src/data/master/contentTypes';
 import { ScheduleDay, ScheduleViewModel } from '@/src/presentation/presenters/schedule/SchedulePresenter';
 import { useSchedulePresenter } from '@/src/presentation/presenters/schedule/useSchedulePresenter';
+import { useGenerateStore } from '@/src/presentation/stores/useGenerateStore';
 import { animated, config, useSpring } from '@react-spring/web';
+import { useEffect } from 'react';
+import { GenerateContentModal } from '../generate/GenerateContentModal';
 import { MainLayout } from '../layout/MainLayout';
 import { JellyButton } from '../ui/JellyButton';
 import { JellyCard } from '../ui/JellyCard';
+import { SmartImage } from '../ui/SmartImage';
 
 interface DayColumnProps {
   day: ScheduleDay;
@@ -79,8 +83,16 @@ function TimeSlotRow({ slot, contents, onAddContent }: TimeSlotRowProps) {
               key={content.id}
               className="flex-shrink-0 w-48 glass-card-hover p-3 rounded-xl"
             >
-              <div className="w-full aspect-video rounded-lg bg-gradient-to-br from-violet-500/20 to-fuchsia-500/20 mb-2 flex items-center justify-center">
-                <span className="text-2xl">🎨</span>
+              <div className="w-full aspect-video rounded-lg bg-gradient-to-br from-violet-500/20 to-fuchsia-500/20 mb-2 flex items-center justify-center overflow-hidden relative">
+                <SmartImage
+                  src={content.imageUrl}
+                  alt={content.title}
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 768px) 100vw, 300px"
+                  emojiClassName="text-2xl"
+                  containerClassName="w-full h-full flex items-center justify-center absolute inset-0"
+                />
               </div>
               <h4 className="text-xs font-medium text-foreground line-clamp-2">{content.title}</h4>
             </JellyCard>
@@ -132,6 +144,16 @@ export function ScheduleView({ initialViewModel }: ScheduleViewProps) {
     totalScheduled: 0,
   };
 
+  // Zustand store
+  const { isModalOpen, openModal, closeModal, generateContent, generatedContent } = useGenerateStore();
+
+  // Auto-refresh when new content is generated
+  useEffect(() => {
+    if (generatedContent) {
+      actions.refresh();
+    }
+  }, [generatedContent, actions]);
+
   const headerSpring = useSpring({
     from: { opacity: 0, y: -10 },
     to: { opacity: 1, y: 0 },
@@ -181,7 +203,11 @@ export function ScheduleView({ initialViewModel }: ScheduleViewProps) {
                 จัดตารางโพสต์คอนเทนต์ • {viewModel.totalScheduled} รายการที่กำลังรอโพสต์
               </p>
             </div>
-            <JellyButton variant="primary" size="lg">
+            <JellyButton 
+              variant="primary" 
+              size="lg" 
+              onClick={() => openModal({ scheduledDate: state.selectedDay?.dateString })}
+            >
               <span>➕</span>
               <span>เพิ่ม Schedule</span>
             </JellyButton>
@@ -226,7 +252,11 @@ export function ScheduleView({ initialViewModel }: ScheduleViewProps) {
                     key={slot.id}
                     slot={slot}
                     contents={actions.getContentsForSlot(slot)}
-                    onAddContent={() => console.log('Add content for', slot.id)}
+                    onAddContent={() => openModal({
+                      timeSlot: slot.id as TimeSlot,
+                      scheduledDate: state.selectedDay?.dateString,
+                      scheduledTime: `${slot.startHour}:00`
+                    })}
                   />
                 ))}
               </div>
@@ -250,6 +280,13 @@ export function ScheduleView({ initialViewModel }: ScheduleViewProps) {
           </div>
         </div>
       </div>
+
+      {/* Generate Content Modal */}
+      <GenerateContentModal
+        isOpen={isModalOpen}
+        onClose={closeModal}
+        onGenerate={generateContent}
+      />
     </MainLayout>
   );
 }

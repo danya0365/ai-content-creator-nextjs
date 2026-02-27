@@ -12,10 +12,11 @@ interface GenerateState {
   isGenerating: boolean;
   generatedContent: GeneratedContent | null;
   error: string | null;
+  initialData: Partial<GenerateFormData> | null;
 }
 
 interface GenerateActions {
-  openModal: () => void;
+  openModal: (data?: Partial<GenerateFormData>) => void;
   closeModal: () => void;
   generateContent: (data: GenerateFormData) => Promise<void>;
   clearError: () => void;
@@ -29,14 +30,15 @@ const initialState: GenerateState = {
   isGenerating: false,
   generatedContent: null,
   error: null,
+  initialData: null,
 };
 
 export const useGenerateStore = create<GenerateStore>((set) => ({
   ...initialState,
 
-  openModal: () => set({ isModalOpen: true }),
+  openModal: (data) => set({ isModalOpen: true, initialData: data || null }),
   
-  closeModal: () => set({ isModalOpen: false, error: null }),
+  closeModal: () => set({ isModalOpen: false, error: null, initialData: null }),
 
   generateContent: async (data: GenerateFormData) => {
     set({ isGenerating: true, error: null });

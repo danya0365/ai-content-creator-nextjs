@@ -1,8 +1,9 @@
 'use client';
 
 import { CONTENT_TYPES, TIME_SLOTS, TimeSlot } from '@/src/data/master/contentTypes';
+import { useGenerateStore } from '@/src/presentation/stores/useGenerateStore';
 import { animated, config, useSpring } from '@react-spring/web';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 interface GenerateContentModalProps {
   isOpen: boolean;
@@ -25,6 +26,8 @@ export interface GenerateFormData {
 export function GenerateContentModal({ isOpen, onClose, onGenerate }: GenerateContentModalProps) {
   const [step, setStep] = useState(1);
   const [isGenerating, setIsGenerating] = useState(false);
+  const initialData = useGenerateStore((state) => state.initialData);
+
   const [formData, setFormData] = useState<GenerateFormData>({
     contentTypeId: '',
     timeSlot: 'morning',
@@ -32,6 +35,19 @@ export function GenerateContentModal({ isOpen, onClose, onGenerate }: GenerateCo
     scheduledDate: new Date().toISOString().split('T')[0],
     scheduledTime: '09:00',
   });
+
+  // Pre-fill form when modal is opening
+  useEffect(() => {
+    if (isOpen) {
+      setFormData(prev => ({
+        ...prev,
+        ...initialData,
+        scheduledDate: initialData?.scheduledDate || new Date().toISOString().split('T')[0],
+        scheduledTime: initialData?.scheduledTime || '09:00',
+        timeSlot: initialData?.timeSlot || 'morning',
+      }));
+    }
+  }, [isOpen, initialData]);
 
   const backdropSpring = useSpring({
     opacity: isOpen ? 1 : 0,
