@@ -9,13 +9,13 @@ import { animated, config, useSpring } from '@react-spring/web';
 import Link from 'next/link';
 import { GenerateContentModal } from '../generate/GenerateContentModal';
 import { MainLayout } from '../layout/MainLayout';
+import { AiAssistantWidget } from '../ui/AiAssistantWidget';
 import { JellyButton } from '../ui/JellyButton';
 import { JellyCard } from '../ui/JellyCard';
 import { MiniSparkline } from '../ui/SimpleChart';
 import { TrendIndicator } from '../ui/TrendIndicator';
 import { ActivityFeed } from './ActivityFeed';
 import { EngagementChart } from './EngagementChart';
-
 interface StatCardProps {
   value: number | string;
   label: string;
@@ -182,7 +182,7 @@ export function DashboardView({ initialViewModel }: DashboardViewProps) {
   };
 
   // Zustand store
-  const { isModalOpen, openModal, closeModal, generateContent } = useGenerateStore();
+  const { isModalOpen, isGenerating, openModal, closeModal, generateContent } = useGenerateStore();
 
   const headerSpring = useSpring({
     from: { opacity: 0, y: -10 },
@@ -310,6 +310,11 @@ export function DashboardView({ initialViewModel }: DashboardViewProps) {
 
             {/* Sidebar - Quick Generate */}
             <div className="space-y-4">
+              {/* 3D AI Assistant Wrapper */}
+              <JellyCard className="glass-card p-1 h-[300px] overflow-hidden relative">
+                <AiAssistantWidget isGenerating={isGenerating} />
+              </JellyCard>
+
               {/* Current Time Slot */}
               {viewModel.currentTimeSlot && (
                 <JellyCard className="glass-card p-4">
