@@ -14,7 +14,6 @@ const NAV_ITEMS: NavItem[] = [
   { label: 'Timeline', href: '/timeline', icon: '📜' },
   { label: 'Gallery', href: '/gallery', icon: '🖼️' },
   { label: 'Schedule', href: '/schedule', icon: '📅' },
-  { label: 'Settings', href: '/settings', icon: '⚙️' },
 ];
 
 /**

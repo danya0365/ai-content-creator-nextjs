@@ -210,7 +210,9 @@ export function SettingsView({ initialViewModel }: SettingsViewProps) {
   return (
     <MainLayout showBubbles={false}>
       <div className="h-full overflow-auto scrollbar-thin">
-        <div className="max-w-3xl mx-auto px-6 py-6 space-y-6">
+        {/* 'Coming Soon' Wrapper */}
+        <div className="relative h-full">
+          <div className="max-w-3xl mx-auto px-6 py-6 space-y-6">
           
           {/* Header */}
           <animated.div style={headerSpring} className="flex items-center justify-between">
@@ -351,6 +353,30 @@ export function SettingsView({ initialViewModel }: SettingsViewProps) {
               </JellyButton>
             </SettingRow>
           </SettingsSection>
+        </div>
+
+        {/* Blur Overlay */}
+        <div className="absolute inset-0 z-50 flex flex-col items-center justify-center p-6 bg-background/50 backdrop-blur-md rounded-2xl m-4 border border-border/10">
+          <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-violet-500 to-fuchsia-500 flex items-center justify-center text-4xl shadow-lg shadow-purple-500/25 mb-6 animate-bounce">
+            🚧
+          </div>
+          <h2 className="text-3xl font-bold text-foreground mb-3 text-center">
+            Coming in <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-fuchsia-400">Phase 2</span>
+          </h2>
+          <p className="text-muted text-center max-w-md mb-8">
+            หน้านี้กำลังอยู่ระหว่างการพัฒนา 
+            ระบบตั้งค่าทั้งหมดจะถูกเปิดให้ใช้งานอย่างสมบูรณ์ในเฟสถัดไปครับ 🚀
+          </p>
+          <JellyButton
+            variant="primary"
+            onClick={() => window.location.href = '/dashboard'}
+            size="lg"
+          >
+            <span>🏠</span>
+            <span>กลับไปหน้า Dashboard</span>
+          </JellyButton>
+        </div>
+
         </div>
       </div>
     </MainLayout>
