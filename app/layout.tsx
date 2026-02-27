@@ -1,3 +1,4 @@
+import AuthInitializerWrapper from "@/src/presentation/components/auth/AuthInitializerWrapper";
 import { ClientProviders } from "@/src/presentation/components/ui/ClientProviders";
 import { ThemeProvider } from "@/src/presentation/components/ui/ThemeProvider";
 import type { Metadata } from "next";
@@ -35,6 +36,7 @@ export default function RootLayout({
   return (
     <html lang="th" suppressHydrationWarning>
       <body className="antialiased" suppressHydrationWarning>
+        <AuthInitializerWrapper />
         <ThemeProvider>
           <ClientProviders>
             {children}

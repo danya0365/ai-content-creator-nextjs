@@ -1,7 +1,7 @@
--- Shop Queue Seed Data - Users
+-- AI Content Creator Seed Data - Users
 -- Created: 2025-06-19
 -- Author: Marosdee Uma
--- Description: Sample user data for testing Shop Queue application
+-- Description: Sample user data for testing AI Content Creator application
 
 -- Set app password for testing
 set session my.app_password = '12345678';
@@ -34,7 +34,7 @@ INSERT INTO
         '00000000-0000-0000-0000-000000000001',
         'authenticated',
         'authenticated',
-        'admin@shopqueue.com',
+        'admin@aicontentcreator.com',
         crypt (current_setting('my.app_password'), gen_salt ('bf')),
         NOW() - INTERVAL '30 days',
         NULL,
@@ -59,7 +59,7 @@ INSERT INTO
         '00000000-0000-0000-0000-000000000003',
         'authenticated',
         'authenticated',
-        'user1@shopqueue.com',
+        'user1@aicontentcreator.com',
         crypt (current_setting('my.app_password'), gen_salt ('bf')),
         NOW() - INTERVAL '20 days',
         NULL,
@@ -84,7 +84,7 @@ INSERT INTO
         '00000000-0000-0000-0000-000000000004',
         'authenticated',
         'authenticated',
-        'user2@shopqueue.com',
+        'user2@aicontentcreator.com',
         crypt (current_setting('my.app_password'), gen_salt ('bf')),
         NOW() - INTERVAL '15 days',
         NULL,
@@ -129,10 +129,10 @@ FROM
     auth.users
 ON CONFLICT (provider_id, provider) DO NOTHING;
 
---  ShopQueue Seed Data - Profiles
+--  AI Content Creator Seed Data - Profiles
 -- Created: 2025-06-19
 -- Author: Marosdee Uma
--- Description: Sample profile data for testing ShopQueue application with multiple profiles per user
+-- Description: Sample profile data for testing AI Content Creator application with multiple profiles per user
 
 -- Insert profiles for admin user (2 profiles)
 INSERT INTO public.profiles (
@@ -194,7 +194,7 @@ ON CONFLICT (id) DO NOTHING;
 
 -- Created at: 2025-06-21T10:15:00+07:00
 -- Author: Marosdee Uma
--- Description: Seed initial profile_roles data for ShopQueue application
+-- Description: Seed initial profile_roles data for AI Content Creator application
 
 -- Insert initial admin role for the first user's active profile
 -- This assumes the first user in auth.users is the system admin
