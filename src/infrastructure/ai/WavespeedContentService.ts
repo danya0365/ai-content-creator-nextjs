@@ -1,0 +1,209 @@
+/**
+ * WavespeedContentService
+ * Service for generating content using Wavespeed AI API
+ * 
+ * ✅ Supports 700+ AI models
+ * ✅ Async task-based generation (polling)
+ * ✅ Unified API interface
+ * 
+ * Get API key: https://wavespeed.ai/
+ */
+
+import {
+  GenerateContentRequest,
+  GenerateContentResponse,
+  IContentService,
+} from '@/src/application/services/IContentService';
+import { ContentType } from '@/src/data/master/contentTypes';
+
+/**
+ * Generate content prompt based on type and topic
+ */
+function buildPrompt(contentType: ContentType, topic: string, timeSlot: string, language: string): string {
+  const timeContext = {
+    morning: 'เช้าวันใหม่ที่สดใส',
+    lunch: 'ช่วงพักเที่ยง',
+    afternoon: 'บ่ายอันแสนสดใส',
+    evening: 'ค่ำคืนที่ผ่อนคลาย',
+  }[timeSlot] || '';
+
+  return `
+You are a creative content creator specializing in ${contentType.name} content. 
+Create engaging social media content about: "${topic}"
+
+Context: This content will be posted during ${timeContext}.
+Content Type: ${contentType.name} - ${contentType.description}
+Language: ${language === 'th' ? 'Thai' : 'English'}
+
+Please provide:
+1. A catchy title (max 50 chars)
+2. An engaging description (100-200 chars)
+3. A prompt for generating a pixel art image
+4. 5 relevant hashtags
+
+Format your response as JSON:
+{
+  "title": "...",
+  "description": "...",
+  "imagePrompt": "Create a cute pixel art illustration of...",
+  "hashtags": ["#tag1", "#tag2", ...]
+}
+`;
+}
+
+/**
+ * WavespeedContentService class
+ * Implements IContentService using Wavespeed AI API
+ */
+export class WavespeedContentService implements IContentService {
+  private apiKey: string;
+  // Wavespeed Model UUID - Text generation (e.g., GPT-4, Llama-3, etc.)
+  private modelUuid = 'openai/gpt-4o-mini';
+  private baseUrl = 'https://api.wavespeed.ai/api/v3';
+
+  /**
+   * @param apiKey - Wavespeed AI API key
+   * @param modelUuid - Optional Model UUID to use
+   */
+  constructor(apiKey: string, modelUuid?: string) {
+    this.apiKey = apiKey;
+    if (modelUuid) this.modelUuid = modelUuid;
+  }
+
+  async generateContent(request: GenerateContentRequest): Promise<GenerateContentResponse> {
+    if (!this.apiKey) {
+      return {
+        success: false,
+        error: 'No Wavespeed AI API key provided',
+      };
+    }
+
+    if (!this.modelUuid) {
+      return {
+        success: false,
+        error: 'No Wavespeed Content Model UUID provided',
+      };
+    }
+
+    try {
+      const { contentType, topic, timeSlot, language = 'th' } = request;
+      const prompt = buildPrompt(contentType, topic, timeSlot, language);
+
+      console.log(`[WavespeedContentService] Submitting task for model: ${this.modelUuid}`);
+      
+      // 1. Submit the task
+      const submitResponse = await fetch(`${this.baseUrl}/${this.modelUuid}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.apiKey}`,
+        },
+        body: JSON.stringify({
+          prompt: prompt,
+        }),
+      });
+
+      if (!submitResponse.ok) {
+        const errorText = await submitResponse.text();
+        console.error('Wavespeed API submit error:', errorText);
+        return {
+          success: false,
+          error: `Wavespeed API submit error: ${submitResponse.status}`,
+        };
+      }
+
+      const submitData = await submitResponse.json();
+      const taskId = submitData.data?.task_id || submitData.task_id;
+
+      if (!taskId) {
+        return {
+          success: false,
+          error: 'Failed to get task ID from Wavespeed AI',
+        };
+      }
+
+      console.log(`[WavespeedContentService] Task created: ${taskId}. Polling for results...`);
+
+      // 2. Poll for results
+      return await this.pollForResults(taskId, prompt, topic);
+
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.error('Wavespeed content generation error:', errorMessage);
+      return {
+        success: false,
+        error: errorMessage,
+      };
+    }
+  }
+
+  /**
+   * Poll Wavespeed API for task completion
+   */
+  private async pollForResults(taskId: string, prompt: string, topic: string, maxRetries = 30, intervalMs = 2000): Promise<GenerateContentResponse> {
+    for (let i = 0; i < maxRetries; i++) {
+      try {
+        const response = await fetch(`${this.baseUrl}/${this.modelUuid}/tasks/${taskId}`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${this.apiKey}`,
+          },
+        });
+
+        if (!response.ok) {
+          console.error(`Wavespeed poll error (${response.status})`);
+          continue; // Try again
+        }
+
+        const data = await response.json();
+        const status = data.data?.status || data.status;
+
+        if (status === 'completed' || status === 'success') {
+          const outputs = data.data?.outputs || data.outputs;
+          const textContent = outputs?.[0]?.text || outputs?.[0];
+
+          if (textContent) {
+             // Parse JSON from response
+            const jsonMatch = textContent.match(/\{[\s\S]*\}/);
+            if (!jsonMatch) {
+                return {
+                success: false,
+                error: 'Failed to parse Wavespeed response as JSON',
+                };
+            }
+
+            const parsed = JSON.parse(jsonMatch[0]);
+
+            return {
+              success: true,
+              title: parsed.title || `${topic} 🎨`,
+              description: parsed.description || `AI generated content about ${topic}`,
+              prompt: prompt,
+              imagePrompt: parsed.imagePrompt || `Cute pixel art illustration of ${topic}`,
+              hashtags: parsed.hashtags || ['#pixelart', '#ai', '#content'],
+            };
+          }
+          return {
+            success: false,
+            error: 'Task completed but no content found',
+          };
+        } else if (status === 'failed') {
+          return {
+            success: false,
+            error: `Wavespeed task failed: ${data.data?.error || data.error || 'Unknown error'}`,
+          };
+        }
+
+        // Wait before next poll
+        await new Promise(resolve => setTimeout(resolve, intervalMs));
+      } catch (error) {
+        console.error('Polling error:', error);
+      }
+    }
+
+    return {
+      success: false,
+      error: 'Polling timed out after 60 seconds',
+    };
+  }
+}

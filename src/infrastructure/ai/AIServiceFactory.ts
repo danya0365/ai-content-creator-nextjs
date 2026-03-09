@@ -29,8 +29,10 @@ import { MockImageService } from './MockImageService';
 import { OpenRouterContentService } from './OpenRouterContentService';
 import { PollinationsImageService } from './PollinationsImageService';
 import { TogetherAIImageService } from './TogetherAIImageService';
+import { WavespeedContentService } from './WavespeedContentService';
+import { WavespeedImageService } from './WavespeedImageService';
 
-export type AIProvider = 'gemini' | 'groq' | 'openrouter' | 'together' | 'pollinations' | 'dicebear' | 'mock';
+export type AIProvider = 'gemini' | 'groq' | 'openrouter' | 'together' | 'pollinations' | 'dicebear' | 'wavespeed' | 'mock';
 
 interface AIServiceConfig {
   provider: AIProvider;
@@ -43,7 +45,7 @@ interface AIServiceConfig {
  */
 function getDefaultContentProvider(): AIProvider {
   const provider = process.env.AI_PROVIDER as AIProvider;
-  if (['gemini', 'groq', 'openrouter', 'mock'].includes(provider)) {
+  if (['gemini', 'groq', 'openrouter', 'wavespeed', 'mock'].includes(provider)) {
     return provider;
   }
   return 'gemini'; // default
@@ -54,7 +56,7 @@ function getDefaultContentProvider(): AIProvider {
  */
 function getDefaultImageProvider(): AIProvider {
   const provider = process.env.AI_IMAGE_PROVIDER as AIProvider;
-  if (['gemini', 'together', 'pollinations', 'dicebear', 'mock'].includes(provider)) {
+  if (['gemini', 'together', 'pollinations', 'dicebear', 'wavespeed', 'mock'].includes(provider)) {
     return provider;
   }
   // If no image provider set, use dicebear (FREE & STABLE)
@@ -74,6 +76,8 @@ function getApiKey(provider: AIProvider): string {
       return process.env.OPENROUTER_API_KEY || '';
     case 'together':
       return process.env.TOGETHER_API_KEY || '';
+    case 'wavespeed':
+      return process.env.WAVESPEED_API_KEY || '';
     case 'pollinations':
     case 'dicebear':
       return ''; // No API key needed
@@ -109,6 +113,13 @@ export class AIServiceFactory {
           return new MockContentService();
         }
         return new OpenRouterContentService(apiKey, config?.model);
+
+      case 'wavespeed':
+        if (!apiKey) {
+          console.warn('[AIServiceFactory] No WAVESPEED_API_KEY, using MockContentService');
+          return new MockContentService();
+        }
+        return new WavespeedContentService(apiKey, config?.model);
 
       case 'mock':
         return new MockContentService();
@@ -147,6 +158,13 @@ export class AIServiceFactory {
         }
         return new TogetherAIImageService(apiKey, config?.model);
 
+      case 'wavespeed':
+        if (!apiKey) {
+          console.warn('[AIServiceFactory] No WAVESPEED_API_KEY, using DiceBearImageService');
+          return new DiceBearImageService();
+        }
+        return new WavespeedImageService(apiKey, config?.model);
+
       case 'pollinations':
         // FREE - no API key needed!
         return new PollinationsImageService();
@@ -173,11 +191,13 @@ export class AIServiceFactory {
         { id: 'gemini', name: 'Google Gemini', hasApiKey: !!process.env.GEMINI_API_KEY, free: false },
         { id: 'groq', name: 'Groq (Llama)', hasApiKey: !!process.env.GROQ_API_KEY, free: true },
         { id: 'openrouter', name: 'OpenRouter', hasApiKey: !!process.env.OPENROUTER_API_KEY, free: true },
+        { id: 'wavespeed', name: 'Wavespeed AI', hasApiKey: !!process.env.WAVESPEED_API_KEY, free: false },
         { id: 'mock', name: 'Mock (Testing)', hasApiKey: true, free: true },
       ],
       image: [
         { id: 'gemini', name: 'Google Gemini Imagen', hasApiKey: !!process.env.GEMINI_API_KEY, free: false },
         { id: 'together', name: 'Together AI (FLUX)', hasApiKey: !!process.env.TOGETHER_API_KEY, free: false },
+        { id: 'wavespeed', name: 'Wavespeed AI', hasApiKey: !!process.env.WAVESPEED_API_KEY, free: false },
         { id: 'pollinations', name: 'Pollinations.ai (FREE - AI Art)', hasApiKey: true, free: true },
         { id: 'dicebear', name: 'DiceBear (FREE Dev Fallback - Avatars)', hasApiKey: true, free: true },
         { id: 'mock', name: 'Mock (Placeholder)', hasApiKey: true, free: true },
