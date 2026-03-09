@@ -265,7 +265,8 @@ services:
       TEMPORARY_SLOT: true
       SECRET_KEY_BASE: ${SECRET_KEY_BASE}
       ERL_AFLAGS: -proto_dist inet_tcp
-      RLIMIT_NOFILE: 1024
+      RLIMIT_NOFILE: ${RLIMIT_NOFILE:-1024}
+      APP_NAME: "${APP_NAME:-AI Content Creator}"
     
     networks:
       - internal
