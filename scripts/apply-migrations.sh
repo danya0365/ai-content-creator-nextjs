@@ -209,6 +209,45 @@ main() {
     
     echo ""
     
+    # ==========================================
+    # Apply Seeds
+    # ==========================================
+    SEEDS_DIR="$APP_DIR/supabase/seeds"
+    if [ -d "$SEEDS_DIR" ] || [ -d "./supabase/seeds" ]; then
+        # Use local path if APP_DIR doesn't exist
+        if [ ! -d "$SEEDS_DIR" ]; then
+            SEEDS_DIR="./supabase/seeds"
+        fi
+        
+        seed_count=$(find "$SEEDS_DIR" -name "*.sql" -type f 2>/dev/null | wc -l | tr -d ' ')
+        
+        if [ "$seed_count" -gt 0 ]; then
+            log_info "Applying $seed_count seed files..."
+            
+            for seed_file in $(find "$SEEDS_DIR" -name "*.sql" -type f | sort); do
+                seed_name=$(basename "$seed_file")
+                
+                # Check if seed already applied
+                seed_applied=$(docker exec -i $DB_CONTAINER psql -U $DB_USER -d $DB_NAME -tAc \
+                    "SELECT COUNT(*) FROM _migrations WHERE name = 'seed:$seed_name';" 2>/dev/null || echo "0")
+                
+                if [ "$seed_applied" = "1" ]; then
+                    log_warning "Skipping seed $seed_name (already applied)"
+                    continue
+                fi
+                
+                log_info "Applying seed $seed_name..."
+                if docker exec -i $DB_CONTAINER psql -U $DB_USER -d $DB_NAME < "$seed_file"; then
+                    docker exec -i $DB_CONTAINER psql -U $DB_USER -d $DB_NAME -c \
+                        "INSERT INTO _migrations (name) VALUES ('seed:$seed_name');" > /dev/null
+                    log_success "Seed $seed_name applied"
+                else
+                    log_warning "Seed $seed_name may have had issues (non-fatal)"
+                fi
+            done
+        fi
+    fi
+    
     if [ $failed -eq 0 ]; then
         echo "============================================"
         echo -e "${GREEN}✅ All migrations completed successfully!${NC}"

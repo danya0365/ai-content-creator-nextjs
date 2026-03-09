@@ -383,6 +383,8 @@ services:
       dockerfile: Dockerfile
       args:
         - BUILD_COMMIT_SHA=${BUILD_COMMIT_SHA:-local}
+        - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
+        - NEXT_PUBLIC_SUPABASE_ANON_KEY=${ANON_KEY}
     container_name: nextjs-app
     restart: unless-stopped
     
