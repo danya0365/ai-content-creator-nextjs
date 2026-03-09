@@ -5,18 +5,18 @@
  */
 
 import type {
-    AuthProfile,
-    AuthResult,
-    AuthSession,
-    AuthUser,
-    IAuthRepository,
-    OTPSignInData,
-    ResetPasswordData,
-    SignInData,
-    SignUpData,
-    UpdatePasswordData,
-    UpdateProfileData,
-    VerifyOTPData,
+  AuthProfile,
+  AuthResult,
+  AuthSession,
+  AuthUser,
+  IAuthRepository,
+  OTPSignInData,
+  ResetPasswordData,
+  SignInData,
+  SignUpData,
+  UpdatePasswordData,
+  UpdateProfileData,
+  VerifyOTPData,
 } from '@/src/application/repositories/IAuthRepository';
 import type { Database } from '@/src/domain/types/supabase';
 import type { SupabaseClient } from '@supabase/supabase-js';
@@ -68,8 +68,11 @@ export class SupabaseAuthRepository implements IAuthRepository {
         notifications: preferences.notifications ?? true,
         theme: (preferences.theme as 'light' | 'dark' | 'auto') || 'auto',
       },
+      privacySettings: (profile.privacy_settings as Record<string, unknown>) || undefined,
       socialLinks: (profile.social_links as Record<string, string>) || undefined,
       verificationStatus: profile.verification_status as 'pending' | 'verified' | 'rejected',
+      loginCount: profile.login_count,
+      lastLogin: profile.last_login || undefined,
       isActive: profile.is_active,
       createdAt: profile.created_at || dayjs().toISOString(),
       updatedAt: profile.updated_at || dayjs().toISOString(),

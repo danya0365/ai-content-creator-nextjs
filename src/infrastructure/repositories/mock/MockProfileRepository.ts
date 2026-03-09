@@ -17,6 +17,7 @@ const MOCK_PROFILES: AuthProfile[] = [
     isActive: true,
     verificationStatus: 'verified',
     preferences: { language: 'th', notifications: true, theme: 'auto' },
+    loginCount: 1,
     createdAt: dayjs().toISOString(),
     updatedAt: dayjs().toISOString(),
   },
@@ -28,6 +29,7 @@ const MOCK_PROFILES: AuthProfile[] = [
     isActive: false,
     verificationStatus: 'verified',
     preferences: { language: 'en', notifications: false, theme: 'dark' },
+    loginCount: 1,
     createdAt: dayjs().toISOString(),
     updatedAt: dayjs().toISOString(),
   }
@@ -58,6 +60,7 @@ export class MockProfileRepository implements IProfileRepository {
       isActive: false,
       verificationStatus: 'verified',
       preferences: { language: 'th', notifications: true, theme: 'auto' },
+      loginCount: 1,
       createdAt: dayjs().toISOString(),
       updatedAt: dayjs().toISOString(),
     };
