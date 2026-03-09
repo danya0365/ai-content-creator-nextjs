@@ -25,6 +25,9 @@ services:
         strip_path: true
         paths:
           - /auth/v1
+        headers:
+          apikey:
+            - "~*"
     plugins:
       - name: cors
         config:
@@ -58,6 +61,9 @@ services:
         strip_path: true
         paths:
           - /rest/v1
+        headers:
+          apikey:
+            - "~*"
     plugins:
       - name: cors
         config:
@@ -137,6 +143,9 @@ services:
         strip_path: true
         paths:
           - /storage/v1
+        headers:
+          apikey:
+            - "~*"
     plugins:
       - name: cors
         config:
