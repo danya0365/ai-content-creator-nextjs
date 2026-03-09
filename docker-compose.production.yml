@@ -20,6 +20,7 @@
 networks:
   # Network สำหรับ Traefik (public facing)
   traefik-public:
+    name: traefik-public
     driver: bridge
   # Network ภายใน สำหรับ services คุยกันเอง
   internal:
