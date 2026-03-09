@@ -1,10 +1,10 @@
 'use client';
 
 import type {
-    AuthProfile,
-    AuthSession,
-    AuthUser,
-    UpdateProfileData
+  AuthProfile,
+  AuthSession,
+  AuthUser,
+  UpdateProfileData
 } from '@/src/application/repositories/IAuthRepository';
 import { useRouter } from 'next/navigation';
 import { useCallback, useMemo, useState } from 'react';
@@ -78,13 +78,13 @@ export function useAuthPresenter(
   const router = useRouter();
   
   const getRedirectUrl = useCallback(() => {
-    if (typeof window === 'undefined') return '/backend';
+    if (typeof window === 'undefined') return '/';
     const urlParams = new URLSearchParams(window.location.search);
     const redirectTo = urlParams.get('redirectTo');
     if (redirectTo && (redirectTo.startsWith('/') || redirectTo.startsWith(window.location.origin))) {
       return redirectTo;
     }
-    return '/backend';
+    return '/';
   }, []);
 
   const { user, profile, profiles, session, isAuthenticated, isLoading } = useAuthStore();
