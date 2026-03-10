@@ -6,24 +6,25 @@
 
 'use client';
 
-import { SupabaseAuthRepository } from '@/src/infrastructure/repositories/supabase/SupabaseAuthRepository';
+import { ApiAuthRepository } from '@/src/infrastructure/repositories/api/ApiAuthRepository';
 import { createClient } from '@/src/infrastructure/supabase/client';
 import { AuthPresenter } from './AuthPresenter';
 
 // ✅ Cache repository instance to prevent creating multiple auth listeners
-let cachedRepository: SupabaseAuthRepository | null = null;
+let cachedRepository: ApiAuthRepository | null = null;
 
 export class AuthPresenterClientFactory {
   static create(): AuthPresenter {
     // ✅ Reuse repository to prevent multiple auth subscriptions
     if (!cachedRepository) {
       const supabase = createClient();
-      cachedRepository = new SupabaseAuthRepository(supabase);
+      cachedRepository = new ApiAuthRepository(supabase);
     }
 
     return new AuthPresenter(cachedRepository);
   }
 }
+
 
 export function createClientAuthPresenter(): AuthPresenter {
   return AuthPresenterClientFactory.create();

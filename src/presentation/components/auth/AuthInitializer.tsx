@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { createClientAuthPresenter } from '../../presenters/auth/AuthPresenterClientFactory';
 import { useAuthStore } from '../../stores/auth-store';
 
@@ -11,24 +11,29 @@ import { useAuthStore } from '../../stores/auth-store';
  */
 export const AuthInitializer: React.FC = () => {
   const { setSession, reset } = useAuthStore();
+  const presenter = useMemo(() => {
+    return createClientAuthPresenter();
+  }, [])
 
   useEffect(() => {
-    // initialize presenter instance (Singleton) via Factory
-    const presenter = createClientAuthPresenter();
-
-    // Subscribe to auth state changes using the Presenter Layer
-    const unsubscribe = presenter.onAuthStateChange((session) => {
-      if (session) {
-        setSession(session);
-      } else {
+    // Fetch initial session once on mount using the Server API
+    const initAuth = async () => {
+      try {
+        const session = await presenter.getSession();
+        console.log('Init auth session:', session);
+        if (session) {
+          setSession(session);
+        } else {
+          reset();
+        }
+      } catch (err) {
+        console.error('Failed to initialize auth:', err);
         reset();
       }
-    });
-
-    return () => {
-      unsubscribe();
     };
-  }, []);
+
+    initAuth();
+  }, [setSession, reset]);
 
   return null;
 };

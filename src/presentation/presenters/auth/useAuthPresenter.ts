@@ -108,6 +108,9 @@ export function useAuthPresenter(
     try {
       const result = await presenter.signUp({ email, password, fullName, phone });
       if (result.success) {
+        if (result.session) {
+          useAuthStore.getState().setSession(result.session);
+        }
         if (result.needsEmailVerification) {
           setNeedsEmailVerification(true);
           setVerificationEmail(email);
@@ -138,6 +141,9 @@ export function useAuthPresenter(
     try {
       const result = await presenter.signIn({ email, password });
       if (result.success) {
+        if (result.session) {
+          useAuthStore.getState().setSession(result.session);
+        }
         setSuccessMessage(result.message || 'เข้าสู่ระบบสำเร็จ');
         router.push(getRedirectUrl());
         return true;
@@ -187,6 +193,9 @@ export function useAuthPresenter(
     try {
       const result = await presenter.verifyOTP({ phone, token });
       if (result.success) {
+        if (result.session) {
+          useAuthStore.getState().setSession(result.session);
+        }
         setOtpSent(false);
         setOtpPhone('');
         setSuccessMessage(result.message || 'ยืนยัน OTP สำเร็จ');
@@ -229,6 +238,7 @@ export function useAuthPresenter(
     try {
       const result = await presenter.signOut();
       if (result.success) {
+        useAuthStore.getState().reset();
         setSuccessMessage(result.message || 'ออกจากระบบสำเร็จ');
         router.push('/');
       } else {

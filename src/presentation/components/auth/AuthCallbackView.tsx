@@ -59,7 +59,7 @@ export function AuthCallbackView() {
         setCountdown((prev) => {
           if (prev <= 1) {
             clearInterval(timer);
-            router.push('/customer');
+            router.push('/dashboard');
             return 0;
           }
           return prev - 1;
@@ -148,10 +148,10 @@ export function AuthCallbackView() {
           
           <div className="mt-6">
             <Link
-              href="/customer"
+              href="/dashboard"
               className="inline-block py-3 px-6 bg-gradient-to-r from-purple-500 to-pink-600 text-white rounded-xl font-medium hover:from-purple-400 hover:to-pink-500 transition-all shadow-lg shadow-purple-500/25"
             >
-              ไปหน้าจองคิว
+              ไปหน้าแดชบอร์ด
             </Link>
           </div>
         </div>
