@@ -32,7 +32,8 @@ services:
       - name: cors
         config:
           origins:
-            - "*"
+            - "http://localhost:3000"
+            - "https://ai.await.life"
           methods:
             - GET
             - POST
@@ -50,6 +51,7 @@ services:
             - Content-Range
           max_age: 3600
           credentials: true
+          preflight_continue: false
 
   # ==========================================
   # REST Service (PostgREST)
@@ -68,7 +70,8 @@ services:
       - name: cors
         config:
           origins:
-            - "*"
+            - "http://localhost:3000"
+            - "https://ai.await.life"
           methods:
             - GET
             - POST
@@ -88,11 +91,13 @@ services:
             - Content-Range
           max_age: 3600
           credentials: true
+          preflight_continue: false
       - name: key-auth
         config:
           key_names:
             - apikey
           hide_credentials: false
+          anonymous: anon
       - name: acl
         config:
           hide_groups_header: true
@@ -114,7 +119,8 @@ services:
       - name: cors
         config:
           origins:
-            - "*"
+            - "http://localhost:3000"
+            - "https://ai.await.life"
           methods:
             - GET
             - POST
@@ -132,6 +138,7 @@ services:
             - Content-Range
           max_age: 3600
           credentials: true
+          preflight_continue: false
 
   # ==========================================
   # Storage Service
@@ -150,7 +157,8 @@ services:
       - name: cors
         config:
           origins:
-            - "*"
+            - "http://localhost:3000"
+            - "https://ai.await.life"
           methods:
             - GET
             - POST
@@ -174,6 +182,7 @@ services:
             - Upload-Length
           max_age: 3600
           credentials: true
+          preflight_continue: false
 
 # ==========================================
 # Consumers (API Key Users)
