@@ -4,13 +4,14 @@
  */
 
 import {
-  Content,
-  ContentFilter,
-  ContentStats,
-  CreateContentDTO,
-  IContentRepository,
-  PaginatedResult,
-  UpdateContentDTO,
+    Content,
+    ContentEvent,
+    ContentFilter,
+    ContentStats,
+    CreateContentDTO,
+    IContentRepository,
+    PaginatedResult,
+    UpdateContentDTO,
 } from '@/src/application/repositories/IContentRepository';
 import { Database } from '@/src/domain/types/supabase';
 import { SupabaseClient } from '@supabase/supabase-js';
@@ -276,5 +277,45 @@ export class SupabaseContentRepository implements IContentRepository {
       return false;
     }
     return true;
+  }
+
+  /**
+   * Subscribe to real-time content changes
+   */
+  subscribe(callback: (event: ContentEvent) => void): () => void {
+    const channel = this.supabase
+      .channel('ai_contents_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'ai_contents',
+        },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            callback({
+              type: 'INSERT',
+              new: mapRowToContent(payload.new as SupabaseContentRow),
+            });
+          } else if (payload.eventType === 'UPDATE') {
+            callback({
+              type: 'UPDATE',
+              old: payload.old as Partial<Content>,
+              new: mapRowToContent(payload.new as SupabaseContentRow),
+            });
+          } else if (payload.eventType === 'DELETE') {
+            callback({
+              type: 'DELETE',
+              old: { id: payload.old.id },
+            });
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      this.supabase.removeChannel(channel);
+    };
   }
 }

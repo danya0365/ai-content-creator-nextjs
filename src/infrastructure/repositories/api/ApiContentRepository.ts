@@ -10,17 +10,52 @@
 'use client';
 
 import {
-    Content,
-    ContentFilter,
-    ContentStats,
-    CreateContentDTO,
-    IContentRepository,
-    PaginatedResult,
-    UpdateContentDTO,
+  Content,
+  ContentEvent,
+  ContentFilter,
+  ContentStats,
+  CreateContentDTO,
+  IContentRepository,
+  PaginatedResult,
+  UpdateContentDTO,
 } from '@/src/application/repositories/IContentRepository';
+import { Database } from '@/src/domain/types/supabase';
+import { SupabaseClient } from '@supabase/supabase-js';
+
+// Supabase row types
+type SupabaseContentRow = Database['public']['Tables']['ai_contents']['Row'];
+
+// Map database row to domain model
+function mapRowToContent(row: SupabaseContentRow): Content {
+  return {
+    id: row.id,
+    contentTypeId: row.content_type_id,
+    title: row.title,
+    description: row.description || '',
+    imageUrl: row.image_url || '',
+    prompt: row.prompt || '',
+    timeSlot: row.time_slot as Content['timeSlot'],
+    scheduledAt: row.scheduled_at || '',
+    publishedAt: row.published_at,
+    status: (row.status || 'draft') as Content['status'],
+    likes: row.likes || 0,
+    shares: row.shares || 0,
+    createdAt: row.created_at || '',
+    updatedAt: row.updated_at || '',
+    comments: row.comments || 0,
+    tags: row.tags || [],
+    emoji: row.emoji || undefined,
+  };
+}
 
 export class ApiContentRepository implements IContentRepository {
   private baseUrl = '/api/contents';
+
+  /**
+   * Optional Supabase client strictly used for real-time subscriptions.
+   * Do not use for CRUD operations; use fetch to API routes instead.
+   */
+  constructor(private readonly supabase?: SupabaseClient<Database>) {}
 
   /**
    * Get all contents with optional filter
@@ -156,5 +191,51 @@ export class ApiContentRepository implements IContentRepository {
     }
     const result = await res.json();
     return result.success;
+  }
+
+  /**
+   * Subscribe to content changes
+   * Requires a valid SupabaseClient instance passed via the constructor
+   */
+  subscribe(callback: (event: ContentEvent) => void): () => void {
+    if (!this.supabase) {
+      console.warn('Real-time subscription requires passing a SupabaseClient to ApiContentRepository');
+      return () => {};
+    }
+
+    const channel = this.supabase
+      .channel('ai_contents_changes_api')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'ai_contents',
+        },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            callback({
+              type: 'INSERT',
+              new: mapRowToContent(payload.new as SupabaseContentRow),
+            });
+          } else if (payload.eventType === 'UPDATE') {
+            callback({
+              type: 'UPDATE',
+              old: payload.old as Partial<Content>,
+              new: mapRowToContent(payload.new as SupabaseContentRow),
+            });
+          } else if (payload.eventType === 'DELETE') {
+            callback({
+              type: 'DELETE',
+              old: { id: payload.old.id },
+            });
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      this.supabase?.removeChannel(channel);
+    };
   }
 }

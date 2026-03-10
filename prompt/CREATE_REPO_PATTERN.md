@@ -836,7 +836,7 @@ export class Api[Entity]Repository implements I[Entity]Repository {
   }
 
   /**
-   * Example: Action with POST body
+   * Action with POST body
    */
   async customAction(id: string, action: string): Promise<void> {
     const res = await fetch(`${this.baseUrl}/${id}`, {
@@ -850,8 +850,59 @@ export class Api[Entity]Repository implements I[Entity]Repository {
       throw new Error(error.error || 'ไม่สามารถดำเนินการได้');
     }
   }
+
+  // ============================================================
+  // REAL-TIME (Optional)
+  // ============================================================
+
+  /**
+   * Subscribe to real-time changes
+   * Requires passing a SupabaseClient to the ApiRepository constructor
+   */
+  subscribe(callback: (event: any) => void): () => void {
+    if (!this.supabase) {
+      console.warn('Real-time subscription requires passing a SupabaseClient to ApiRepository');
+      return () => {};
+    }
+
+    const channel = this.supabase
+      .channel('[entities]_changes_api')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: '[entities]' },
+        (payload) => {
+          callback(payload);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      this.supabase?.removeChannel(channel);
+    };
+  }
 }
 ```
+
+### การจัดการ Realtime ใน ApiRepository
+
+แม้ว่า `ApiRepository` จะออกแบบมาเพื่อเน้นการใช้ `fetch` ผ่าน API Routes แต่สำหรับฟีเจอร์ที่ต้องใช้ **Realtime (WebSocket)** อย่าง Supabase Channels เราสามารถประยุกต์ใช้ได้ดังนี้:
+
+1. รับ `SupabaseClient` ผ่าน constructor:
+   ```typescript
+   constructor(private readonly supabase?: SupabaseClient<Database>) {}
+   ```
+2. ตอนสร้าง Factory ให้ส่ง **Browser Client** เท่านั้น:
+   ```typescript
+   // ClientFactory.ts
+   import { createBrowserClient } from '@/src/infrastructure/supabase/client';
+   
+   static create(): Presenter {
+     const supabase = createBrowserClient();
+     const repository = new ApiEntityRepository(supabase);
+     return new Presenter(repository);
+   }
+   ```
+   **คำเตือน**: ใช้ `supabase` `เฉพาะในเมธอด subscribe() เท่านั้น!` ห้ามนำไปใช้งาน CRUD operations เด็ดขาด เพื่อให้การ query ทั้งหมดยังวิ่งผ่าน API Routes อยู่
 
 ### Key Features
 

@@ -5,13 +5,13 @@
  */
 
 import {
-  Content,
-  ContentFilter,
-  ContentStats,
-  CreateContentDTO,
-  IContentRepository,
-  PaginatedResult,
-  UpdateContentDTO,
+    Content,
+    ContentFilter,
+    ContentStats,
+    CreateContentDTO,
+    IContentRepository,
+    PaginatedResult,
+    UpdateContentDTO,
 } from '@/src/application/repositories/IContentRepository';
 import { GeneratedContent, MOCK_CONTENTS } from '@/src/data/mock/mockContents';
 
@@ -174,6 +174,13 @@ export class MockContentRepository implements IContentRepository {
     }
     this.items.splice(index, 1);
     return true;
+  }
+
+  /**
+   * Subscribe to real-time content changes (dummy implementation)
+   */
+  subscribe(_callback: (event: any) => void): () => void {
+    return () => {};
   }
 
   // Helper method to simulate network delay

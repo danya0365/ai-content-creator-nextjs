@@ -72,6 +72,11 @@ export interface ContentStats {
   totalShares: number;
 }
 
+export type ContentEvent = 
+  | { type: 'INSERT'; new: Content }
+  | { type: 'UPDATE'; old: Partial<Content>; new: Content }
+  | { type: 'DELETE'; old: { id: string } };
+
 export interface PaginatedResult<T> {
   data: T[];
   total: number;
@@ -127,4 +132,10 @@ export interface IContentRepository {
    * Delete content
    */
   delete(id: string): Promise<boolean>;
+
+  /**
+   * Subscribe to real-time content changes
+   * Returns an unsubscribe function
+   */
+  subscribe(callback: (event: ContentEvent) => void): () => void;
 }

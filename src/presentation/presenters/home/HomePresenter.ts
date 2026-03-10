@@ -4,8 +4,8 @@
  * ✅ Uses dependency injection for repository
  */
 
-import { CONTENT_TYPES, ContentType, TIME_SLOTS, TimeSlotConfig } from '@/src/data/master/contentTypes';
 import { Content, ContentStats, IContentRepository } from '@/src/application/repositories/IContentRepository';
+import { CONTENT_TYPES, ContentType, TIME_SLOTS, TimeSlotConfig } from '@/src/data/master/contentTypes';
 import { Metadata } from 'next';
 
 export interface HomeViewModel {
@@ -60,5 +60,14 @@ export class HomePresenter {
         type: 'website',
       },
     };
+  }
+
+  /**
+   * Subscribe to content changes
+   */
+  subscribeToChanges(callback: () => void): () => void {
+    return this.repository.subscribe(() => {
+      callback();
+    });
   }
 }
