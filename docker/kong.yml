@@ -34,6 +34,7 @@ services:
           origins:
             - "http://localhost:3000"
             - "https://ai.await.life"
+            - "https://api.ai.await.life"
           methods:
             - GET
             - POST
@@ -72,6 +73,7 @@ services:
           origins:
             - "http://localhost:3000"
             - "https://ai.await.life"
+            - "https://api.ai.await.life"
           methods:
             - GET
             - POST
@@ -121,6 +123,7 @@ services:
           origins:
             - "http://localhost:3000"
             - "https://ai.await.life"
+            - "https://api.ai.await.life"
           methods:
             - GET
             - POST
@@ -159,6 +162,7 @@ services:
           origins:
             - "http://localhost:3000"
             - "https://ai.await.life"
+            - "https://api.ai.await.life"
           methods:
             - GET
             - POST
