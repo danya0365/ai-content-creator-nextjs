@@ -117,7 +117,7 @@ INSERT INTO
         updated_at
     )
 SELECT
-    uuid_generate_v4(),
+    extensions.uuid_generate_v4(),
     id,
     id,
     format('{"sub":"%s","email":"%s"}', id::text, email)::jsonb,

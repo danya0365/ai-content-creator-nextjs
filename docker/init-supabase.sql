@@ -128,7 +128,7 @@ CREATE TABLE IF NOT EXISTS storage.buckets (
 
 -- Objects table
 CREATE TABLE IF NOT EXISTS storage.objects (
-    id uuid DEFAULT uuid_generate_v4() PRIMARY KEY,
+    id uuid DEFAULT extensions.uuid_generate_v4() PRIMARY KEY,
     bucket_id text REFERENCES storage.buckets(id),
     name text,
     owner uuid,
@@ -156,7 +156,7 @@ ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY;
 
 -- Users table
 CREATE TABLE IF NOT EXISTS auth.users (
-    id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id uuid PRIMARY KEY DEFAULT extensions.uuid_generate_v4(),
     instance_id uuid,
     aud varchar(255),
     role varchar(255),

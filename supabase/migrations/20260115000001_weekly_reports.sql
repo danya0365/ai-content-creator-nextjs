@@ -7,7 +7,7 @@
 -- WEEKLY REPORTS TABLE
 -- ============================================================================
 CREATE TABLE IF NOT EXISTS public.ai_weekly_reports (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT extensions.uuid_generate_v4(),
   
   -- Period
   period_start DATE NOT NULL,

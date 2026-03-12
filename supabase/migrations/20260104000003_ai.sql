@@ -47,7 +47,7 @@ CREATE POLICY "ai_content_types_admin_all" ON public.ai_content_types
 -- ============================================================================
 -- NOTE: content_type_id refers to ai_content_types table
 CREATE TABLE IF NOT EXISTS public.ai_contents (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT extensions.uuid_generate_v4(),
   profile_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
   content_type_id TEXT NOT NULL REFERENCES public.ai_content_types(id) ON DELETE RESTRICT,
   title TEXT NOT NULL,
