@@ -6,7 +6,7 @@
 
 'use client';
 
-import { ApiContentRepository } from '@/src/infrastructure/repositories/api/ApiContentRepository';
+import { SupabaseContentRepository } from '@/src/infrastructure/repositories/SupabaseContentRepository';
 import { createClient } from '@/src/infrastructure/supabase/client';
 import { HomePresenter } from './HomePresenter';
 
@@ -15,8 +15,8 @@ export class HomePresenterClientFactory {
     // ✅ Use API Repository for client-side
     // ✅ Pass browser Supabase client *only* for realtime channel subscription
     const supabase = createClient();
-    const repository = new ApiContentRepository(supabase);
-    //const repository = new SupabaseContentRepository(supabase);
+    //const repository = new ApiContentRepository(supabase);
+    const repository = new SupabaseContentRepository(supabase);
 
     return new HomePresenter(repository);
   }
