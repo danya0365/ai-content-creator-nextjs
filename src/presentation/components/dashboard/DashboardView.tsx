@@ -87,39 +87,41 @@ function ContentCard({ content, delay }: ContentCardProps) {
 
   return (
     <animated.div style={springProps}>
-      <JellyCard className="glass-card-hover p-4 group">
-        {/* Image placeholder */}
-        <div className="w-full aspect-square rounded-xl bg-gradient-to-br from-violet-500/20 to-fuchsia-500/20 mb-3 flex items-center justify-center overflow-hidden relative">
-          <SmartImage
-            src={content.imageUrl}
-            alt={content.title}
-            fill
-            className="object-cover group-hover:scale-110 transition-transform duration-300"
-            sizes="(max-width: 768px) 50vw, 33vw"
-            containerClassName="w-full h-full flex items-center justify-center absolute inset-0"
-            emojiClassName="text-4xl group-hover:scale-110 transition-transform duration-300"
-          />
-        </div>
-        
-        {/* Content info */}
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <span className={`text-xs px-2 py-1 rounded-full ${statusColors[content.status]}`}>
-              {content.status === 'published' ? '✅ Published' : 
-               content.status === 'scheduled' ? '📅 Scheduled' : 
-               content.status === 'draft' ? '📝 Draft' : '❌ Failed'}
-            </span>
-            <span className="text-xs text-muted">{content.timeSlot}</span>
+      <Link href={`/content/${content.id}`} className="block h-full group">
+        <JellyCard className="glass-card-hover p-4 h-full cursor-pointer">
+          {/* Image placeholder */}
+          <div className="w-full aspect-square rounded-xl bg-gradient-to-br from-violet-500/20 to-fuchsia-500/20 mb-3 flex items-center justify-center overflow-hidden relative">
+            <SmartImage
+              src={content.imageUrl}
+              alt={content.title}
+              fill
+              className="object-cover group-hover:scale-110 transition-transform duration-300"
+              sizes="(max-width: 768px) 50vw, 33vw"
+              containerClassName="w-full h-full flex items-center justify-center absolute inset-0"
+              emojiClassName="text-4xl group-hover:scale-110 transition-transform duration-300"
+            />
           </div>
-          <h4 className="text-sm font-semibold text-foreground line-clamp-2">{content.title}</h4>
-          {content.status === 'published' && (
-            <div className="flex items-center gap-3 text-xs text-muted">
-              <span>❤️ {content.likes}</span>
-              <span>🔗 {content.shares}</span>
+          
+          {/* Content info */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <span className={`text-xs px-2 py-1 rounded-full ${statusColors[content.status]}`}>
+                {content.status === 'published' ? '✅ Published' : 
+                 content.status === 'scheduled' ? '📅 Scheduled' : 
+                 content.status === 'draft' ? '📝 Draft' : '❌ Failed'}
+              </span>
+              <span className="text-xs text-muted">{content.timeSlot}</span>
             </div>
-          )}
-        </div>
-      </JellyCard>
+            <h4 className="text-sm font-semibold text-foreground line-clamp-2">{content.title}</h4>
+            {content.status === 'published' && (
+              <div className="flex items-center gap-3 text-xs text-muted">
+                <span>❤️ {content.likes}</span>
+                <span>🔗 {content.shares}</span>
+              </div>
+            )}
+          </div>
+        </JellyCard>
+      </Link>
     </animated.div>
   );
 }
@@ -369,23 +371,25 @@ export function DashboardView({ initialViewModel }: DashboardViewProps) {
                   <h3 className="text-sm font-semibold text-foreground mb-3">📅 กำลังจะโพสต์</h3>
                   <div className="space-y-2">
                     {viewModel.scheduledContents.slice(0, 3).map((content) => (
-                      <JellyCard key={content.id} className="glass-card p-3 flex items-center gap-3">
-                        <div className="w-10 h-10 flex-shrink-0 rounded-lg bg-gradient-to-br from-violet-500/20 to-fuchsia-500/20 overflow-hidden relative">
-                          <SmartImage
-                            src={content.imageUrl}
-                            alt={content.title}
-                            fill
-                            className="object-cover"
-                            sizes="40px"
-                            emojiClassName="text-xl"
-                            containerClassName="w-full h-full flex items-center justify-center absolute inset-0"
-                          />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="text-xs font-medium text-foreground truncate">{content.title}</div>
-                          <div className="text-xs text-muted">{content.timeSlot}</div>
-                        </div>
-                      </JellyCard>
+                      <Link key={content.id} href={`/content/${content.id}`} className="block">
+                        <JellyCard className="glass-card-hover p-3 flex items-center gap-3 cursor-pointer">
+                          <div className="w-10 h-10 flex-shrink-0 rounded-lg bg-gradient-to-br from-violet-500/20 to-fuchsia-500/20 overflow-hidden relative">
+                            <SmartImage
+                              src={content.imageUrl}
+                              alt={content.title}
+                              fill
+                              className="object-cover"
+                              sizes="40px"
+                              emojiClassName="text-xl"
+                              containerClassName="w-full h-full flex items-center justify-center absolute inset-0"
+                            />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="text-xs font-medium text-foreground truncate">{content.title}</div>
+                            <div className="text-xs text-muted">{content.timeSlot}</div>
+                          </div>
+                        </JellyCard>
+                      </Link>
                     ))}
                   </div>
                 </div>
