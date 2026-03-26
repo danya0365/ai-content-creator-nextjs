@@ -20,7 +20,15 @@ import { getToneById } from '@/src/data/master/tones';
 /**
  * Generate content prompt based on type and topic
  */
-function buildPrompt(contentType: ContentType, topic: string, timeSlot: string, language: string, imageStyle: string): string {
+function buildPrompt(
+  contentType: ContentType, 
+  topic: string, 
+  timeSlot: string, 
+  language: string, 
+  imageStyle: string,
+  platformId?: string,
+  toneId?: string
+): string {
   const timeContext = {
     morning: 'เช้าวันใหม่ที่สดใส',
     lunch: 'ช่วงพักเที่ยง',
@@ -29,14 +37,25 @@ function buildPrompt(contentType: ContentType, topic: string, timeSlot: string, 
   }[timeSlot] || '';
 
   const style = getImageStyleById(imageStyle);
+  const platform = platformId ? getPlatformById(platformId) : null;
+  const tone = toneId ? getToneById(toneId) : null;
 
-  return `
-You are a creative content creator specializing in ${contentType.name} content. 
+  let prompt = `You are a creative content creator specializing in ${contentType.name} content. 
 Create engaging social media content about: "${topic}"
 
 Context: This content will be posted during ${timeContext}.
 Content Type: ${contentType.name} - ${contentType.description}
-Language: ${language === 'th' ? 'Thai' : 'English'}
+Language: ${language === 'th' ? 'Thai' : 'English'}`;
+
+  if (platform) {
+    prompt += `\n\n[CRITICAL SOCIAL PLATFORM CONSTRAINTS: ${platform.nameEn}]\n${platform.promptGuidance}`;
+  }
+  
+  if (tone) {
+    prompt += `\n\n[TONE OF VOICE: ${tone.nameEn}]\n${tone.promptModifier}`;
+  }
+
+  prompt += `
 
 Please provide:
 1. A catchy title (max 50 chars)
@@ -52,6 +71,8 @@ Format your response as JSON:
   "hashtags": ["#tag1", "#tag2", ...]
 }
 `;
+
+  return prompt;
 }
 
 /**

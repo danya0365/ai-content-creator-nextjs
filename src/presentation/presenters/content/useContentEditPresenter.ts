@@ -18,6 +18,7 @@ export interface ContentFormData {
   prompt: string;
   timeSlot: string;
   hashtags: string[];
+  imageUrl: string;
 }
 
 // Time slot option
@@ -42,6 +43,7 @@ const emptyFormData: ContentFormData = {
   prompt: '',
   timeSlot: 'morning',
   hashtags: [],
+  imageUrl: '',
 };
 
 export interface ContentEditPresenterState {
@@ -66,6 +68,8 @@ export interface ContentEditPresenterActions {
   removeHashtag: (tag: string) => void;
   saveContent: () => Promise<void>;
   regenerateContent: () => Promise<void>;
+  regenerateImage: () => Promise<void>;
+  regenerateDescription: () => Promise<void>;
 }
 
 export function useContentEditPresenter(
@@ -94,7 +98,8 @@ export function useContentEditPresenter(
       description: content.description,
       prompt: content.prompt,
       timeSlot: content.timeSlot,
-      hashtags: ['#PixelArt', '#AI', '#Content', '#Creative', '#Tech'],
+      hashtags: content.tags || ['#PixelArt', '#AI', '#Content'],
+      imageUrl: content.imageUrl || '',
     } : emptyFormData
   );
   const [isSaving, setIsSaving] = useState(false);
@@ -112,7 +117,8 @@ export function useContentEditPresenter(
           description: newViewModel.content.description,
           prompt: newViewModel.content.prompt,
           timeSlot: newViewModel.content.timeSlot,
-          hashtags: ['#PixelArt', '#AI', '#Content', '#Creative', '#Tech'],
+          hashtags: newViewModel.content.tags || ['#PixelArt', '#AI', '#Content'],
+          imageUrl: newViewModel.content.imageUrl || '',
         });
       }
     } catch (err) {
@@ -149,29 +155,126 @@ export function useContentEditPresenter(
 
   // Save content
   const saveContent = useCallback(async () => {
+    if (!content) return;
     setIsSaving(true);
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-      console.log('Saved:', formData);
+      const response = await fetch(`/api/contents/${content.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: formData.title,
+          description: formData.description,
+          prompt: formData.prompt,
+          timeSlot: formData.timeSlot,
+          hashtags: formData.hashtags,
+          imageUrl: formData.imageUrl,
+        }),
+      });
+      if (!response.ok) throw new Error('Failed to save content');
+      await refresh(content.id);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save');
     } finally {
       setIsSaving(false);
     }
-  }, [formData]);
+  }, [formData, content, refresh]);
 
-  // Regenerate content
+  // Regenerate content (Text + Image)
   const regenerateContent = useCallback(async () => {
+    if (!content) return;
     setIsRegenerating(true);
     try {
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-      console.log('Regenerated');
+      const response = await fetch('/api/ai/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contentTypeId: content.contentTypeId,
+          topic: formData.title || 'คอนเทนต์น่าสนใจ',
+          timeSlot: formData.timeSlot,
+          imageStyle: 'pixel-art', // Default fallback
+          generateImage: true,
+        }),
+      });
+      if (!response.ok) throw new Error('API error');
+      const data = await response.json();
+      if (data.success && data.content) {
+        setFormData(prev => ({
+          ...prev,
+          title: data.content.title,
+          description: data.content.description,
+          prompt: data.content.prompt,
+          hashtags: data.content.tags || prev.hashtags,
+          imageUrl: data.content.imageUrl || prev.imageUrl,
+        }));
+      } else {
+        throw new Error(data.error || 'Failed to regenerate');
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to regenerate');
     } finally {
       setIsRegenerating(false);
     }
-  }, []);
+  }, [formData, content]);
+
+  // Regenerate Image only
+  const regenerateImage = useCallback(async () => {
+    if (!formData.prompt) return;
+    setIsRegenerating(true);
+    try {
+      const response = await fetch('/api/ai/image', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          imagePrompt: formData.prompt,
+          imageStyle: 'pixel-art', // Default fallback
+        }),
+      });
+      if (!response.ok) throw new Error('API error');
+      const data = await response.json();
+      if (data.success && data.imageUrl) {
+        setFormData(prev => ({ ...prev, imageUrl: data.imageUrl }));
+      } else {
+        throw new Error(data.error || 'Failed to generate image');
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to regenerate image');
+    } finally {
+      setIsRegenerating(false);
+    }
+  }, [formData.prompt]);
+
+  // Regenerate Description only
+  const regenerateDescription = useCallback(async () => {
+    if (!content) return;
+    setIsRegenerating(true);
+    try {
+      const response = await fetch('/api/ai/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contentTypeId: content.contentTypeId,
+          topic: formData.title || 'คอนเทนต์น่าสนใจ',
+          timeSlot: formData.timeSlot,
+          imageStyle: 'pixel-art', // Required field by interface, ignored since generateImage=false
+          generateImage: false,    // Skip image generation
+        }),
+      });
+      if (!response.ok) throw new Error('API error');
+      const data = await response.json();
+      if (data.success && data.content) {
+        setFormData(prev => ({
+          ...prev,
+          description: data.content.description,
+        }));
+      } else {
+        throw new Error(data.error || 'Failed to regenerate description');
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to regenerate description');
+    } finally {
+      setIsRegenerating(false);
+    }
+  }, [formData.title, formData.timeSlot, content]);
 
   useEffect(() => {
     if (!initialViewModel && contentId) {
@@ -199,6 +302,8 @@ export function useContentEditPresenter(
       removeHashtag,
       saveContent,
       regenerateContent,
+      regenerateImage,
+      regenerateDescription,
     },
   ];
 }

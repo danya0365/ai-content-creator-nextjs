@@ -152,9 +152,20 @@ export function ContentEditView({ contentId, initialViewModel }: ContentEditView
 
               {/* Description */}
               <JellyCard className="glass-card p-5">
-                <label className="block text-sm font-medium text-foreground mb-2">
-                  📄 Description
-                </label>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-sm font-medium text-foreground">
+                    📄 Description
+                  </label>
+                  <JellyButton
+                    onClick={actions.regenerateDescription}
+                    disabled={state.isRegenerating}
+                    variant="ghost"
+                    size="sm"
+                    className="text-muted hover:text-foreground"
+                  >
+                    {state.isRegenerating ? '⏳...' : '✨ Gen Description'}
+                  </JellyButton>
+                </div>
                 <textarea
                   value={state.formData.description}
                   onChange={(e) => actions.updateFormData({ description: e.target.value })}
@@ -170,14 +181,24 @@ export function ContentEditView({ contentId, initialViewModel }: ContentEditView
                   <label className="text-sm font-medium text-foreground">
                     🤖 AI Prompt
                   </label>
-                  <JellyButton
-                    onClick={actions.regenerateContent}
-                    disabled={state.isRegenerating}
-                    variant="ghost"
-                    size="sm"
-                  >
-                    {state.isRegenerating ? '⏳ Generating...' : '✨ Regenerate Image'}
-                  </JellyButton>
+                  <div className="flex gap-2">
+                    <JellyButton
+                      onClick={actions.regenerateContent}
+                      disabled={state.isRegenerating}
+                      variant="ghost"
+                      size="sm"
+                    >
+                      {state.isRegenerating ? '⏳...' : '📝 Gen เนื้อหาใหม่'}
+                    </JellyButton>
+                    <JellyButton
+                      onClick={actions.regenerateImage}
+                      disabled={state.isRegenerating}
+                      variant="ghost"
+                      size="sm"
+                    >
+                      {state.isRegenerating ? '⏳...' : '✨ Gen รูปใหม่'}
+                    </JellyButton>
+                  </div>
                 </div>
                 <textarea
                   value={state.formData.prompt}
@@ -261,12 +282,14 @@ export function ContentEditView({ contentId, initialViewModel }: ContentEditView
                 {/* Preview Card */}
                 <div className="glass-card p-4 rounded-xl">
                   {/* Image */}
-                  <div className={`aspect-video rounded-xl bg-gradient-to-br from-violet-500/30 via-purple-500/20 to-fuchsia-500/30 flex items-center justify-center mb-4 relative ${state.isRegenerating ? 'animate-pulse' : ''}`}>
+                  <div className={`aspect-video rounded-xl bg-gradient-to-br from-violet-500/30 via-purple-500/20 to-fuchsia-500/30 flex items-center justify-center mb-4 relative overflow-hidden ${state.isRegenerating ? 'animate-pulse' : ''}`}>
                     {state.isRegenerating ? (
                       <div className="text-center">
                         <span className="text-4xl mb-2 block animate-spin">✨</span>
                         <span className="text-sm text-muted">Generating...</span>
                       </div>
+                    ) : state.formData.imageUrl ? (
+                      <img src={state.formData.imageUrl} alt="Preview" className="w-full h-full object-cover" />
                     ) : (
                       <span className="text-6xl">🎨</span>
                     )}

@@ -126,6 +126,9 @@ export async function POST(request: NextRequest) {
       topic,
       timeSlot: currentTimeSlot.id,
       language: 'th',
+      imageStyle: 'pixel-art', // Required field
+      platform: 'facebook', // Default
+      tone: 'casual', // Default
     });
 
     if (!contentResult.success) {
@@ -140,6 +143,7 @@ export async function POST(request: NextRequest) {
     if (contentResult.imagePrompt) {
       const imageResult = await imageService.generateImage({
         imagePrompt: contentResult.imagePrompt,
+        imageStyle: 'pixel-art', // Required field
       });
 
       // Upload to storage if generation was successful
