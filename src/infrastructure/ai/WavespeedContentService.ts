@@ -12,6 +12,7 @@
 import {
   GenerateContentRequest,
   GenerateContentResponse,
+  GenerateTopicIdeaResponse,
   IContentService,
 } from '@/src/application/services/IContentService';
 import {
@@ -214,5 +215,56 @@ export class WavespeedContentService implements IContentService {
       success: false,
       error: 'Polling timed out after 60 seconds',
     };
+  }
+
+  async generateTopicIdea(contentType: ContentType): Promise<GenerateTopicIdeaResponse> {
+    if (!this.apiKey) return { success: false, error: 'No Wavespeed API key' };
+    try {
+      // 1. Submit the task
+      const submitResponse = await fetch(`${this.baseUrl}/${this.modelUuid}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.apiKey}`,
+        },
+        body: JSON.stringify({
+          messages: [
+            { role: 'system', content: 'You are a creative brainstorming assistant. Reply with ONLY ONE short, engaging topic idea (in Thai) for the requested category. Do not include any quotes or markdown formatting.' },
+            { role: 'user', content: `Generate one topic idea about ${contentType.nameTh} (${contentType.name}).` }
+          ],
+          temperature: 0.9, max_tokens: 100,
+        }),
+      });
+
+      if (!submitResponse.ok) return { success: false, error: `Wavespeed API error: ${submitResponse.status}` };
+      const submitData = await submitResponse.json();
+      const taskId = submitData.data?.id || submitData.id;
+      const pollUrl = submitData.data?.urls?.get || submitData.urls?.get || `${this.baseUrl}/predictions/${taskId}/result`;
+
+      // 2. Poll for results (fast polling for idea generation)
+      for (let i = 0; i < 20; i++) {
+        const pollResponse = await fetch(pollUrl, {
+          method: 'GET',
+          headers: { 'Authorization': `Bearer ${this.apiKey}` },
+        });
+
+        if (pollResponse.ok) {
+          const data = await pollResponse.json();
+          const status = data.data?.status || data.status;
+
+          if (status === 'completed' || status === 'success') {
+            const outputs = data.data?.outputs || data.outputs;
+            const idea = outputs?.[0]?.replace(/["*/]/g, '').trim();
+            return { success: !!idea, idea, error: idea ? undefined : 'No idea generated' };
+          } else if (status === 'failed') {
+            return { success: false, error: `Task failed` };
+          }
+        }
+        await new Promise(resolve => setTimeout(resolve, 1500));
+      }
+      return { success: false, error: 'Polling timed out' };
+    } catch (e) {
+      return { success: false, error: e instanceof Error ? e.message : 'Unknown error' };
+    }
   }
 }

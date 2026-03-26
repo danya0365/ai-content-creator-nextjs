@@ -25,9 +25,16 @@ export interface GenerateContentResponse {
   error?: string;
 }
 
+export interface GenerateTopicIdeaResponse {
+  success: boolean;
+  idea?: string;
+  error?: string;
+}
+
 /**
  * Interface for content generation services
  */
 export interface IContentService {
   generateContent(request: GenerateContentRequest): Promise<GenerateContentResponse>;
+  generateTopicIdea(contentType: ContentType): Promise<GenerateTopicIdeaResponse>;
 }

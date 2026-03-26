@@ -9,6 +9,7 @@
 import {
   GenerateContentRequest,
   GenerateContentResponse,
+  GenerateTopicIdeaResponse,
   IContentService,
 } from '@/src/application/services/IContentService';
 import { ContentType } from '@/src/data/master/contentTypes';
@@ -140,6 +141,27 @@ export class GeminiContentService implements IContentService {
         success: false,
         error: errorMessage,
       };
+    }
+  }
+
+  async generateTopicIdea(contentType: ContentType): Promise<GenerateTopicIdeaResponse> {
+    if (!this.apiKey) return { success: false, error: 'No Gemini API key' };
+    try {
+      const prompt = `You are a creative brainstorming assistant. Reply with ONLY ONE short, engaging topic idea (in Thai) for a ${contentType.nameTh} (${contentType.name}) content. Do not include any quotes or markdown formatting.`;
+      const response = await fetch(`${this.baseUrl}/models/gemini-2.0-flash:generateContent?key=${this.apiKey}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: { temperature: 0.9, maxOutputTokens: 100 },
+        }),
+      });
+      if (!response.ok) return { success: false, error: `Gemini API error: ${response.status}` };
+      const data = await response.json();
+      const idea = data.candidates?.[0]?.content?.parts?.[0]?.text?.replace(/["*/]/g, '').trim();
+      return { success: !!idea, idea, error: idea ? undefined : 'No idea generated' };
+    } catch (e) {
+      return { success: false, error: e instanceof Error ? e.message : 'Unknown error' };
     }
   }
 }

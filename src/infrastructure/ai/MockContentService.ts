@@ -9,8 +9,10 @@
 import {
     GenerateContentRequest,
     GenerateContentResponse,
+    GenerateTopicIdeaResponse,
     IContentService,
 } from '@/src/application/services/IContentService';
+import { ContentType } from '@/src/data/master/contentTypes';
 import { getImageStyleById } from '@/src/data/master/imageStyles';
 
 export class MockContentService implements IContentService {
@@ -43,6 +45,20 @@ export class MockContentService implements IContentService {
       prompt: `Create content about ${request.topic}`,
       imagePrompt: `Create ${style.contentPromptInstruction} about ${request.topic}. ${style.promptModifier}`,
       hashtags: ['#AIContent', '#Creative', '#Digital'],
+    };
+  }
+
+  async generateTopicIdea(contentType: ContentType): Promise<GenerateTopicIdeaResponse> {
+    await new Promise((resolve) => setTimeout(resolve, this.delay));
+    const ideas = [
+      `10 ไอเดียสุดเจ๋งเกี่ยวกับ ${contentType.nameTh}`,
+      `เคล็ดลับการทำ ${contentType.nameTh} ให้ปัง`,
+      `สรุปสั้นๆ เรื่อง ${contentType.nameTh} ที่ควรรู้`,
+      `มีอะไรใหม่ในวงการ ${contentType.nameTh}`,
+    ];
+    return {
+      success: true,
+      idea: ideas[Math.floor(Math.random() * ideas.length)],
     };
   }
 }

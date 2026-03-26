@@ -30,6 +30,7 @@ export function GenerateContentModal({ isOpen, onClose, onGenerate }: GenerateCo
   const [isGenerating, setIsGenerating] = useState(false);
   const initialData = useGenerateStore((state) => state.initialData);
 
+  const [isGeneratingIdea, setIsGeneratingIdea] = useState(false);
   const [formData, setFormData] = useState<GenerateFormData>({
     contentTypeId: '',
     timeSlot: 'morning',
@@ -96,6 +97,32 @@ export function GenerateContentModal({ isOpen, onClose, onGenerate }: GenerateCo
   const handleClose = () => {
     setStep(1);
     onClose();
+  };
+
+  const handleGenerateIdea = async (e: React.MouseEvent) => {
+    // Prevent event propagation so clicking the button inside the form doesn't trigger anything else
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (!formData.contentTypeId) return;
+    try {
+      setIsGeneratingIdea(true);
+      const url = `/api/ai/ideas?contentTypeId=${formData.contentTypeId}`;
+      const response = await fetch(url);
+      if (!response.ok) throw new Error('API error');
+      const data = await response.json();
+      if (data.success && data.idea) {
+        setFormData((prev) => ({ ...prev, topic: data.idea }));
+      } else {
+        throw new Error(data.error || 'Failed to generate idea');
+      }
+    } catch (err) {
+      console.error('Error generating idea:', err);
+      const typeName = CONTENT_TYPES.find((c) => c.id === formData.contentTypeId)?.nameTh || '';
+      setFormData((prev) => ({ ...prev, topic: `เรื่องน่าสนใจเกี่ยวกับ ${typeName}` }));
+    } finally {
+      setIsGeneratingIdea(false);
+    }
   };
 
   if (!isOpen) return null;
@@ -182,9 +209,24 @@ export function GenerateContentModal({ isOpen, onClose, onGenerate }: GenerateCo
 
             {/* Topic input */}
             <div>
-              <label className="block text-sm font-medium text-foreground mb-2">
-                หัวข้อ / ไอเดีย
-              </label>
+              <div className="flex justify-between items-center mb-2">
+                <label className="block text-sm font-medium text-foreground">
+                  หัวข้อ / ไอเดีย
+                </label>
+                <button
+                  onClick={handleGenerateIdea}
+                  disabled={isGeneratingIdea}
+                  className="text-xs flex items-center gap-1.5 font-medium bg-violet-500/10 text-violet-400 hover:bg-violet-500/20 px-2.5 py-1.5 rounded-lg transition-colors disabled:opacity-50"
+                  title="สุ่มไอเดียที่เกี่ยวข้องกับหมวดหมู่นี้"
+                >
+                  {isGeneratingIdea ? (
+                    <span className="w-3.5 h-3.5 border-2 border-violet-400/30 border-t-violet-400 rounded-full animate-spin" />
+                  ) : (
+                    <span className="text-sm">🎲</span>
+                  )}
+                  <span>สุ่มไอเดีย</span>
+                </button>
+              </div>
               <textarea
                 value={formData.topic}
                 onChange={(e) => setFormData((prev) => ({ ...prev, topic: e.target.value }))}

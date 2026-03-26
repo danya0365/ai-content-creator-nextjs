@@ -12,6 +12,7 @@
 import {
     GenerateContentRequest,
     GenerateContentResponse,
+    GenerateTopicIdeaResponse,
     IContentService,
 } from '@/src/application/services/IContentService';
 import { ContentType } from '@/src/data/master/contentTypes';
@@ -134,6 +135,30 @@ export class GroqContentService implements IContentService {
         success: false,
         error: errorMessage,
       };
+    }
+  }
+
+  async generateTopicIdea(contentType: ContentType): Promise<GenerateTopicIdeaResponse> {
+    if (!this.apiKey) return { success: false, error: 'No Groq API key' };
+    try {
+      const response = await fetch(`${this.baseUrl}/chat/completions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${this.apiKey}` },
+        body: JSON.stringify({
+          model: this.model,
+          messages: [
+            { role: 'system', content: 'You are a creative brainstorming assistant. Reply with ONLY ONE short, engaging topic idea (in Thai) for the requested category. Do not include any quotes or markdown formatting.' },
+            { role: 'user', content: `Generate one topic idea about ${contentType.nameTh} (${contentType.name}).` }
+          ],
+          temperature: 0.9, max_tokens: 100,
+        }),
+      });
+      if (!response.ok) return { success: false, error: `Groq API error: ${response.status}` };
+      const data = await response.json();
+      const idea = data.choices?.[0]?.message?.content?.replace(/["*/]/g, '').trim();
+      return { success: !!idea, idea, error: idea ? undefined : 'No idea generated' };
+    } catch (e) {
+      return { success: false, error: e instanceof Error ? e.message : 'Unknown error' };
     }
   }
 }
