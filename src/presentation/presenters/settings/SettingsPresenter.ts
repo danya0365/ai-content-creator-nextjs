@@ -14,6 +14,7 @@ export interface AppSettings {
   defaultTimeSlot: string;
   contentQuality: 'standard' | 'high' | 'ultra';
   language: 'th' | 'en';
+  brandContext?: string;
   notifications: {
     onGenerate: boolean;
     onPublish: boolean;
@@ -48,6 +49,7 @@ const defaultSettings: AppSettings = {
   defaultTimeSlot: 'morning',
   contentQuality: 'high',
   language: 'th',
+  brandContext: '',
   notifications: {
     onGenerate: true,
     onPublish: true,

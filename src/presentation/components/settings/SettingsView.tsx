@@ -265,6 +265,20 @@ export function SettingsView({ initialViewModel }: SettingsViewProps) {
             </SettingRow>
           </SettingsSection>
 
+          {/* Brand Persona Settings */}
+          <SettingsSection title="Brand Persona" icon="🧠" delay={125}>
+            <div className="flex flex-col gap-2">
+              <div className="text-sm font-medium text-foreground">กฎส่วนตัวและสไตล์แบรนด์ (Custom Instructions)</div>
+              <div className="text-xs text-muted">บอก AI ว่าคุณเป็นใคร และอยากให้ออกแบบเนื้อหาแบบไหน (เช่น 'แบรนด์เราชื่อ Acme, พูดเป็นกันเอง, ห้ามใช้คำวิชาการ')</div>
+              <textarea
+                value={state.settings.brandContext || ''}
+                onChange={(e) => actions.updateSettings({ brandContext: e.target.value })}
+                placeholder="พิมพ์คำสั่งหรือข้อมูลแบรนด์ของคุณที่นี่..."
+                className="w-full mt-2 px-4 py-3 min-h-[120px] rounded-xl glass-card text-sm text-foreground placeholder-muted focus:outline-none focus:ring-2 focus:ring-violet-500/50 resize-y scrollbar-thin"
+              />
+            </div>
+          </SettingsSection>
+
           {/* Content Settings */}
           <SettingsSection title="Content Generation" icon="✨" delay={150}>
             <SettingRow label="คุณภาพคอนเทนต์" description="ระดับความละเอียดของรูปภาพ">
@@ -354,30 +368,7 @@ export function SettingsView({ initialViewModel }: SettingsViewProps) {
             </SettingRow>
           </SettingsSection>
         </div>
-
-        {/* Blur Overlay */}
-        <div className="absolute inset-0 z-50 flex flex-col items-center justify-center p-6 bg-background/50 backdrop-blur-md rounded-2xl m-4 border border-border/10">
-          <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-violet-500 to-fuchsia-500 flex items-center justify-center text-4xl shadow-lg shadow-purple-500/25 mb-6 animate-bounce">
-            🚧
-          </div>
-          <h2 className="text-3xl font-bold text-foreground mb-3 text-center">
-            Coming in <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-fuchsia-400">Phase 2</span>
-          </h2>
-          <p className="text-muted text-center max-w-md mb-8">
-            หน้านี้กำลังอยู่ระหว่างการพัฒนา 
-            ระบบตั้งค่าทั้งหมดจะถูกเปิดให้ใช้งานอย่างสมบูรณ์ในเฟสถัดไปครับ 🚀
-          </p>
-          <JellyButton
-            variant="primary"
-            onClick={() => window.location.href = '/dashboard'}
-            size="lg"
-          >
-            <span>🏠</span>
-            <span>กลับไปหน้า Dashboard</span>
-          </JellyButton>
-        </div>
-
-        </div>
+      </div>
       </div>
     </MainLayout>
   );

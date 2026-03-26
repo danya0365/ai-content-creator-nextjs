@@ -5,6 +5,7 @@
 
 import { GeneratedContent } from '@/src/data/mock/mockContents';
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 import { GenerateFormData } from '../components/generate/GenerateContentModal';
 
 interface GenerateState {
@@ -33,8 +34,10 @@ const initialState: GenerateState = {
   initialData: null,
 };
 
-export const useGenerateStore = create<GenerateStore>((set) => ({
-  ...initialState,
+export const useGenerateStore = create<GenerateStore>()(
+  persist(
+    (set) => ({
+      ...initialState,
 
   openModal: (data) => set({ isModalOpen: true, initialData: data || null }),
   
@@ -44,6 +47,19 @@ export const useGenerateStore = create<GenerateStore>((set) => ({
     set({ isGenerating: true, error: null });
 
     try {
+      // Step 1: Extract brandContext dynamically
+      let brandContext = '';
+      if (typeof window !== 'undefined') {
+        try {
+          const stored = localStorage.getItem('appSettings');
+          if (stored) {
+            brandContext = JSON.parse(stored).brandContext || '';
+          }
+        } catch (e) {
+          console.error('Failed to parse appSettings from localStorage for brand injection');
+        }
+      }
+
       const aiResponse = await fetch('/api/ai/generate-multi', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -54,6 +70,7 @@ export const useGenerateStore = create<GenerateStore>((set) => ({
           imageStyle: data.imageStyle,
           platforms: data.platforms,
           tone: data.tone,
+          brandContext,
         }),
       });
 
@@ -132,4 +149,12 @@ export const useGenerateStore = create<GenerateStore>((set) => ({
   clearError: () => set({ error: null }),
 
   reset: () => set(initialState),
-}));
+  }),
+  {
+    name: 'ai-creator-generate-store',
+    partialize: (state) => ({
+      generatedContent: state.generatedContent,
+      initialData: state.initialData,
+    }),
+  }
+));

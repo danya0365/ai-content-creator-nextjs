@@ -43,6 +43,7 @@ const defaultSettings: AppSettings = {
   defaultTimeSlot: 'morning',
   contentQuality: 'high',
   language: 'th',
+  brandContext: '',
   notifications: {
     onGenerate: true,
     onPublish: true,
@@ -77,8 +78,22 @@ export function useSettingsPresenter(
     setError(null);
     try {
       const newViewModel = await presenter.getViewModel();
+      
+      // Load settings from localStorage if available
+      let loadedSettings = newViewModel.settings;
+      try {
+        if (typeof window !== 'undefined') {
+          const stored = localStorage.getItem('appSettings');
+          if (stored) {
+            loadedSettings = { ...loadedSettings, ...JSON.parse(stored) };
+          }
+        }
+      } catch (e) {
+        console.error('Failed to parse settings from localStorage', e);
+      }
+
       setViewModel(newViewModel);
-      setSettings(newViewModel.settings);
+      setSettings(loadedSettings);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error');
     } finally {
@@ -110,9 +125,14 @@ export function useSettingsPresenter(
   const saveSettings = useCallback(async () => {
     setIsSaving(true);
     try {
-      // In production, save to database/localStorage
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      console.log('Settings saved:', settings);
+      // Save directly to localStorage
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('appSettings', JSON.stringify(settings));
+      }
+      
+      // Simulate network delay for UX feedback
+      await new Promise((resolve) => setTimeout(resolve, 800));
+      console.log('Settings saved to localStorage:', settings);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save settings');
     } finally {

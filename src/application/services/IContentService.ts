@@ -15,6 +15,7 @@ export interface GenerateContentRequest {
   imageStyle: string;
   platform?: string;
   tone?: string;
+  brandContext?: string;
 }
 
 export interface GenerateContentResponse {

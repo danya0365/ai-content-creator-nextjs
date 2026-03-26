@@ -23,6 +23,7 @@ interface AIGenerateRequest {
   generateImage?: boolean; // Optional: whether to generate image
   platform?: string;
   tone?: string;
+  brandContext?: string;
 }
 
 export async function POST(request: NextRequest) {
@@ -39,7 +40,8 @@ export async function POST(request: NextRequest) {
       imageStyle, 
       generateImage = true,
       platform,
-      tone
+      tone,
+      brandContext
     } = body;
 
     // Validate request
@@ -70,6 +72,7 @@ export async function POST(request: NextRequest) {
       imageStyle,
       platform,
       tone,
+      brandContext,
       language: 'th',
     });
 

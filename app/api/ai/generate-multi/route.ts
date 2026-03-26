@@ -21,6 +21,7 @@ interface AIMultiGenerateRequest {
   imageStyle: string;
   platforms: string[]; // array of platforms to target
   tone?: string;
+  brandContext?: string;
 }
 
 export async function POST(request: NextRequest) {
@@ -35,7 +36,8 @@ export async function POST(request: NextRequest) {
       timeSlot, 
       imageStyle, 
       platforms,
-      tone
+      tone,
+      brandContext
     } = body;
 
     // Validate
@@ -66,6 +68,7 @@ export async function POST(request: NextRequest) {
         imageStyle,
         platform,
         tone,
+        brandContext,
         language: 'th',
       })
     );

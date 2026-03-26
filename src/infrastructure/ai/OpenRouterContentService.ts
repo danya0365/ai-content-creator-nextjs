@@ -31,7 +31,8 @@ function buildPrompt(
   language: string, 
   imageStyle: string,
   platformId?: string,
-  toneId?: string
+  toneId?: string,
+  brandContext?: string
 ): string {
   const timeContext = {
     morning: 'เช้าวันใหม่ที่สดใส',
@@ -57,6 +58,10 @@ Language: ${language === 'th' ? 'Thai' : 'English'}`;
   
   if (tone) {
     prompt += `\n\n[TONE OF VOICE: ${tone.nameEn}]\n${tone.promptModifier}`;
+  }
+
+  if (brandContext && brandContext.trim() !== '') {
+    prompt += `\n\n[BRAND PERSONA & CUSTOM INSTRUCTIONS]\nYou must strictly adhere to the following brand guidelines and styles:\n${brandContext}`;
   }
 
   prompt += `\n\nPlease provide your response in this exact JSON format (no markdown, just raw JSON):
@@ -97,8 +102,8 @@ export class OpenRouterContentService implements IContentService {
     }
 
     try {
-      const { contentType, topic, timeSlot, language = 'th', imageStyle, platform, tone } = request;
-      const prompt = buildPrompt(contentType, topic, timeSlot, language, imageStyle, platform, tone);
+      const { contentType, topic, timeSlot, language = 'th', imageStyle, platform, tone, brandContext } = request;
+      const prompt = buildPrompt(contentType, topic, timeSlot, language, imageStyle, platform, tone, brandContext);
 
       const response = await fetch(`${this.baseUrl}/chat/completions`, {
         method: 'POST',
