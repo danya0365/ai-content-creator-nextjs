@@ -109,7 +109,7 @@ export function GenerateContentModal({ isOpen, onClose, onGenerate }: GenerateCo
     onClose();
   };
 
-  const handleGenerateIdea = async (e: React.MouseEvent) => {
+  const handleGenerateIdea = async (e: React.MouseEvent, mode?: 'trending') => {
     // Prevent event propagation so clicking the button inside the form doesn't trigger anything else
     e.preventDefault();
     e.stopPropagation();
@@ -117,7 +117,22 @@ export function GenerateContentModal({ isOpen, onClose, onGenerate }: GenerateCo
     if (!formData.contentTypeId) return;
     try {
       setIsGeneratingIdea(true);
-      const url = `/api/ai/ideas?contentTypeId=${formData.contentTypeId}`;
+      let brandContext = '';
+      if (typeof window !== 'undefined') {
+        try {
+          const stored = localStorage.getItem('appSettings');
+          if (stored) {
+            brandContext = JSON.parse(stored).brandContext || '';
+          }
+        } catch (err) {
+          // ignore
+        }
+      }
+
+      let url = `/api/ai/ideas?contentTypeId=${formData.contentTypeId}`;
+      if (mode === 'trending') url += '&mode=trending';
+      if (brandContext) url += `&brandContext=${encodeURIComponent(brandContext)}`;
+
       const response = await fetch(url);
       if (!response.ok) throw new Error('API error');
       const data = await response.json();
@@ -223,19 +238,34 @@ export function GenerateContentModal({ isOpen, onClose, onGenerate }: GenerateCo
                 <label className="block text-sm font-medium text-foreground">
                   หัวข้อ / ไอเดีย
                 </label>
-                <button
-                  onClick={handleGenerateIdea}
-                  disabled={isGeneratingIdea}
-                  className="text-xs flex items-center gap-1.5 font-medium bg-violet-500/10 text-violet-400 hover:bg-violet-500/20 px-2.5 py-1.5 rounded-lg transition-colors disabled:opacity-50"
-                  title="สุ่มไอเดียที่เกี่ยวข้องกับหมวดหมู่นี้"
-                >
-                  {isGeneratingIdea ? (
-                    <span className="w-3.5 h-3.5 border-2 border-violet-400/30 border-t-violet-400 rounded-full animate-spin" />
-                  ) : (
-                    <span className="text-sm">🎲</span>
-                  )}
-                  <span>สุ่มไอเดีย</span>
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={(e) => handleGenerateIdea(e, 'trending')}
+                    disabled={isGeneratingIdea}
+                    className="text-xs flex items-center gap-1.5 font-medium bg-gradient-to-r from-orange-500/10 to-red-500/10 text-orange-500 hover:from-orange-500/20 hover:to-red-500/20 px-2.5 py-1.5 rounded-lg transition-colors disabled:opacity-50 border border-orange-500/20"
+                    title="สร้างไอเดียเกาะกระแสยอดฮิตวันนี้"
+                  >
+                    {isGeneratingIdea ? (
+                      <span className="w-3.5 h-3.5 border-2 border-orange-400/30 border-t-orange-500 rounded-full animate-spin" />
+                    ) : (
+                      <span className="text-sm">🔥</span>
+                    )}
+                    <span>เกาะกระแส</span>
+                  </button>
+                  <button
+                    onClick={(e) => handleGenerateIdea(e)}
+                    disabled={isGeneratingIdea}
+                    className="text-xs flex items-center gap-1.5 font-medium bg-violet-500/10 text-violet-400 hover:bg-violet-500/20 px-2.5 py-1.5 rounded-lg transition-colors disabled:opacity-50"
+                    title="สุ่มไอเดียทั่วไปที่เกี่ยวข้องกับหมวดหมู่นี้"
+                  >
+                    {isGeneratingIdea ? (
+                      <span className="w-3.5 h-3.5 border-2 border-violet-400/30 border-t-violet-400 rounded-full animate-spin" />
+                    ) : (
+                      <span className="text-sm">🎲</span>
+                    )}
+                    <span>สุ่มไอเดีย</span>
+                  </button>
+                </div>
               </div>
               <textarea
                 value={formData.topic}

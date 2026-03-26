@@ -56,11 +56,15 @@ export class MockContentService implements IContentService {
     };
   }
 
-  async generateTopicIdea(contentType: ContentType): Promise<GenerateTopicIdeaResponse> {
+  async generateTopicIdea(
+    contentType: ContentType,
+    options?: { trends?: string[]; brandContext?: string }
+  ): Promise<GenerateTopicIdeaResponse> {
     await new Promise((resolve) => setTimeout(resolve, this.delay));
+    const postfix = options?.trends && options.trends.length > 0 ? ` (เกาะกระแส: ${options.trends[0]})` : '';
     const ideas = [
-      `10 ไอเดียสุดเจ๋งเกี่ยวกับ ${contentType.nameTh}`,
-      `เคล็ดลับการทำ ${contentType.nameTh} ให้ปัง`,
+      `10 ไอเดียสุดเจ๋งเกี่ยวกับ ${contentType.nameTh}${postfix}`,
+      `เคล็ดลับการทำ ${contentType.nameTh} ให้ปัง${postfix}`,
       `สรุปสั้นๆ เรื่อง ${contentType.nameTh} ที่ควรรู้`,
       `มีอะไรใหม่ในวงการ ${contentType.nameTh}`,
     ];

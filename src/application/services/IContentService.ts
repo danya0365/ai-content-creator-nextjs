@@ -39,5 +39,11 @@ export interface GenerateTopicIdeaResponse {
  */
 export interface IContentService {
   generateContent(request: GenerateContentRequest): Promise<GenerateContentResponse>;
-  generateTopicIdea(contentType: ContentType): Promise<GenerateTopicIdeaResponse>;
+  generateTopicIdea(
+    contentType: ContentType,
+    options?: {
+      trends?: string[];
+      brandContext?: string;
+    }
+  ): Promise<GenerateTopicIdeaResponse>;
 }

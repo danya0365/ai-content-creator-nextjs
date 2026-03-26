@@ -10,6 +10,8 @@ export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
     const contentTypeId = searchParams.get('contentTypeId');
+    const mode = searchParams.get('mode'); // e.g. 'trending'
+    const brandContext = searchParams.get('brandContext');
 
     if (!contentTypeId) {
       return NextResponse.json(
@@ -26,12 +28,22 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // 1. Initialize correct Content Service
+    // 1. Fetch Trends if requested
+    let trends: string[] | undefined = undefined;
+    if (mode === 'trending') {
+      const { GoogleTrendsService } = await import('@/src/infrastructure/services/GoogleTrendsService');
+      trends = await GoogleTrendsService.getTopTrends(5);
+    }
+
+    // 2. Initialize correct Content Service
     const provider = process.env.AI_PROVIDER || 'mock';
     const contentService = AIServiceFactory.createContentService(provider as any);
 
-    // 2. Request idea generation
-    const ideaResponse = await contentService.generateTopicIdea(contentType);
+    // 3. Request idea generation
+    const ideaResponse = await contentService.generateTopicIdea(contentType, {
+      trends,
+      brandContext: brandContext || undefined,
+    });
 
     if (!ideaResponse.success || !ideaResponse.idea) {
       return NextResponse.json(ideaResponse, { status: 500 });

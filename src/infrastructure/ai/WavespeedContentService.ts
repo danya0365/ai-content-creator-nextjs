@@ -236,9 +236,20 @@ export class WavespeedContentService implements IContentService {
     };
   }
 
-  async generateTopicIdea(contentType: ContentType): Promise<GenerateTopicIdeaResponse> {
+  async generateTopicIdea(
+    contentType: ContentType,
+    options?: { trends?: string[]; brandContext?: string }
+  ): Promise<GenerateTopicIdeaResponse> {
     if (!this.apiKey) return { success: false, error: 'No Wavespeed API key' };
     try {
+      let systemPrompt = 'You are a creative brainstorming assistant. Reply with ONLY ONE short, engaging topic idea (in Thai) for the requested category. Do not include any quotes or markdown formatting.';
+      if (options?.trends && options.trends.length > 0) {
+        systemPrompt += `\n\nCRITICAL CONTEXT: Base your topic idea heavily around at least one of these current trending topics in Thailand: [${options.trends.join(', ')}]. This is a "Trendjacking" requirement.`;
+      }
+      if (options?.brandContext && options.brandContext.trim() !== '') {
+        systemPrompt += `\n\nBRAND PERSONA: Ensure the idea aligns strictly with this brand styling: ${options.brandContext}`;
+      }
+
       // 1. Submit the task
       const submitResponse = await fetch(`${this.baseUrl}/${this.modelUuid}`, {
         method: 'POST',
@@ -248,7 +259,7 @@ export class WavespeedContentService implements IContentService {
         },
         body: JSON.stringify({
           messages: [
-            { role: 'system', content: 'You are a creative brainstorming assistant. Reply with ONLY ONE short, engaging topic idea (in Thai) for the requested category. Do not include any quotes or markdown formatting.' },
+            { role: 'system', content: systemPrompt },
             { role: 'user', content: `Generate one topic idea about ${contentType.nameTh} (${contentType.name}).` }
           ],
           temperature: 0.9, max_tokens: 100,

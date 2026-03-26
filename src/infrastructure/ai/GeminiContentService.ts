@@ -172,10 +172,20 @@ export class GeminiContentService implements IContentService {
     }
   }
 
-  async generateTopicIdea(contentType: ContentType): Promise<GenerateTopicIdeaResponse> {
+  async generateTopicIdea(
+    contentType: ContentType,
+    options?: { trends?: string[]; brandContext?: string }
+  ): Promise<GenerateTopicIdeaResponse> {
     if (!this.apiKey) return { success: false, error: 'No Gemini API key' };
     try {
-      const prompt = `You are a creative brainstorming assistant. Reply with ONLY ONE short, engaging topic idea (in Thai) for a ${contentType.nameTh} (${contentType.name}) content. Do not include any quotes or markdown formatting.`;
+      let prompt = `You are a creative brainstorming assistant. Reply with ONLY ONE short, engaging topic idea (in Thai) for a ${contentType.nameTh} (${contentType.name}) content. Do not include any quotes or markdown formatting.`;
+      if (options?.trends && options.trends.length > 0) {
+        prompt += `\n\nCRITICAL CONTEXT: Base your topic idea heavily around at least one of these current trending topics in Thailand: [${options.trends.join(', ')}]. This is a "Trendjacking" requirement.`;
+      }
+      if (options?.brandContext && options.brandContext.trim() !== '') {
+        prompt += `\n\nBRAND PERSONA: Ensure the idea aligns strictly with this brand styling: ${options.brandContext}`;
+      }
+
       const response = await fetch(`${this.baseUrl}/models/gemini-2.0-flash:generateContent?key=${this.apiKey}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
