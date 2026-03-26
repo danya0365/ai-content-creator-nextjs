@@ -148,7 +148,7 @@ function ActivityItem({ activity, delay }: ActivityItemProps) {
         <div className="text-xs text-muted flex items-center gap-2">
           <span>{config.label}</span>
           <span>•</span>
-          <span>{formatRelativeTime(activity.timestamp)}</span>
+          <span suppressHydrationWarning>{formatRelativeTime(activity.timestamp)}</span>
         </div>
       </div>
     </animated.div>
