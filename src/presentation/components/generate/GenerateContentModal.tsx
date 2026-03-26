@@ -5,6 +5,7 @@ import { IMAGE_STYLES } from '@/src/data/master/imageStyles';
 import { PLATFORMS } from '@/src/data/master/platforms';
 import { TONE_OF_VOICE } from '@/src/data/master/tones';
 import { useGenerateStore } from '@/src/presentation/stores/useGenerateStore';
+import { usePreferencesStore } from '@/src/presentation/stores/usePreferencesStore';
 import { animated, config, useSpring } from '@react-spring/web';
 import { useEffect, useState } from 'react';
 
@@ -34,6 +35,9 @@ export function GenerateContentModal({ isOpen, onClose, onGenerate }: GenerateCo
   const [isGenerating, setIsGenerating] = useState(false);
   const initialData = useGenerateStore((state) => state.initialData);
 
+  const { defaultTone, defaultPlatforms, defaultImageStyle, setPreference } = usePreferencesStore();
+  const [brandContext, setBrandContext] = useState('');
+
   const [isGeneratingIdea, setIsGeneratingIdea] = useState(false);
   const [formData, setFormData] = useState<GenerateFormData>({
     contentTypeId: '',
@@ -41,9 +45,9 @@ export function GenerateContentModal({ isOpen, onClose, onGenerate }: GenerateCo
     topic: '',
     scheduledDate: new Date().toISOString().split('T')[0],
     scheduledTime: '09:00',
-    imageStyle: 'pixel-art',
-    platforms: ['facebook'],
-    tone: 'casual',
+    imageStyle: defaultImageStyle,
+    platforms: defaultPlatforms,
+    tone: defaultTone,
   });
 
   // Pre-fill form when modal is opening
@@ -55,12 +59,24 @@ export function GenerateContentModal({ isOpen, onClose, onGenerate }: GenerateCo
         scheduledDate: initialData?.scheduledDate || new Date().toISOString().split('T')[0],
         scheduledTime: initialData?.scheduledTime || '09:00',
         timeSlot: initialData?.timeSlot || 'morning',
-        imageStyle: initialData?.imageStyle || 'pixel-art',
-        platforms: initialData?.platforms || ['facebook'],
-        tone: initialData?.tone || 'casual',
+        imageStyle: initialData?.imageStyle || defaultImageStyle,
+        platforms: initialData?.platforms || defaultPlatforms,
+        tone: initialData?.tone || defaultTone,
       }));
+
+      // Hydrate brandContext to decide if we should show the UI hint
+      try {
+        if (typeof window !== 'undefined') {
+          const stored = localStorage.getItem('appSettings');
+          if (stored) {
+            setBrandContext(JSON.parse(stored).brandContext || '');
+          }
+        }
+      } catch {
+        // ignore
+      }
     }
-  }, [isOpen, initialData]);
+  }, [isOpen, initialData, defaultTone, defaultPlatforms, defaultImageStyle]);
 
   const backdropSpring = useSpring({
     opacity: isOpen ? 1 : 0,
@@ -117,12 +133,12 @@ export function GenerateContentModal({ isOpen, onClose, onGenerate }: GenerateCo
     if (!formData.contentTypeId) return;
     try {
       setIsGeneratingIdea(true);
-      let brandContext = '';
+      let ideaBrandContext = '';
       if (typeof window !== 'undefined') {
         try {
           const stored = localStorage.getItem('appSettings');
           if (stored) {
-            brandContext = JSON.parse(stored).brandContext || '';
+            ideaBrandContext = JSON.parse(stored).brandContext || '';
           }
         } catch (err) {
           // ignore
@@ -131,7 +147,7 @@ export function GenerateContentModal({ isOpen, onClose, onGenerate }: GenerateCo
 
       let url = `/api/ai/ideas?contentTypeId=${formData.contentTypeId}`;
       if (mode === 'trending') url += '&mode=trending';
-      if (brandContext) url += `&brandContext=${encodeURIComponent(brandContext)}`;
+      if (ideaBrandContext) url += `&brandContext=${encodeURIComponent(ideaBrandContext)}`;
 
       const response = await fetch(url);
       if (!response.ok) throw new Error('API error');
@@ -274,6 +290,12 @@ export function GenerateContentModal({ isOpen, onClose, onGenerate }: GenerateCo
                 className="w-full px-4 py-3 rounded-xl glass-card text-foreground placeholder-muted focus:outline-none focus:ring-2 focus:ring-violet-500/50 resize-none"
                 rows={3}
               />
+              {brandContext && (
+                <div className="mt-2 flex items-center gap-2 text-xs text-violet-400 bg-violet-500/10 px-3 py-2 rounded-lg">
+                  <span>💡</span>
+                  <span>ระบบจะปรับไอเดียให้เข้ากับสไตล์เพจของคุณโดยอัตโนมัติ (อิงจาก Brand Persona)</span>
+                </div>
+              )}
             </div>
 
             {/* Tone of Voice */}
@@ -285,7 +307,10 @@ export function GenerateContentModal({ isOpen, onClose, onGenerate }: GenerateCo
                 {TONE_OF_VOICE.map((t) => (
                   <button
                     key={t.id}
-                    onClick={() => setFormData((prev) => ({ ...prev, tone: t.id }))}
+                    onClick={() => {
+                      setFormData((prev) => ({ ...prev, tone: t.id }));
+                      setPreference('defaultTone', t.id as any);
+                    }}
                     className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-all duration-300 ${
                       formData.tone === t.id
                         ? 'bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white shadow-lg shadow-purple-500/25'
@@ -315,6 +340,8 @@ export function GenerateContentModal({ isOpen, onClose, onGenerate }: GenerateCo
                         : [...prev.platforms, p.id];
                       // Ensure at least one platform is selected
                       if (newPlatforms.length === 0) return prev;
+                      
+                      setPreference('defaultPlatforms', newPlatforms as any[]);
                       return { ...prev, platforms: newPlatforms };
                     })}
                     className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-all duration-300 ${
@@ -338,7 +365,10 @@ export function GenerateContentModal({ isOpen, onClose, onGenerate }: GenerateCo
                 {IMAGE_STYLES.map((style) => (
                   <button
                     key={style.id}
-                    onClick={() => setFormData((prev) => ({ ...prev, imageStyle: style.id }))}
+                    onClick={() => {
+                      setFormData((prev) => ({ ...prev, imageStyle: style.id }));
+                      setPreference('defaultImageStyle', style.id as any);
+                    }}
                     className={`p-2 rounded-xl text-xs font-medium transition-all duration-300 flex flex-col items-center gap-1 ${
                       formData.imageStyle === style.id
                         ? 'bg-gradient-to-br from-violet-600 to-fuchsia-600 text-white shadow-lg shadow-purple-500/25'
@@ -352,51 +382,51 @@ export function GenerateContentModal({ isOpen, onClose, onGenerate }: GenerateCo
               </div>
             </div>
 
-            {/* Time slot */}
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-2">
-                ช่วงเวลาโพสต์
+            {/* Settings that shouldn't persist globally but quick shortcuts are needed */}
+            <div className="p-3 rounded-xl border border-violet-500/20 bg-surface/30">
+              <label className="block text-sm font-medium text-foreground mb-3 flex items-center justify-between">
+                <div>ช่วงเวลาโพสต์ (Schedule)</div>
+                <div className="flex gap-1.5">
+                  <button 
+                    onClick={(e) => { e.preventDefault(); setFormData(prev => ({ ...prev, scheduledDate: new Date().toISOString().split('T')[0], scheduledTime: new Date().toTimeString().slice(0,5) })) }}
+                    className="text-[10px] bg-emerald-500/20 text-emerald-400 px-2 py-1 rounded hover:bg-emerald-500/30 transition-colors"
+                  >🚀 โพสต์ทันที</button>
+                  <button 
+                    onClick={(e) => {
+                      e.preventDefault();
+                      const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
+                      setFormData(prev => ({ ...prev, scheduledDate: tomorrow.toISOString().split('T')[0], scheduledTime: '08:00', timeSlot: 'morning' }))
+                    }}
+                    className="text-[10px] bg-blue-500/20 text-blue-400 px-2 py-1 rounded hover:bg-blue-500/30 transition-colors"
+                  >🌅 เช้าพรุ่งนี้</button>
+                  <button 
+                    onClick={(e) => { e.preventDefault(); setFormData(prev => ({ ...prev, scheduledTime: '12:00', timeSlot: 'lunch' })) }}
+                    className="text-[10px] bg-orange-500/20 text-orange-400 px-2 py-1 rounded hover:bg-orange-500/30 transition-colors"
+                  >🍱 เที่ยง</button>
+                  <button 
+                    onClick={(e) => { e.preventDefault(); setFormData(prev => ({ ...prev, scheduledTime: '18:00', timeSlot: 'evening' })) }}
+                    className="text-[10px] bg-fuchsia-500/20 text-fuchsia-400 px-2 py-1 rounded hover:bg-fuchsia-500/30 transition-colors"
+                  >🌆 เย็น</button>
+                </div>
               </label>
-              <div className="flex gap-2 flex-wrap">
-                {TIME_SLOTS.map((slot) => (
-                  <button
-                    key={slot.id}
-                    onClick={() => setFormData((prev) => ({ ...prev, timeSlot: slot.id }))}
-                    className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 ${
-                      formData.timeSlot === slot.id
-                        ? 'bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white shadow-lg shadow-purple-500/25'
-                        : 'glass-card text-muted hover:text-foreground'
-                    }`}
-                  >
-                    {slot.emoji} {slot.nameTh}
-                  </button>
-                ))}
-              </div>
-            </div>
 
-            {/* Schedule */}
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-2">
-                  วันที่
-                </label>
-                <input
-                  type="date"
-                  value={formData.scheduledDate}
-                  onChange={(e) => setFormData((prev) => ({ ...prev, scheduledDate: e.target.value }))}
-                  className="w-full px-4 py-3 rounded-xl glass-card text-foreground focus:outline-none focus:ring-2 focus:ring-violet-500/50"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-2">
-                  เวลา
-                </label>
-                <input
-                  type="time"
-                  value={formData.scheduledTime}
-                  onChange={(e) => setFormData((prev) => ({ ...prev, scheduledTime: e.target.value }))}
-                  className="w-full px-4 py-3 rounded-xl glass-card text-foreground focus:outline-none focus:ring-2 focus:ring-violet-500/50"
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <input
+                    type="date"
+                    value={formData.scheduledDate}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, scheduledDate: e.target.value }))}
+                    className="w-full px-4 py-2 text-sm rounded-lg border border-border/50 bg-black/20 text-foreground focus:outline-none focus:ring-1 focus:ring-violet-500/50"
+                  />
+                </div>
+                <div>
+                  <input
+                    type="time"
+                    value={formData.scheduledTime}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, scheduledTime: e.target.value }))}
+                    className="w-full px-4 py-2 text-sm rounded-lg border border-border/50 bg-black/20 text-foreground focus:outline-none focus:ring-1 focus:ring-violet-500/50"
+                  />
+                </div>
               </div>
             </div>
 

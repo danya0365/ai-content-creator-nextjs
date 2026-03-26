@@ -4,7 +4,6 @@ import { Content } from '@/src/application/repositories/IContentRepository';
 import { ContentFilter, GalleryViewModel } from '@/src/presentation/presenters/gallery/GalleryPresenter';
 import { useGalleryPresenter, ViewMode } from '@/src/presentation/presenters/gallery/useGalleryPresenter';
 import { animated, config, useSpring } from '@react-spring/web';
-import { MainLayout } from '../layout/MainLayout';
 import { JellyButton } from '../ui/JellyButton';
 import { JellyCard } from '../ui/JellyCard';
 import { SmartImage } from '../ui/SmartImage';
@@ -345,21 +344,21 @@ export function GalleryView({ initialViewModel }: GalleryViewProps) {
   // Loading state
   if (state.loading && !state.viewModel) {
     return (
-      <MainLayout showBubbles={false}>
+      <>
         <div className="h-full flex items-center justify-center">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-violet-500 mx-auto mb-4"></div>
             <p className="text-muted">กำลังโหลด...</p>
           </div>
         </div>
-      </MainLayout>
+      </>
     );
   }
 
   // Error state
   if (state.error) {
     return (
-      <MainLayout showBubbles={false}>
+      <>
         <div className="h-full flex items-center justify-center">
           <div className="text-center">
             <p className="text-red-400 mb-4">{state.error}</p>
@@ -368,12 +367,12 @@ export function GalleryView({ initialViewModel }: GalleryViewProps) {
             </JellyButton>
           </div>
         </div>
-      </MainLayout>
+      </>
     );
   }
 
   return (
-    <MainLayout showBubbles={false}>
+    <>
       <div className="h-full overflow-auto scrollbar-thin">
         <div className="max-w-7xl mx-auto px-3 py-4 md:px-6 md:py-6 space-y-4 md:space-y-6">
           
@@ -448,6 +447,6 @@ export function GalleryView({ initialViewModel }: GalleryViewProps) {
           onClose={() => actions.selectContent(null)}
         />
       )}
-    </MainLayout>
+    </>
   );
 }

@@ -10,7 +10,6 @@ import {
 } from '@/src/presentation/presenters/timeline/TimelinePresenter';
 import { useTimelinePresenter } from '@/src/presentation/presenters/timeline/useTimelinePresenter';
 import { animated, config, useSpring } from '@react-spring/web';
-import { MainLayout } from '../layout/MainLayout';
 import { JellyButton } from '../ui/JellyButton';
 import { JellyCard } from '../ui/JellyCard';
 import { SmartImage } from '../ui/SmartImage';
@@ -237,21 +236,21 @@ export function TimelineView({ initialViewModel }: TimelineViewProps) {
   // Loading state
   if (state.loading && !state.viewModel) {
     return (
-      <MainLayout showBubbles={false}>
+      <>
         <div className="h-full flex items-center justify-center">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-violet-500 mx-auto mb-4"></div>
             <p className="text-muted">กำลังโหลด...</p>
           </div>
         </div>
-      </MainLayout>
+      </>
     );
   }
 
   // Error state
   if (state.error) {
     return (
-      <MainLayout showBubbles={false}>
+      <>
         <div className="h-full flex items-center justify-center">
           <div className="text-center">
             <p className="text-red-400 mb-4">{state.error}</p>
@@ -260,12 +259,12 @@ export function TimelineView({ initialViewModel }: TimelineViewProps) {
             </JellyButton>
           </div>
         </div>
-      </MainLayout>
+      </>
     );
   }
 
   return (
-    <MainLayout showBubbles={false}>
+    <>
       <div className="h-full overflow-auto scrollbar-thin">
         <div className="max-w-5xl mx-auto px-6 py-6 space-y-6">
           
@@ -404,6 +403,6 @@ export function TimelineView({ initialViewModel }: TimelineViewProps) {
           )}
         </div>
       </div>
-    </MainLayout>
+    </>
   );
 }

@@ -8,7 +8,6 @@ import { useGenerateStore } from '@/src/presentation/stores/useGenerateStore';
 import { animated, config, useSpring } from '@react-spring/web';
 import Link from 'next/link';
 import { GenerateContentModal } from '../generate/GenerateContentModal';
-import { MainLayout } from '../layout/MainLayout';
 import { AiAssistantWidget } from '../ui/AiAssistantWidget';
 import { JellyButton } from '../ui/JellyButton';
 import { JellyCard } from '../ui/JellyCard';
@@ -204,21 +203,21 @@ export function DashboardView({ initialViewModel }: DashboardViewProps) {
   // Show loading state
   if (state.loading && !state.viewModel) {
     return (
-      <MainLayout showBubbles={false}>
+      <>
         <div className="h-full flex items-center justify-center">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-violet-500 mx-auto mb-4"></div>
             <p className="text-muted">กำลังโหลดข้อมูล...</p>
           </div>
         </div>
-      </MainLayout>
+      </>
     );
   }
 
   // Show error state
   if (state.error) {
     return (
-      <MainLayout showBubbles={false}>
+      <>
         <div className="h-full flex items-center justify-center">
           <div className="text-center">
             <p className="text-red-400 mb-4">{state.error}</p>
@@ -227,12 +226,12 @@ export function DashboardView({ initialViewModel }: DashboardViewProps) {
             </JellyButton>
           </div>
         </div>
-      </MainLayout>
+      </>
     );
   }
 
   return (
-    <MainLayout showBubbles={false}>
+    <>
       <div className="h-full overflow-auto scrollbar-thin">
         <div className="max-w-7xl mx-auto px-3 py-4 md:px-6 md:py-6 space-y-4 md:space-y-6">
           
@@ -405,6 +404,6 @@ export function DashboardView({ initialViewModel }: DashboardViewProps) {
         onClose={closeModal}
         onGenerate={generateContent}
       />
-    </MainLayout>
+    </>
   );
 }

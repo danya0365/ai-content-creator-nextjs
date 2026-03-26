@@ -5,7 +5,6 @@ import { HomeViewModel } from '@/src/presentation/presenters/home/HomePresenter'
 import { useHomePresenter } from '@/src/presentation/presenters/home/useHomePresenter';
 import { animated, config, useSpring } from '@react-spring/web';
 import Link from 'next/link';
-import { MainLayout } from '../layout/MainLayout';
 import { JellyButton } from '../ui/JellyButton';
 import { JellyCard } from '../ui/JellyCard';
 
@@ -130,7 +129,7 @@ export function HomeView({ initialViewModel }: HomeViewProps) {
   });
 
   return (
-    <MainLayout showBubbles={true}>
+    <>
       <div className="max-w-6xl mx-auto px-6 py-6 space-y-8">
         
         {loading && !viewModel && (
@@ -280,6 +279,6 @@ export function HomeView({ initialViewModel }: HomeViewProps) {
           </>
         )}
       </div>
-    </MainLayout>
+    </>
   );
 }

@@ -8,7 +8,6 @@ import { useGenerateStore } from '@/src/presentation/stores/useGenerateStore';
 import { animated, config, useSpring } from '@react-spring/web';
 import { useEffect } from 'react';
 import { GenerateContentModal } from '../generate/GenerateContentModal';
-import { MainLayout } from '../layout/MainLayout';
 import { JellyButton } from '../ui/JellyButton';
 import { JellyCard } from '../ui/JellyCard';
 import { SmartImage } from '../ui/SmartImage';
@@ -163,21 +162,21 @@ export function ScheduleView({ initialViewModel }: ScheduleViewProps) {
   // Loading state
   if (state.loading && !state.viewModel) {
     return (
-      <MainLayout showBubbles={false}>
+      <>
         <div className="h-full flex items-center justify-center">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-violet-500 mx-auto mb-4"></div>
             <p className="text-muted">กำลังโหลด...</p>
           </div>
         </div>
-      </MainLayout>
+      </>
     );
   }
 
   // Error state
   if (state.error) {
     return (
-      <MainLayout showBubbles={false}>
+      <>
         <div className="h-full flex items-center justify-center">
           <div className="text-center">
             <p className="text-red-400 mb-4">{state.error}</p>
@@ -186,12 +185,12 @@ export function ScheduleView({ initialViewModel }: ScheduleViewProps) {
             </JellyButton>
           </div>
         </div>
-      </MainLayout>
+      </>
     );
   }
 
   return (
-    <MainLayout showBubbles={false}>
+    <>
       <div className="h-full overflow-auto scrollbar-thin">
         <div className="max-w-6xl mx-auto px-6 py-6 space-y-6">
           
@@ -287,6 +286,6 @@ export function ScheduleView({ initialViewModel }: ScheduleViewProps) {
         onClose={closeModal}
         onGenerate={generateContent}
       />
-    </MainLayout>
+    </>
   );
 }

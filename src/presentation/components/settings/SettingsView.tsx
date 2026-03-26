@@ -3,7 +3,6 @@
 import { AppSettings } from '@/src/presentation/presenters/settings/SettingsPresenter';
 import { UserProfile, useSettingsPresenter } from '@/src/presentation/presenters/settings/useSettingsPresenter';
 import { animated, config, useSpring } from '@react-spring/web';
-import { MainLayout } from '../layout/MainLayout';
 import { JellyButton } from '../ui/JellyButton';
 import { JellyCard, JellyWrapper } from '../ui/JellyCard';
 
@@ -180,21 +179,21 @@ export function SettingsView({ initialViewModel }: SettingsViewProps) {
   // Loading state
   if (state.loading && !state.viewModel) {
     return (
-      <MainLayout showBubbles={false}>
+      <>
         <div className="h-full flex items-center justify-center">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-violet-500 mx-auto mb-4"></div>
             <p className="text-muted">กำลังโหลด...</p>
           </div>
         </div>
-      </MainLayout>
+      </>
     );
   }
 
   // Error state
   if (state.error) {
     return (
-      <MainLayout showBubbles={false}>
+      <>
         <div className="h-full flex items-center justify-center">
           <div className="text-center">
             <p className="text-red-400 mb-4">{state.error}</p>
@@ -203,12 +202,12 @@ export function SettingsView({ initialViewModel }: SettingsViewProps) {
             </JellyButton>
           </div>
         </div>
-      </MainLayout>
+      </>
     );
   }
 
   return (
-    <MainLayout showBubbles={false}>
+    <>
       <div className="h-full overflow-auto scrollbar-thin">
         {/* 'Coming Soon' Wrapper */}
         <div className="relative h-full">
@@ -370,6 +369,6 @@ export function SettingsView({ initialViewModel }: SettingsViewProps) {
         </div>
       </div>
       </div>
-    </MainLayout>
+    </>
   );
 }

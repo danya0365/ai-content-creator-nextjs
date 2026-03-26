@@ -4,7 +4,6 @@ import { ContentDetailViewModel } from '@/src/presentation/presenters/content/Co
 import { useContentDetailPresenter } from '@/src/presentation/presenters/content/useContentDetailPresenter';
 import { animated, config, useSpring } from '@react-spring/web';
 import Link from 'next/link';
-import { MainLayout } from '../layout/MainLayout';
 import { JellyButton } from '../ui/JellyButton';
 import { JellyCard } from '../ui/JellyCard';
 import { DonutChart } from '../ui/SimpleChart';
@@ -46,21 +45,21 @@ export function ContentDetailView({ contentId, initialViewModel }: ContentDetail
   // Loading state
   if (state.loading && !state.viewModel) {
     return (
-      <MainLayout showBubbles={false}>
+      <>
         <div className="h-full flex items-center justify-center">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-violet-500 mx-auto mb-4"></div>
             <p className="text-muted">กำลังโหลด...</p>
           </div>
         </div>
-      </MainLayout>
+      </>
     );
   }
 
   // Error state
   if (state.error) {
     return (
-      <MainLayout showBubbles={false}>
+      <>
         <div className="h-full flex items-center justify-center">
           <div className="text-center">
             <p className="text-red-400 mb-4">{state.error}</p>
@@ -69,14 +68,14 @@ export function ContentDetailView({ contentId, initialViewModel }: ContentDetail
             </JellyButton>
           </div>
         </div>
-      </MainLayout>
+      </>
     );
   }
 
   // Not found state
   if (!state.viewModel?.content) {
     return (
-      <MainLayout showBubbles={false}>
+      <>
         <div className="h-full flex items-center justify-center">
           <div className="text-center">
             <span className="text-5xl mb-4 block">🔍</span>
@@ -87,7 +86,7 @@ export function ContentDetailView({ contentId, initialViewModel }: ContentDetail
             </Link>
           </div>
         </div>
-      </MainLayout>
+      </>
     );
   }
 
@@ -109,7 +108,7 @@ export function ContentDetailView({ contentId, initialViewModel }: ContentDetail
   };
 
   return (
-    <MainLayout showBubbles={false}>
+    <>
       <div className="h-full overflow-auto scrollbar-thin">
         <div className="max-w-6xl mx-auto px-6 py-6">
           
@@ -274,6 +273,6 @@ export function ContentDetailView({ contentId, initialViewModel }: ContentDetail
           </div>
         </div>
       </div>
-    </MainLayout>
+    </>
   );
 }

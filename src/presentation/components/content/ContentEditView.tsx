@@ -4,7 +4,6 @@ import { ContentEditViewModel } from '@/src/presentation/presenters/content/Cont
 import { useContentEditPresenter } from '@/src/presentation/presenters/content/useContentEditPresenter';
 import { animated, config, useSpring } from '@react-spring/web';
 import Link from 'next/link';
-import { MainLayout } from '../layout/MainLayout';
 import { JellyButton } from '../ui/JellyButton';
 import { JellyCard } from '../ui/JellyCard';
 
@@ -44,21 +43,21 @@ export function ContentEditView({ contentId, initialViewModel }: ContentEditView
   // Loading state
   if (state.loading && !state.viewModel) {
     return (
-      <MainLayout showBubbles={false}>
+      <>
         <div className="h-full flex items-center justify-center">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-violet-500 mx-auto mb-4"></div>
             <p className="text-muted">กำลังโหลด...</p>
           </div>
         </div>
-      </MainLayout>
+      </>
     );
   }
 
   // Error state
   if (state.error) {
     return (
-      <MainLayout showBubbles={false}>
+      <>
         <div className="h-full flex items-center justify-center">
           <div className="text-center">
             <p className="text-red-400 mb-4">{state.error}</p>
@@ -67,14 +66,14 @@ export function ContentEditView({ contentId, initialViewModel }: ContentEditView
             </JellyButton>
           </div>
         </div>
-      </MainLayout>
+      </>
     );
   }
 
   // Not found state
   if (!state.content) {
     return (
-      <MainLayout showBubbles={false}>
+      <>
         <div className="h-full flex items-center justify-center">
           <div className="text-center">
             <span className="text-5xl mb-4 block">🔍</span>
@@ -85,12 +84,12 @@ export function ContentEditView({ contentId, initialViewModel }: ContentEditView
             </Link>
           </div>
         </div>
-      </MainLayout>
+      </>
     );
   }
 
   return (
-    <MainLayout showBubbles={false}>
+    <>
       <div className="h-full overflow-auto scrollbar-thin">
         <div className="max-w-6xl mx-auto px-6 py-6">
           
@@ -325,6 +324,6 @@ export function ContentEditView({ contentId, initialViewModel }: ContentEditView
           </div>
         </div>
       </div>
-    </MainLayout>
+    </>
   );
 }

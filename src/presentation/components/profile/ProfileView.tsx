@@ -5,7 +5,6 @@ import { useProfilePresenter } from '@/src/presentation/presenters/profile/usePr
 import { animated, config, useSpring } from '@react-spring/web';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { MainLayout } from '../layout/MainLayout';
 import { JellyButton } from '../ui/JellyButton';
 import { JellyCard } from '../ui/JellyCard';
 
@@ -245,14 +244,14 @@ export function ProfileView() {
   // ─── Loading State ──────────────────────────────────────────────
   if (authState.isLoading) {
     return (
-      <MainLayout showBubbles={false}>
+      <>
         <div className="h-full flex items-center justify-center">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-violet-500 mx-auto mb-4"></div>
             <p className="text-muted text-sm">กำลังโหลด...</p>
           </div>
         </div>
-      </MainLayout>
+      </>
     );
   }
 
@@ -286,7 +285,7 @@ export function ProfileView() {
 
   // ─── Render ─────────────────────────────────────────────────────
   return (
-    <MainLayout showBubbles={false}>
+    <>
       <div className="h-full overflow-auto scrollbar-thin">
         <div className="max-w-7xl mx-auto px-3 py-4 md:px-6 md:py-6 space-y-4 md:space-y-6">
 
@@ -621,6 +620,6 @@ export function ProfileView() {
           </div>
         </div>
       </div>
-    </MainLayout>
+    </>
   );
 }
