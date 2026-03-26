@@ -7,6 +7,7 @@
 
 export interface GenerateImageRequest {
   imagePrompt: string;
+  imageStyle: string;
 }
 
 export interface GenerateImageResponse {

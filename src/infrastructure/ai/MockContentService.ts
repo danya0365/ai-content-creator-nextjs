@@ -11,6 +11,7 @@ import {
     GenerateContentResponse,
     IContentService,
 } from '@/src/application/services/IContentService';
+import { getImageStyleById } from '@/src/data/master/imageStyles';
 
 export class MockContentService implements IContentService {
   private delay: number;
@@ -33,13 +34,15 @@ export class MockContentService implements IContentService {
       evening: 'ค่ำนี้',
     }[request.timeSlot] || '';
 
+    const style = getImageStyleById(request.imageStyle);
+
     return {
       success: true,
       title: `${request.topic} 🎨`,
       description: `คอนเทนต์สุดน่ารักเกี่ยวกับ ${request.topic} สำหรับ${timeContext} สร้างด้วย AI`,
       prompt: `Create content about ${request.topic}`,
-      imagePrompt: `Create a cute retro pixel art illustration about ${request.topic}. Style: 16-bit SNES era, bright colors, detailed backgrounds.`,
-      hashtags: ['#PixelArt', '#AIContent', '#Creative', '#Digital', '#Retro'],
+      imagePrompt: `Create ${style.contentPromptInstruction} about ${request.topic}. ${style.promptModifier}`,
+      hashtags: ['#AIContent', '#Creative', '#Digital'],
     };
   }
 }

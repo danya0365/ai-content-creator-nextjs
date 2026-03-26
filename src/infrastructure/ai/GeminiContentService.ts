@@ -12,17 +12,20 @@ import {
   IContentService,
 } from '@/src/application/services/IContentService';
 import { ContentType } from '@/src/data/master/contentTypes';
+import { getImageStyleById } from '@/src/data/master/imageStyles';
 
 /**
  * Generate content prompt based on type and topic
  */
-function buildPrompt(contentType: ContentType, topic: string, timeSlot: string, language: string): string {
+function buildPrompt(contentType: ContentType, topic: string, timeSlot: string, language: string, imageStyle: string): string {
   const timeContext = {
     morning: 'เช้าวันใหม่ที่สดใส',
     lunch: 'ช่วงพักเที่ยง',
     afternoon: 'บ่ายอันแสนสดใส',
     evening: 'ค่ำคืนที่ผ่อนคลาย',
   }[timeSlot] || '';
+
+  const style = getImageStyleById(imageStyle);
 
   return `
 You are a creative content creator specializing in ${contentType.name} content. 
@@ -35,14 +38,14 @@ Language: ${language === 'th' ? 'Thai' : 'English'}
 Please provide:
 1. A catchy title (max 50 chars)
 2. An engaging description (100-200 chars)
-3. A prompt for generating a pixel art image
+3. A prompt for generating a ${style.nameEn} image
 4. 5 relevant hashtags
 
 Format your response as JSON:
 {
   "title": "...",
   "description": "...",
-  "imagePrompt": "Create a cute pixel art illustration of...",
+  "imagePrompt": "Create ${style.contentPromptInstruction}...",
   "hashtags": ["#tag1", "#tag2", ...]
 }
 `;
@@ -72,8 +75,8 @@ export class GeminiContentService implements IContentService {
     }
 
     try {
-      const { contentType, topic, timeSlot, language = 'th' } = request;
-      const prompt = buildPrompt(contentType, topic, timeSlot, language);
+      const { contentType, topic, timeSlot, language = 'th', imageStyle } = request;
+      const prompt = buildPrompt(contentType, topic, timeSlot, language, imageStyle);
 
       const response = await fetch(
         `${this.baseUrl}/models/gemini-2.0-flash:generateContent?key=${this.apiKey}`,
@@ -120,13 +123,14 @@ export class GeminiContentService implements IContentService {
       }
 
       const parsed = JSON.parse(jsonMatch[0]);
+      const style = getImageStyleById(imageStyle);
 
       return {
         success: true,
         title: parsed.title || `${request.topic} 🎨`,
         description: parsed.description || `AI generated content about ${request.topic}`,
         prompt: prompt,
-        imagePrompt: parsed.imagePrompt || `Cute pixel art illustration of ${request.topic}`,
+        imagePrompt: parsed.imagePrompt || `Cute ${style.nameEn} illustration of ${request.topic}`,
         hashtags: parsed.hashtags || ['#pixelart', '#ai', '#content'],
       };
     } catch (error) {

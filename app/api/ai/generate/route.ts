@@ -19,6 +19,7 @@ interface AIGenerateRequest {
   contentTypeId: string;
   topic: string;
   timeSlot: TimeSlot;
+  imageStyle: string; // Required: style of the generated image
   generateImage?: boolean; // Optional: whether to generate image
 }
 
@@ -55,6 +56,7 @@ export async function POST(request: NextRequest) {
       contentType,
       topic: body.topic,
       timeSlot: body.timeSlot,
+      imageStyle: body.imageStyle,
       language: 'th',
     });
 
@@ -70,6 +72,7 @@ export async function POST(request: NextRequest) {
     if (body.generateImage !== false && result.imagePrompt) {
       const imageResult = await imageService.generateImage({
         imagePrompt: result.imagePrompt,
+        imageStyle: body.imageStyle,
       });
       
       // Upload to storage if generation was successful

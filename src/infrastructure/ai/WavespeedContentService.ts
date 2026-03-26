@@ -19,17 +19,20 @@ import {
   resolveWavespeedContentModel,
 } from './WavespeedModels';
 import { ContentType } from '@/src/data/master/contentTypes';
+import { getImageStyleById } from '@/src/data/master/imageStyles';
 
 /**
  * Generate content prompt based on type and topic
  */
-function buildPrompt(contentType: ContentType, topic: string, timeSlot: string, language: string): string {
+function buildPrompt(contentType: ContentType, topic: string, timeSlot: string, language: string, imageStyleId: string): string {
   const timeContext = {
     morning: 'เช้าวันใหม่ที่สดใส',
     lunch: 'ช่วงพักเที่ยง',
     afternoon: 'บ่ายอันแสนสดใส',
     evening: 'ค่ำคืนที่ผ่อนคลาย',
   }[timeSlot] || '';
+
+  const style = getImageStyleById(imageStyleId);
 
   return `
 You are a creative content creator specializing in ${contentType.name} content. 
@@ -42,14 +45,14 @@ Language: ${language === 'th' ? 'Thai' : 'English'}
 Please provide:
 1. A catchy title (max 50 chars)
 2. An engaging description (100-200 chars)
-3. A prompt for generating a pixel art image
+3. A prompt for generating a ${style.nameEn} image
 4. 5 relevant hashtags
 
 Format your response as JSON:
 {
   "title": "...",
   "description": "...",
-  "imagePrompt": "Create a cute pixel art illustration of...",
+  "imagePrompt": "Create ${style.contentPromptInstruction}...",
   "hashtags": ["#tag1", "#tag2", ...]
 }
 `;
@@ -90,8 +93,8 @@ export class WavespeedContentService implements IContentService {
     }
 
     try {
-      const { contentType, topic, timeSlot, language = 'th' } = request;
-      const prompt = buildPrompt(contentType, topic, timeSlot, language);
+      const { contentType, topic, timeSlot, language = 'th', imageStyle } = request;
+      const prompt = buildPrompt(contentType, topic, timeSlot, language, imageStyle);
 
       console.log(`[WavespeedContentService] Submitting task for model: ${this.modelUuid}`);
       
@@ -117,7 +120,8 @@ export class WavespeedContentService implements IContentService {
       }
 
       const submitData = await submitResponse.json();
-      const taskId = submitData.data?.task_id || submitData.task_id;
+      const taskId = submitData.data?.id || submitData.id;
+      const pollUrl = submitData.data?.urls?.get || submitData.urls?.get || `${this.baseUrl}/predictions/${taskId}/result`;
 
       if (!taskId) {
         return {
@@ -129,7 +133,7 @@ export class WavespeedContentService implements IContentService {
       console.log(`[WavespeedContentService] Task created: ${taskId}. Polling for results...`);
 
       // 2. Poll for results
-      return await this.pollForResults(taskId, prompt, topic);
+      return await this.pollForResults(pollUrl, taskId, prompt, topic, imageStyle);
 
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -144,10 +148,10 @@ export class WavespeedContentService implements IContentService {
   /**
    * Poll Wavespeed API for task completion
    */
-  private async pollForResults(taskId: string, prompt: string, topic: string, maxRetries = 30, intervalMs = 2000): Promise<GenerateContentResponse> {
+  private async pollForResults(pollUrl: string, taskId: string, prompt: string, topic: string, imageStyle: string, maxRetries = 30, intervalMs = 2000): Promise<GenerateContentResponse> {
     for (let i = 0; i < maxRetries; i++) {
       try {
-        const response = await fetch(`${this.baseUrl}/${this.modelUuid}/tasks/${taskId}`, {
+        const response = await fetch(pollUrl, {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${this.apiKey}`,
@@ -177,13 +181,14 @@ export class WavespeedContentService implements IContentService {
             }
 
             const parsed = JSON.parse(jsonMatch[0]);
+            const style = getImageStyleById(imageStyle);
 
             return {
               success: true,
               title: parsed.title || `${topic} 🎨`,
               description: parsed.description || `AI generated content about ${topic}`,
               prompt: prompt,
-              imagePrompt: parsed.imagePrompt || `Cute pixel art illustration of ${topic}`,
+              imagePrompt: parsed.imagePrompt || `Cute ${style.nameEn} illustration of ${topic}`,
               hashtags: parsed.hashtags || ['#pixelart', '#ai', '#content'],
             };
           }

@@ -1,6 +1,7 @@
 'use client';
 
 import { CONTENT_TYPES, TIME_SLOTS, TimeSlot } from '@/src/data/master/contentTypes';
+import { IMAGE_STYLES } from '@/src/data/master/imageStyles';
 import { useGenerateStore } from '@/src/presentation/stores/useGenerateStore';
 import { animated, config, useSpring } from '@react-spring/web';
 import { useEffect, useState } from 'react';
@@ -17,6 +18,7 @@ export interface GenerateFormData {
   topic: string;
   scheduledDate: string;
   scheduledTime: string;
+  imageStyle: string;
 }
 
 /**
@@ -34,6 +36,7 @@ export function GenerateContentModal({ isOpen, onClose, onGenerate }: GenerateCo
     topic: '',
     scheduledDate: new Date().toISOString().split('T')[0],
     scheduledTime: '09:00',
+    imageStyle: 'pixel-art',
   });
 
   // Pre-fill form when modal is opening
@@ -45,6 +48,7 @@ export function GenerateContentModal({ isOpen, onClose, onGenerate }: GenerateCo
         scheduledDate: initialData?.scheduledDate || new Date().toISOString().split('T')[0],
         scheduledTime: initialData?.scheduledTime || '09:00',
         timeSlot: initialData?.timeSlot || 'morning',
+        imageStyle: initialData?.imageStyle || 'pixel-art',
       }));
     }
   }, [isOpen, initialData]);
@@ -79,6 +83,7 @@ export function GenerateContentModal({ isOpen, onClose, onGenerate }: GenerateCo
         topic: '',
         scheduledDate: new Date().toISOString().split('T')[0],
         scheduledTime: '09:00',
+        imageStyle: 'pixel-art',
       });
       onClose();
     } catch (error) {
@@ -187,6 +192,29 @@ export function GenerateContentModal({ isOpen, onClose, onGenerate }: GenerateCo
                 className="w-full px-4 py-3 rounded-xl glass-card text-foreground placeholder-muted focus:outline-none focus:ring-2 focus:ring-violet-500/50 resize-none"
                 rows={3}
               />
+            </div>
+
+            {/* Image Style */}
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-2">
+                สไตล์รูปภาพ
+              </label>
+              <div className="grid grid-cols-3 gap-2">
+                {IMAGE_STYLES.map((style) => (
+                  <button
+                    key={style.id}
+                    onClick={() => setFormData((prev) => ({ ...prev, imageStyle: style.id }))}
+                    className={`p-2 rounded-xl text-xs font-medium transition-all duration-300 flex flex-col items-center gap-1 ${
+                      formData.imageStyle === style.id
+                        ? 'bg-gradient-to-br from-violet-600 to-fuchsia-600 text-white shadow-lg shadow-purple-500/25'
+                        : 'glass-card text-muted hover:text-foreground'
+                    }`}
+                  >
+                    <span className="text-xl">{style.emoji}</span>
+                    <span className="text-center">{style.nameTh}</span>
+                  </button>
+                ))}
+              </div>
             </div>
 
             {/* Time slot */}

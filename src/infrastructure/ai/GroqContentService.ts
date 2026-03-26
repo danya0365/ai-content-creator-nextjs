@@ -15,17 +15,20 @@ import {
     IContentService,
 } from '@/src/application/services/IContentService';
 import { ContentType } from '@/src/data/master/contentTypes';
+import { getImageStyleById } from '@/src/data/master/imageStyles';
 
 /**
  * Generate content prompt based on type and topic
  */
-function buildPrompt(contentType: ContentType, topic: string, timeSlot: string, language: string): string {
+function buildPrompt(contentType: ContentType, topic: string, timeSlot: string, language: string, imageStyle: string): string {
   const timeContext = {
     morning: 'เช้าวันใหม่ที่สดใส',
     lunch: 'ช่วงพักเที่ยง',
     afternoon: 'บ่ายอันแสนสดใส',
     evening: 'ค่ำคืนที่ผ่อนคลาย',
   }[timeSlot] || '';
+
+  const style = getImageStyleById(imageStyle);
 
   return `You are a creative content creator specializing in ${contentType.name} content. 
 Create engaging social media content about: "${topic}"
@@ -38,7 +41,7 @@ Please provide your response in this exact JSON format (no markdown, just raw JS
 {
   "title": "A catchy title (max 50 chars)",
   "description": "An engaging description (100-200 chars)",
-  "imagePrompt": "Create a cute pixel art illustration of...",
+  "imagePrompt": "Create ${style.contentPromptInstruction}...",
   "hashtags": ["#tag1", "#tag2", "#tag3", "#tag4", "#tag5"]
 }`;
 }
@@ -66,8 +69,8 @@ export class GroqContentService implements IContentService {
     }
 
     try {
-      const { contentType, topic, timeSlot, language = 'th' } = request;
-      const prompt = buildPrompt(contentType, topic, timeSlot, language);
+      const { contentType, topic, timeSlot, language = 'th', imageStyle } = request;
+      const prompt = buildPrompt(contentType, topic, timeSlot, language, imageStyle);
 
       const response = await fetch(`${this.baseUrl}/chat/completions`, {
         method: 'POST',
@@ -114,13 +117,14 @@ export class GroqContentService implements IContentService {
       }
 
       const parsed = JSON.parse(jsonMatch[0]);
+      const style = getImageStyleById(imageStyle);
 
       return {
         success: true,
         title: parsed.title || `${topic} 🎨`,
         description: parsed.description || `AI generated content about ${topic}`,
         prompt: prompt,
-        imagePrompt: parsed.imagePrompt || `Cute pixel art illustration of ${topic}`,
+        imagePrompt: parsed.imagePrompt || `Cute ${style.nameEn} illustration of ${topic}`,
         hashtags: parsed.hashtags || ['#pixelart', '#ai', '#content'],
       };
     } catch (error) {

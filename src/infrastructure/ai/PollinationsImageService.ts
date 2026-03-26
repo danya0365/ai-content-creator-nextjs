@@ -14,6 +14,7 @@ import {
     GenerateImageResponse,
     IImageService,
 } from '@/src/application/services/IImageService';
+import { getImageStyleById } from '@/src/data/master/imageStyles';
 
 /**
  * PollinationsImageService class
@@ -28,8 +29,8 @@ export class PollinationsImageService implements IImageService {
 
   async generateImage(request: GenerateImageRequest): Promise<GenerateImageResponse> {
     try {
-      // Enhance prompt for pixel art style
-      const enhancedPrompt = this.enhancePromptForPixelArt(request.imagePrompt);
+      // Enhance prompt for selected style
+      const enhancedPrompt = this.enhancePromptForStyle(request.imagePrompt, request.imageStyle);
       
       // URL encode the prompt
       const encodedPrompt = encodeURIComponent(enhancedPrompt);
@@ -73,18 +74,10 @@ export class PollinationsImageService implements IImageService {
   }
 
   /**
-   * Enhance the prompt for pixel art style
+   * Enhance the prompt for the selected style
    */
-  private enhancePromptForPixelArt(prompt: string): string {
-    const pixelArtStyleGuide = [
-      'pixel art style',
-      '16-bit retro SNES era aesthetic',
-      'bright and cheerful colors',
-      'clean pixel-perfect lines',
-      'cute kawaii style',
-      'detailed background',
-    ].join(', ');
-
-    return `${prompt}, ${pixelArtStyleGuide}`;
+  private enhancePromptForStyle(prompt: string, imageStyle: string): string {
+    const style = getImageStyleById(imageStyle);
+    return `${prompt}, ${style.promptModifier}`;
   }
 }

@@ -14,6 +14,7 @@ import {
     GenerateImageResponse,
     IImageService,
 } from '@/src/application/services/IImageService';
+import { getImageStyleById } from '@/src/data/master/imageStyles';
 
 /**
  * TogetherAIImageService class
@@ -42,8 +43,8 @@ export class TogetherAIImageService implements IImageService {
     }
 
     try {
-      // Enhance prompt for pixel art style
-      const enhancedPrompt = this.enhancePromptForPixelArt(request.imagePrompt);
+      // Enhance prompt for selected style
+      const enhancedPrompt = this.enhancePromptForStyle(request.imagePrompt, request.imageStyle);
 
       const response = await fetch(`${this.baseUrl}/images/generations`, {
         method: 'POST',
@@ -96,19 +97,10 @@ export class TogetherAIImageService implements IImageService {
   }
 
   /**
-   * Enhance the prompt for pixel art style
+   * Enhance the prompt for the selected style
    */
-  private enhancePromptForPixelArt(prompt: string): string {
-    const pixelArtStyleGuide = [
-      'Pixel art style',
-      '16-bit retro SNES era aesthetic',
-      'Bright and cheerful colors',
-      'Clean pixel-perfect lines',
-      'Cute and kawaii style',
-      'Detailed background',
-      'High quality pixel art',
-    ].join(', ');
-
-    return `${prompt}. ${pixelArtStyleGuide}. Square aspect ratio, centered composition.`;
+  private enhancePromptForStyle(prompt: string, imageStyle: string): string {
+    const style = getImageStyleById(imageStyle);
+    return `${prompt}. ${style.promptModifier}. Square aspect ratio, centered composition.`;
   }
 }

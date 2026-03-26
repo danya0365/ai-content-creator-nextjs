@@ -44,7 +44,6 @@ export const useGenerateStore = create<GenerateStore>((set) => ({
     set({ isGenerating: true, error: null });
 
     try {
-      // Step 1: Call the new AI Generation API (No DB touch)
       const aiResponse = await fetch('/api/ai/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -52,6 +51,7 @@ export const useGenerateStore = create<GenerateStore>((set) => ({
           contentTypeId: data.contentTypeId,
           topic: data.topic,
           timeSlot: data.timeSlot,
+          imageStyle: data.imageStyle,
         }),
       });
 

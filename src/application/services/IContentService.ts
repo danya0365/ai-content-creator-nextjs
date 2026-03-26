@@ -12,6 +12,7 @@ export interface GenerateContentRequest {
   topic: string;
   timeSlot: string;
   language?: 'th' | 'en';
+  imageStyle: string;
 }
 
 export interface GenerateContentResponse {

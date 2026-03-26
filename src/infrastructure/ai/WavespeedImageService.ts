@@ -18,6 +18,7 @@ import {
   WavespeedImageModel,
   resolveWavespeedImageModel,
 } from './WavespeedModels';
+import { getImageStyleById } from '@/src/data/master/imageStyles';
 
 /**
  * WavespeedImageService class
@@ -56,6 +57,8 @@ export class WavespeedImageService implements IImageService {
     try {
       console.log(`[WavespeedImageService] Submitting task for model: ${this.modelUuid}`);
       
+      const enhancedPrompt = this.enhancePromptForStyle(request.imagePrompt, request.imageStyle);
+
       // 1. Submit the task
       const submitResponse = await fetch(`${this.baseUrl}/${this.modelUuid}`, {
         method: 'POST',
@@ -64,7 +67,7 @@ export class WavespeedImageService implements IImageService {
           'Authorization': `Bearer ${this.apiKey}`,
         },
         body: JSON.stringify({
-          prompt: request.imagePrompt,
+          prompt: enhancedPrompt,
           // Add default parameters if needed, or allow them in request
           aspect_ratio: "1:1",
         }),
@@ -183,5 +186,13 @@ export class WavespeedImageService implements IImageService {
       success: false,
       error: 'Polling timed out after 60 seconds',
     };
+  }
+
+  /**
+   * Enhance the prompt for the selected style
+   */
+  private enhancePromptForStyle(prompt: string, imageStyle: string): string {
+    const style = getImageStyleById(imageStyle);
+    return `${prompt}. ${style.promptModifier}. Square aspect ratio, centered composition.`;
   }
 }
