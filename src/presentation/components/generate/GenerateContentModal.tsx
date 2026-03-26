@@ -21,7 +21,7 @@ export interface GenerateFormData {
   scheduledDate: string;
   scheduledTime: string;
   imageStyle: string;
-  platform: string;
+  platforms: string[];
   tone: string;
 }
 
@@ -42,7 +42,7 @@ export function GenerateContentModal({ isOpen, onClose, onGenerate }: GenerateCo
     scheduledDate: new Date().toISOString().split('T')[0],
     scheduledTime: '09:00',
     imageStyle: 'pixel-art',
-    platform: 'facebook',
+    platforms: ['facebook'],
     tone: 'casual',
   });
 
@@ -56,7 +56,7 @@ export function GenerateContentModal({ isOpen, onClose, onGenerate }: GenerateCo
         scheduledTime: initialData?.scheduledTime || '09:00',
         timeSlot: initialData?.timeSlot || 'morning',
         imageStyle: initialData?.imageStyle || 'pixel-art',
-        platform: initialData?.platform || 'facebook',
+        platforms: initialData?.platforms || ['facebook'],
         tone: initialData?.tone || 'casual',
       }));
     }
@@ -93,7 +93,7 @@ export function GenerateContentModal({ isOpen, onClose, onGenerate }: GenerateCo
         scheduledDate: new Date().toISOString().split('T')[0],
         scheduledTime: '09:00',
         imageStyle: 'pixel-art',
-        platform: 'facebook',
+        platforms: ['facebook'],
         tone: 'casual',
       });
       onClose();
@@ -274,19 +274,28 @@ export function GenerateContentModal({ isOpen, onClose, onGenerate }: GenerateCo
                 แพลตฟอร์มปลายทาง
               </label>
               <div className="flex gap-2 flex-wrap">
-                {PLATFORMS.map((p) => (
+                {PLATFORMS.map((p) => {
+                  const isSelected = formData.platforms.includes(p.id);
+                  return (
                   <button
                     key={p.id}
-                    onClick={() => setFormData((prev) => ({ ...prev, platform: p.id }))}
+                    onClick={() => setFormData((prev) => {
+                      const newPlatforms = isSelected
+                        ? prev.platforms.filter((id) => id !== p.id)
+                        : [...prev.platforms, p.id];
+                      // Ensure at least one platform is selected
+                      if (newPlatforms.length === 0) return prev;
+                      return { ...prev, platforms: newPlatforms };
+                    })}
                     className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-all duration-300 ${
-                      formData.platform === p.id
+                      isSelected
                         ? 'bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white shadow-lg shadow-purple-500/25'
                         : 'glass-card text-muted hover:text-foreground'
                     }`}
                   >
-                    {p.emoji} {p.nameEn}
+                    {p.emoji} {p.nameTh}
                   </button>
-                ))}
+                )})}
               </div>
             </div>
 

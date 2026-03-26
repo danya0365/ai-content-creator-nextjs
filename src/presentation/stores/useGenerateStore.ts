@@ -44,7 +44,7 @@ export const useGenerateStore = create<GenerateStore>((set) => ({
     set({ isGenerating: true, error: null });
 
     try {
-      const aiResponse = await fetch('/api/ai/generate', {
+      const aiResponse = await fetch('/api/ai/generate-multi', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -52,66 +52,73 @@ export const useGenerateStore = create<GenerateStore>((set) => ({
           topic: data.topic,
           timeSlot: data.timeSlot,
           imageStyle: data.imageStyle,
-          platform: data.platform,
+          platforms: data.platforms,
           tone: data.tone,
         }),
       });
 
       const aiResult = await aiResponse.json();
 
-      if (!aiResponse.ok || !aiResult.success) {
-        throw new Error(aiResult.error || 'Failed to generate AI content');
+      if (!aiResponse.ok || !aiResult.success || !aiResult.contents) {
+        throw new Error(aiResult.error || 'Failed to generate AI content variants');
       }
 
-      // Step 2: Prepare payload for Database insertion
+      // Step 2: Prepare payloads for Database insertion
       const scheduledAt = `${data.scheduledDate}T${data.scheduledTime}:00.000Z`;
       
-      const createPayload = {
-        ...aiResult.content,
+      const createPayloads = aiResult.contents.map((content: any) => ({
+        ...content,
         scheduledAt,
         status: 'scheduled',
-      };
+      }));
 
-      // Step 3: Call the DB Contents API to save
-      const dbResponse = await fetch('/api/contents', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(createPayload),
-      });
+      // Step 3: Call the DB Contents API to save each variant sequentially 
+      // (This could be optimized with a bulk insert endpoint later)
+      const savedContents: GeneratedContent[] = [];
+      
+      for (const payload of createPayloads) {
+        const dbResponse = await fetch('/api/contents', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
 
-      const dbResult = await dbResponse.json();
+        const dbResult = await dbResponse.json();
 
-      if (!dbResponse.ok) {
-        throw new Error(dbResult.error || 'Failed to save content to database');
+        if (!dbResponse.ok) {
+          throw new Error(dbResult.error || 'Failed to save content to database');
+        }
+
+        // Format response to match store
+        savedContents.push({
+          id: dbResult.id,
+          contentTypeId: dbResult.contentTypeId,
+          title: dbResult.title,
+          description: dbResult.description,
+          imageUrl: dbResult.imageUrl || '/generated/placeholder.png',
+          prompt: dbResult.prompt,
+          timeSlot: dbResult.timeSlot,
+          scheduledAt: dbResult.scheduledAt,
+          publishedAt: dbResult.publishedAt,
+          status: dbResult.status,
+          likes: dbResult.likes || 0,
+          shares: dbResult.shares || 0,
+          createdAt: dbResult.createdAt,
+          comments: dbResult.comments || 0,
+          tags: dbResult.tags || [],
+          emoji: dbResult.emoji,
+        });
       }
-
-      // Format response to match store
-      const newContent: GeneratedContent = {
-        id: dbResult.id,
-        contentTypeId: dbResult.contentTypeId,
-        title: dbResult.title,
-        description: dbResult.description,
-        imageUrl: dbResult.imageUrl || '/generated/placeholder.png',
-        prompt: dbResult.prompt,
-        timeSlot: dbResult.timeSlot,
-        scheduledAt: dbResult.scheduledAt,
-        publishedAt: dbResult.publishedAt,
-        status: dbResult.status,
-        likes: dbResult.likes || 0,
-        shares: dbResult.shares || 0,
-        createdAt: dbResult.createdAt,
-        comments: dbResult.comments || 0,
-        tags: dbResult.tags || [],
-        emoji: dbResult.emoji,
-      };
 
       set({
         isGenerating: false,
-        generatedContent: newContent,
+        // Since we now generate M contents, we can just display the first one structurally in the modal success view 
+        // or just let the dashboard Timeline handle array updates. We set generatedContent to the first one.
+        generatedContent: savedContents[0],
         isModalOpen: false,
       });
 
-      console.log('Successfully generated and saved content:', newContent);
+      console.log(`Successfully generated and saved ${savedContents.length} content variants.`);
 
     } catch (error) {
       set({
