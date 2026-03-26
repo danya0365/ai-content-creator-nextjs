@@ -1,20 +1,21 @@
-import { GoogleTrendsService } from '@/src/infrastructure/services/GoogleTrendsService';
+import { createServerTrendsPresenter } from '@/src/presentation/presenters/trends/TrendsPresenterServerFactory';
 import TrendsView from '@/src/presentation/components/trends/TrendsView';
 
-export const metadata = {
-  title: 'Google Trends Explorer | AI Content Creator',
-  description: 'Explore realtime search trends in Thailand and instantly generate AI content.',
-};
+export async function generateMetadata() {
+  const presenter = createServerTrendsPresenter();
+  return presenter.generateMetadata();
+}
 
 export const revalidate = 3600; // revalidate at most every hour
 
 export default async function TrendsPage() {
-  const initialTrends = await GoogleTrendsService.getDetailedTrends(20);
+  const presenter = createServerTrendsPresenter();
+  const viewModel = await presenter.getViewModel(20);
 
   return (
     <main className="min-h-screen bg-background flex flex-col pt-16 md:pt-20 pb-20 md:pb-6 relative overflow-hidden">
       <div className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 relative z-10 flex flex-col h-full">
-        <TrendsView initialTrends={initialTrends} />
+        <TrendsView initialViewModel={viewModel} />
       </div>
       
       {/* Background Decorators */}

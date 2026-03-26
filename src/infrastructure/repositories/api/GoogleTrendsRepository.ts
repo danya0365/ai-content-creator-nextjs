@@ -1,19 +1,10 @@
 /**
- * GoogleTrendsService
- * Fetches real-time trending keywords from Google Trends RSS Feed.
- * Used for the Trendjacking AI feature.
+ * GoogleTrendsRepository
+ * Implementation of ITrendsRepository using Google Trends RSS
+ * Following Clean Architecture - this is in the Infrastructure layer
  */
 
-export interface TrendItem {
-  title: string;
-  traffic: string;
-  picture: string;
-  pictureSource: string;
-  newsTitle: string;
-  newsSnippet: string;
-  newsUrl: string;
-  pubDate: string;
-}
+import { ITrendsRepository, TrendItem } from '@/src/application/repositories/ITrendsRepository';
 
 function decodeHtmlEntities(text: string): string {
   if (!text) return '';
@@ -27,16 +18,13 @@ function decodeHtmlEntities(text: string): string {
     .replace(/&#x2F;/g, '/');
 }
 
-export class GoogleTrendsService {
+export class GoogleTrendsRepository implements ITrendsRepository {
   private static RSS_URL = 'https://trends.google.co.th/trending/rss?geo=TH';
 
-  /**
-   * Fetches the top N trending keywords in Thailand today.
-   */
-  static async getTopTrends(limit: number = 5): Promise<string[]> {
+  async getTopTrends(limit: number = 5): Promise<string[]> {
     try {
-      const response = await fetch(this.RSS_URL, {
-        next: { revalidate: 3600 }, // Cache for 1 hour
+      const response = await fetch(GoogleTrendsRepository.RSS_URL, {
+        next: { revalidate: 3600 },
       });
 
       if (!response.ok) {
@@ -44,16 +32,12 @@ export class GoogleTrendsService {
       }
 
       const xmlText = await response.text();
-      
-      // We extract <title> from inside <item> blocks using Regex
-      // This avoids needing heavy XML parser dependencies for just one route.
       const itemRegex = /<item>[\s\S]*?<title>(.*?)<\/title>[\s\S]*?<\/item>/g;
       const trends: string[] = [];
       let match;
 
       while ((match = itemRegex.exec(xmlText)) !== null) {
         if (match[1]) {
-          // Sometimes titles are wrapped in CDATA, e.g., <![CDATA[Keyword]]>
           let cleanTitle = match[1].replace(/<!\[CDATA\[(.*?)\]\]>/g, '$1');
           cleanTitle = decodeHtmlEntities(cleanTitle.trim());
           trends.push(cleanTitle);
@@ -62,18 +46,15 @@ export class GoogleTrendsService {
 
       return trends.slice(0, limit);
     } catch (error) {
-      console.error('GoogleTrendsService Error:', error);
+      console.error('GoogleTrendsRepository Error:', error);
       return [];
     }
   }
 
-  /**
-   * Fetches detailed trending objects for the Trends Dashboard visual Explorer.
-   */
-  static async getDetailedTrends(limit: number = 20): Promise<TrendItem[]> {
+  async getDetailedTrends(limit: number = 20): Promise<TrendItem[]> {
     try {
-      const response = await fetch(this.RSS_URL, {
-        next: { revalidate: 3600 }, // Cache for 1 hour
+      const response = await fetch(GoogleTrendsRepository.RSS_URL, {
+        next: { revalidate: 3600 },
       });
 
       if (!response.ok) {
@@ -98,6 +79,7 @@ export class GoogleTrendsService {
         const title = extractTag(itemXml, 'title');
         if (title) {
           trends.push({
+            id: title, // Using title as unique id
             title,
             traffic: extractTag(itemXml, 'ht:approx_traffic'),
             picture: extractTag(itemXml, 'ht:picture'),
@@ -112,7 +94,7 @@ export class GoogleTrendsService {
 
       return trends.slice(0, limit);
     } catch (error) {
-      console.error('GoogleTrendsService Error:', error);
+      console.error('GoogleTrendsRepository Error:', error);
       return [];
     }
   }

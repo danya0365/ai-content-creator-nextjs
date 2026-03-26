@@ -31,8 +31,9 @@ export async function GET(request: NextRequest) {
     // 1. Fetch Trends if requested
     let trends: string[] | undefined = undefined;
     if (mode === 'trending') {
-      const { GoogleTrendsService } = await import('@/src/infrastructure/services/GoogleTrendsService');
-      trends = await GoogleTrendsService.getTopTrends(5);
+      const { GoogleTrendsRepository } = await import('@/src/infrastructure/repositories/api/GoogleTrendsRepository');
+      const trendsRepo = new GoogleTrendsRepository();
+      trends = await trendsRepo.getTopTrends(5);
     }
 
     // 2. Initialize correct Content Service

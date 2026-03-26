@@ -1,14 +1,26 @@
 'use client';
 
-import { useState } from 'react';
-import { TrendItem } from '@/src/infrastructure/services/GoogleTrendsService';
+import { useState, useEffect } from 'react';
+import { TrendItem } from '@/src/application/repositories/ITrendsRepository';
 import { useGenerateStore } from '@/src/presentation/stores/useGenerateStore';
+import { useTrendsPresenter } from '@/src/presentation/presenters/trends/useTrendsPresenter';
+import { TrendsViewModel } from '@/src/presentation/presenters/trends/TrendsPresenter';
 import { useRouter } from 'next/navigation';
 
-export default function TrendsView({ initialTrends }: { initialTrends: TrendItem[] }) {
+export default function TrendsView({ initialViewModel }: { initialViewModel: TrendsViewModel }) {
   const router = useRouter();
   const openModal = useGenerateStore((state) => state.openModal);
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+
+  const { trends, setViewModel } = useTrendsPresenter();
+
+  // Hydrate initial state from server
+  useEffect(() => {
+    setViewModel(initialViewModel);
+  }, [initialViewModel, setViewModel]);
+
+  // Use local trends if hydrated, else initial (prevents hydration mismatch flash)
+  const displayTrends = trends.length > 0 ? trends : initialViewModel.trends;
 
   const handleCreateContent = (trend: TrendItem) => {
     // Open the modal with the pre-filled topic containing the trend title
@@ -36,7 +48,7 @@ export default function TrendsView({ initialTrends }: { initialTrends: TrendItem
 
       {/* Grid of Trends */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 pt-6">
-        {initialTrends.map((trend, index) => (
+        {displayTrends.map((trend, index) => (
           <div
             key={index}
             className="group relative h-80 rounded-2xl overflow-hidden glass-card transition-all duration-500 hover:shadow-2xl hover:shadow-orange-500/20 flex flex-col justify-end"
@@ -105,7 +117,7 @@ export default function TrendsView({ initialTrends }: { initialTrends: TrendItem
             </div>
           </div>
         ))}
-        {initialTrends.length === 0 && (
+        {displayTrends.length === 0 && (
           <div className="col-span-full py-20 text-center text-muted">
             <p>ขณะนี้ไม่พบข้อมูลยอดฮิต กรุณาลองใหม่ในภายหลัง</p>
           </div>
