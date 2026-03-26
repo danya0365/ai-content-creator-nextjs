@@ -183,6 +183,7 @@ export function DashboardView({ initialViewModel }: DashboardViewProps) {
   const viewModel = state.viewModel || {
     stats: { totalContents: 0, publishedCount: 0, scheduledCount: 0, draftCount: 0, totalLikes: 0, totalShares: 0 },
     recentContents: [],
+    activities: [],
     scheduledContents: [],
     draftContents: [],
     contentTypes: [],
@@ -290,7 +291,7 @@ export function DashboardView({ initialViewModel }: DashboardViewProps) {
           {/* Charts Section */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 md:gap-6">
             <EngagementChart />
-            <ActivityFeed />
+            <ActivityFeed activities={viewModel.activities} />
           </div>
 
           {/* Main Content Grid */}

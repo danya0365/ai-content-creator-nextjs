@@ -15,9 +15,18 @@ import {
 } from '@/src/data/master/contentTypes';
 import { Metadata } from 'next';
 
+export interface DashboardActivity {
+  id: string;
+  type: 'created' | 'published' | 'scheduled' | 'edited' | 'deleted';
+  title: string;
+  timestamp: Date;
+  contentType?: string;
+}
+
 export interface DashboardViewModel {
   stats: ContentStats;
   recentContents: Content[];
+  activities: DashboardActivity[];
   scheduledContents: Content[];
   draftContents: Content[];
   contentTypes: ContentType[];
@@ -59,9 +68,35 @@ export class DashboardPresenter {
       ? getContentTypesByTimeSlot(currentTimeSlot.id)
       : CONTENT_TYPES.slice(0, 3);
 
+    // Map content to activity feed items
+    const activities: DashboardActivity[] = allContents
+      .map((c) => {
+        let type: DashboardActivity['type'] = 'created';
+        let timestamp = new Date(c.createdAt);
+        
+        if (c.status === 'published' && c.publishedAt) {
+          type = 'published';
+          timestamp = new Date(c.publishedAt);
+        } else if (c.status === 'scheduled' && c.scheduledAt) {
+          type = 'scheduled';
+          timestamp = new Date(c.scheduledAt);
+        }
+        
+        return {
+          id: c.id,
+          type,
+          title: c.title,
+          timestamp,
+          contentType: c.contentTypeId,
+        };
+      })
+      .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
+      .slice(0, 10);
+
     return {
       stats,
       recentContents,
+      activities,
       scheduledContents,
       draftContents,
       contentTypes: CONTENT_TYPES,
