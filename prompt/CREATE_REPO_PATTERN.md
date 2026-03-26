@@ -114,13 +114,20 @@ export interface [Entity]Stats {
 }
 
 /**
- * Data required to create a new entity
+ * Data required to create a new entity (full server-side DTO)
  */
 export interface Create[Entity]Data {
+  ownerId: string;       // 🔒 Server-injected — ห้าม client ส่งเอง
   name: string;
   description?: string;
   // Add create-specific fields
 }
+
+/**
+ * Client-safe payload — ตัด auth ID ออกด้วย Omit<>
+ * ใช้ใน interface method + client-side repositories
+ */
+export type Create[Entity]Payload = Omit<Create[Entity]Data, 'ownerId'>;
 
 /**
  * Data for updating an existing entity
@@ -170,8 +177,9 @@ export interface I[Entity]Repository {
 
   /**
    * Create a new entity
+   * 🔒 Client sends Payload (ไม่มี auth ID), Server inject เอง
    */
-  create(data: Create[Entity]Data): Promise<[Entity]>;
+  create(data: Create[Entity]Payload): Promise<[Entity]>;
 
   /**
    * Update an existing entity
@@ -457,7 +465,7 @@ export const mock[Entity]Repository = new Mock[Entity]Repository();
  */
 
 import {
-  Create[Entity]Data,
+  Create[Entity]Payload,
   I[Entity]Repository,
   [Entity],
   [Entity]Stats,
@@ -543,13 +551,18 @@ export class Supabase[Entity]Repository implements I[Entity]Repository {
   // WRITE OPERATIONS
   // ============================================================
 
-  async create(data: Create[Entity]Data): Promise<[Entity]> {
+  // 🔒 Server-Injected Identity Pattern:
+  // ownerId ถูกส่งเป็น parameter แยก โดย API Route (ไม่อยู่ใน payload)
+  async create(data: Create[Entity]Payload, ownerId?: string): Promise<[Entity]> {
+    const resolvedOwnerId = ownerId || '';
+
     const { data: created, error } = await this.supabase
       .from('[entities]')
       .insert({
+        owner_id: resolvedOwnerId,  // 🔒 Server-injected
         name: data.name,
         description: data.description,
-        // Map other fields from Create[Entity]Data to snake_case
+        // Map other fields from Create[Entity]Payload to snake_case
       })
       .select()
       .single();
@@ -645,18 +658,22 @@ export class Supabase[Entity]Repository implements I[Entity]Repository {
 - ✅ **Error Handling** - จัดการ errors อย่างเหมาะสม
 - ✅ **RPC Support** - รองรับ stored procedures
 
-### การใช้งานใน API Routes
+### การใช้งานใน API Routes (Server-side)
+
+**⚠️ สำคัญ:** ห้ามเรียกใช้ `Supabase[Entity]Repository` โดยตรงใน API Routes เพื่อป้องกันรหัสซ้ำซ้อนและละเมิด Single Source of Truth! **ต้องเรียกผ่าน `[Entity]PresenterServerFactory` เสมอ** 
 
 ```typescript
 // app/api/[entities]/route.ts
-import { createServerSupabaseClient } from '@/src/infrastructure/supabase/server';
-import { Supabase[Entity]Repository } from '@/src/infrastructure/repositories/supabase/Supabase[Entity]Repository';
+import { createServer[Entity]Presenter } from '@/src/presentation/presenters/[entity]/[Entity]PresenterServerFactory';
 
 export async function GET() {
-  const supabase = await createServerSupabaseClient();
-  const repository = new Supabase[Entity]Repository(supabase);
+  // 1. เรียกใช้งานผ่าน Factory ฝั่ง Server
+  const presenter = await createServer[Entity]Presenter();
   
-  const entities = await repository.getAll();
+  // 2. ดึงข้อมูลผ่าน Presenter เท่านั้น 
+  // (ห้ามลัดไปเรียก Repository โดยตรงเด็ดขาด)
+  const entities = await presenter.getAll[Entities]();
+  
   return Response.json(entities);
 }
 ```
@@ -698,7 +715,7 @@ export async function GET() {
 'use client';
 
 import {
-  Create[Entity]Data,
+  Create[Entity]Payload,
   I[Entity]Repository,
   [Entity],
   [Entity]Stats,
@@ -761,7 +778,9 @@ export class Api[Entity]Repository implements I[Entity]Repository {
   // WRITE OPERATIONS
   // ============================================================
 
-  async create(data: Create[Entity]Data): Promise<[Entity]> {
+  // 🔒 Client ส่ง Payload เท่านั้น (ไม่มี auth ID)
+  // API Route จะ inject ownerId จาก session ให้
+  async create(data: Create[Entity]Payload): Promise<[Entity]> {
     const res = await fetch(this.baseUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -836,7 +855,7 @@ export class Api[Entity]Repository implements I[Entity]Repository {
   }
 
   /**
-   * Action with POST body
+   * Example: Action with POST body
    */
   async customAction(id: string, action: string): Promise<void> {
     const res = await fetch(`${this.baseUrl}/${id}`, {
@@ -850,59 +869,8 @@ export class Api[Entity]Repository implements I[Entity]Repository {
       throw new Error(error.error || 'ไม่สามารถดำเนินการได้');
     }
   }
-
-  // ============================================================
-  // REAL-TIME (Optional)
-  // ============================================================
-
-  /**
-   * Subscribe to real-time changes
-   * Requires passing a SupabaseClient to the ApiRepository constructor
-   */
-  subscribe(callback: (event: any) => void): () => void {
-    if (!this.supabase) {
-      console.warn('Real-time subscription requires passing a SupabaseClient to ApiRepository');
-      return () => {};
-    }
-
-    const channel = this.supabase
-      .channel('[entities]_changes_api')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: '[entities]' },
-        (payload) => {
-          callback(payload);
-        }
-      )
-      .subscribe();
-
-    return () => {
-      this.supabase?.removeChannel(channel);
-    };
-  }
 }
 ```
-
-### การจัดการ Realtime ใน ApiRepository
-
-แม้ว่า `ApiRepository` จะออกแบบมาเพื่อเน้นการใช้ `fetch` ผ่าน API Routes แต่สำหรับฟีเจอร์ที่ต้องใช้ **Realtime (WebSocket)** อย่าง Supabase Channels เราสามารถประยุกต์ใช้ได้ดังนี้:
-
-1. รับ `SupabaseClient` ผ่าน constructor:
-   ```typescript
-   constructor(private readonly supabase?: SupabaseClient<Database>) {}
-   ```
-2. ตอนสร้าง Factory ให้ส่ง **Browser Client** เท่านั้น:
-   ```typescript
-   // ClientFactory.ts
-   import { createBrowserClient } from '@/src/infrastructure/supabase/client';
-   
-   static create(): Presenter {
-     const supabase = createBrowserClient();
-     const repository = new ApiEntityRepository(supabase);
-     return new Presenter(repository);
-   }
-   ```
-   **คำเตือน**: ใช้ `supabase` `เฉพาะในเมธอด subscribe() เท่านั้น!` ห้ามนำไปใช้งาน CRUD operations เด็ดขาด เพื่อให้การ query ทั้งหมดยังวิ่งผ่าน API Routes อยู่
 
 ### Key Features
 
@@ -1112,6 +1080,7 @@ export interface IBookingRepository {
 
 - [ ] สร้าง Interface ใน `src/application/repositories/`
 - [ ] กำหนด Types ทั้งหมด (Entity, Stats, Create, Update)
+- [ ] ถ้ามี auth-sensitive field → สร้าง `Payload` type ด้วย `Omit<>` (🔒 Server-Injected Identity)
 - [ ] สร้าง Mock Repository พร้อม mock data
 - [ ] Export singleton instance จาก Mock
 - [ ] สร้าง Supabase Repository
@@ -1175,6 +1144,30 @@ async getByIds(ids: string[]): Promise<[Entity][]> {
   // ... rest of implementation
 }
 ```
+
+### 7. Server-Injected Identity Pattern (🔒)
+
+Authenticated user ID (เช่น `studentId`, `instructorId`, `ownerId`) **ต้องถูก inject จาก server เสมอ** ห้ามรับจาก client
+
+**หลักการ:**
+- `Create[Entity]Data` = Full DTO (มี auth ID) ใช้ internal เท่านั้น
+- `Create[Entity]Payload` = `Omit<Create[Entity]Data, 'ownerId'>` ← ใช้ใน interface + client
+- API Route inject auth ID จาก session แล้วส่งเป็น parameter แยก
+
+```typescript
+// ❌ Bad - Client ส่ง auth ID เอง (IDOR vulnerability)
+await repository.create({ ownerId: 'user-123', name: 'Test' });
+
+// ✅ Good - API Route inject auth ID
+const body: Create[Entity]Payload = await request.json(); // ไม่มี ownerId
+const result = await repository.create(body, profile.id);  // inject แยก
+```
+
+**Convention:**
+- Field ที่เป็น auth ID ต้องมี comment `// 🔒 Server-injected`
+- Supabase repo: รับ auth ID เป็น optional parameter ตัวที่ 2
+- API repo: ส่งแค่ Payload (ไม่มี auth ID)
+- Mock repo: auto-assign dummy ID ภายใน
 
 ---
 

@@ -14,6 +14,10 @@ import {
   GenerateContentResponse,
   IContentService,
 } from '@/src/application/services/IContentService';
+import {
+  WavespeedContentModel,
+  resolveWavespeedContentModel,
+} from './WavespeedModels';
 import { ContentType } from '@/src/data/master/contentTypes';
 
 /**
@@ -57,17 +61,17 @@ Format your response as JSON:
  */
 export class WavespeedContentService implements IContentService {
   private apiKey: string;
-  // Wavespeed Model UUID - Text generation (e.g., GPT-4, Llama-3, etc.)
-  private modelUuid = 'openai/gpt-4o-mini';
+  // Wavespeed Model UUID - Text generation (strict typed)
+  private modelUuid: WavespeedContentModel;
   private baseUrl = 'https://api.wavespeed.ai/api/v3';
 
   /**
    * @param apiKey - Wavespeed AI API key
-   * @param modelUuid - Optional Model UUID to use
+   * @param modelUuid - Optional Model UUID (validated against WavespeedContentModel)
    */
   constructor(apiKey: string, modelUuid?: string) {
     this.apiKey = apiKey;
-    if (modelUuid) this.modelUuid = modelUuid;
+    this.modelUuid = resolveWavespeedContentModel(modelUuid);
   }
 
   async generateContent(request: GenerateContentRequest): Promise<GenerateContentResponse> {

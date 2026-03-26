@@ -81,6 +81,16 @@ export function LoginView() {
   };
 
   /**
+   * Handle auto login for non-prod environments
+   */
+  const handleAutoLogin = async () => {
+    actions.clearError();
+    setEmail('admin@aicontentcreator.com');
+    setPassword('12345678');
+    await actions.signIn('admin@aicontentcreator.com', '12345678');
+  };
+
+  /**
    * Get OAuth provider icon
    */
   const getProviderIcon = (provider: string) => {
@@ -140,6 +150,21 @@ export function LoginView() {
                 }`}
               >
                 เบอร์โทรศัพท์
+              </button>
+            </div>
+          )}
+
+          {/* Auto Login Button (Non-Prod) */}
+          {process.env.NODE_ENV !== 'production' && (
+            <div className="mb-6">
+              <button
+                type="button"
+                onClick={handleAutoLogin}
+                disabled={state.isSubmitting}
+                className="w-full py-2.5 px-4 bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 border border-emerald-500/20 rounded-xl font-medium transition-all flex items-center justify-center gap-2"
+              >
+                <span>⚡</span>
+                Auto Login as Admin (Dev Only)
               </button>
             </div>
           )}

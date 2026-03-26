@@ -14,6 +14,10 @@ import {
   GenerateImageResponse,
   IImageService,
 } from '@/src/application/services/IImageService';
+import {
+  WavespeedImageModel,
+  resolveWavespeedImageModel,
+} from './WavespeedModels';
 
 /**
  * WavespeedImageService class
@@ -21,17 +25,17 @@ import {
  */
 export class WavespeedImageService implements IImageService {
   private apiKey: string;
-  // Wavespeed Model UUID - Image generation (e.g., FLUX, Kling, etc.)
-  private modelUuid = 'black-forest-labs/flux-schnell';
+  // Wavespeed Model UUID - Image generation (strict typed)
+  private modelUuid: WavespeedImageModel;
   private baseUrl = 'https://api.wavespeed.ai/api/v3';
 
   /**
    * @param apiKey - Wavespeed AI API key
-   * @param modelUuid - Optional Model UUID to use
+   * @param modelUuid - Optional Model UUID (validated against WavespeedImageModel)
    */
   constructor(apiKey: string, modelUuid?: string) {
     this.apiKey = apiKey;
-    if (modelUuid) this.modelUuid = modelUuid;
+    this.modelUuid = resolveWavespeedImageModel(modelUuid);
   }
 
   async generateImage(request: GenerateImageRequest): Promise<GenerateImageResponse> {
@@ -76,7 +80,8 @@ export class WavespeedImageService implements IImageService {
       }
 
       const submitData = await submitResponse.json();
-      const taskId = submitData.data?.task_id || submitData.task_id;
+      const taskId = submitData.data?.id || submitData.id;
+      const pollUrl = submitData.data?.urls?.get || submitData.urls?.get || `${this.baseUrl}/predictions/${taskId}/result`;
 
       if (!taskId) {
         return {
@@ -88,7 +93,7 @@ export class WavespeedImageService implements IImageService {
       console.log(`[WavespeedImageService] Task created: ${taskId}. Polling for results...`);
 
       // 2. Poll for results
-      return await this.pollForResults(taskId);
+      return await this.pollForResults(pollUrl, taskId);
 
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -103,10 +108,10 @@ export class WavespeedImageService implements IImageService {
   /**
    * Poll Wavespeed API for task completion
    */
-  private async pollForResults(taskId: string, maxRetries = 30, intervalMs = 2000): Promise<GenerateImageResponse> {
+  private async pollForResults(pollUrl: string, taskId: string, maxRetries = 30, intervalMs = 2000): Promise<GenerateImageResponse> {
     for (let i = 0; i < maxRetries; i++) {
       try {
-        const response = await fetch(`${this.baseUrl}/${this.modelUuid}/tasks/${taskId}`, {
+        const response = await fetch(pollUrl, {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${this.apiKey}`,
@@ -126,6 +131,31 @@ export class WavespeedImageService implements IImageService {
           const imageUrl = outputs?.[0]?.url || outputs?.[0];
 
           if (imageUrl) {
+            try {
+              // Fetch the image to get base64 data for Supabase upload
+              const imageResponse = await fetch(imageUrl);
+              if (imageResponse.ok) {
+                const arrayBuffer = await imageResponse.arrayBuffer();
+                const buffer = Buffer.from(arrayBuffer);
+                const base64Data = buffer.toString('base64');
+                const contentType = imageResponse.headers.get('content-type') || 'image/jpeg';
+                // Clean the extension (e.g. 'jpeg' instead of 'jpeg; charset=utf-8')
+                const rawExtension = contentType.split('/')[1] || 'jpeg';
+                const extension = rawExtension.split(';')[0].trim();
+
+                return {
+                  success: true,
+                  imageUrl: imageUrl,
+                  base64Data,
+                  contentType,
+                  extension
+                };
+              }
+            } catch (fetchErr) {
+              console.error('[WavespeedImageService] Failed to fetch image for base64 conversion:', fetchErr);
+            }
+
+            // Fallback to just URL if fetching fails
             return {
               success: true,
               imageUrl: imageUrl,
