@@ -18,6 +18,7 @@ import {
   IContentRepository,
   PaginatedResult,
   UpdateContentDTO,
+  AnalyticsMetrics,
 } from '@/src/application/repositories/IContentRepository';
 import { Database } from '@/src/domain/types/supabase';
 import { SupabaseClient } from '@supabase/supabase-js';
@@ -237,5 +238,17 @@ export class ApiContentRepository implements IContentRepository {
     return () => {
       this.supabase?.removeChannel(channel);
     };
+  }
+
+  /**
+   * Get analytics aggregations
+   */
+  async getAnalyticsMetrics(): Promise<AnalyticsMetrics> {
+    const res = await fetch(`${this.baseUrl}?action=analytics`);
+    if (!res.ok) {
+      const error = await res.json();
+      throw new Error(error.error || 'ไม่สามารถโหลดข้อมูล Analytics ได้');
+    }
+    return res.json();
   }
 }

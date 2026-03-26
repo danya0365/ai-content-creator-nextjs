@@ -12,6 +12,7 @@ import {
     IContentRepository,
     PaginatedResult,
     UpdateContentDTO,
+    AnalyticsMetrics,
 } from '@/src/application/repositories/IContentRepository';
 import { GeneratedContent, MOCK_CONTENTS } from '@/src/data/mock/mockContents';
 
@@ -181,6 +182,26 @@ export class MockContentRepository implements IContentRepository {
    */
   subscribe(_callback: (event: any) => void): () => void {
     return () => {};
+  }
+
+  async getAnalyticsMetrics(): Promise<AnalyticsMetrics> {
+    await this.delay(100);
+    return {
+      growth: { currentPeriod: 15, previousPeriod: 10, rate: 50 },
+      dailyEngagement: [
+        { date: '2026-03-20', total: 100 },
+        { date: '2026-03-21', total: 150 },
+        { date: '2026-03-22', total: 200 },
+      ],
+      contentTypes: [
+        { id: 'tech', count: 5 },
+        { id: 'news', count: 3 },
+      ],
+      weeklyTrends: [
+        { weekLabel: 'W1', total: 500 },
+        { weekLabel: 'W2', total: 600 },
+      ],
+    };
   }
 
   // Helper method to simulate network delay

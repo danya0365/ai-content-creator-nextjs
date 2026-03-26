@@ -30,6 +30,12 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(stats);
     }
 
+    // Get analytics metrics
+    if (action === 'analytics') {
+      const metrics = await repo.getAnalyticsMetrics();
+      return NextResponse.json(metrics);
+    }
+
     // Get recent published
     if (action === 'recentPublished') {
       const limit = parseInt(searchParams.get('limit') || '5');

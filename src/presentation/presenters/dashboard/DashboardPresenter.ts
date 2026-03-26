@@ -27,6 +27,8 @@ export interface DashboardViewModel {
   stats: ContentStats;
   recentContents: Content[];
   activities: DashboardActivity[];
+  engagementWeeklyData: { label: string; value: number }[];
+  engagementByType: { label: string; value: number; color: string }[];
   scheduledContents: Content[];
   draftContents: Content[];
   contentTypes: ContentType[];
@@ -49,21 +51,22 @@ export class DashboardPresenter {
    */
   async getViewModel(): Promise<DashboardViewModel> {
     // Get data in parallel for better performance
-    const [stats, allContents] = await Promise.all([
+    const [stats, allContents, metrics] = await Promise.all([
       this.repository.getStats(),
       this.repository.getAll(),
+      this.repository.getAnalyticsMetrics()
     ]);
 
-    // Recent contents = latest 6, regardless of status (sorted by createdAt)
-    const recentContents = [...allContents]
-      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-      .slice(0, 6);
-
+    // Split contents into categories
+    const recentContents = allContents.slice(0, 5);
     const scheduledContents = allContents.filter((c) => c.status === 'scheduled');
     const draftContents = allContents.filter((c) => c.status === 'draft');
-    const currentTimeSlot = getCurrentTimeSlot();
-    
-    // Get suggested content types based on current time
+
+    // Determine current time period and suggested content types
+    const currentHour = new Date().getHours();
+    const currentTimeSlot = TIME_SLOTS.find(
+      (slot) => currentHour >= slot.startHour && currentHour < slot.endHour
+    ) || null;
     const suggestedContentTypes = currentTimeSlot
       ? getContentTypesByTimeSlot(currentTimeSlot.id)
       : CONTENT_TYPES.slice(0, 3);
@@ -93,10 +96,25 @@ export class DashboardPresenter {
       .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
       .slice(0, 10);
 
+    // Map UI engagement charts from Repository Analytics
+    const days = ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส'];
+    const engagementWeeklyData = metrics.dailyEngagement.map(d => {
+      const dateObj = new Date(d.date);
+      return { label: days[dateObj.getDay()], value: d.total };
+    });
+
+    const engagementByType = [
+      { label: 'Likes', value: stats.totalLikes || 0, color: '#EC4899' },
+      { label: 'Shares', value: stats.totalShares || 0, color: '#8B5CF6' },
+      { label: 'Comments', value: allContents.reduce((sum, c) => sum + (c.comments || 0), 0), color: '#06B6D4' },
+    ];
+
     return {
       stats,
       recentContents,
       activities,
+      engagementWeeklyData,
+      engagementByType,
       scheduledContents,
       draftContents,
       contentTypes: CONTENT_TYPES,

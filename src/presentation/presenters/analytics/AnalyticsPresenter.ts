@@ -62,19 +62,11 @@ export class AnalyticsPresenter {
    * Get view model for the page
    */
   async getViewModel(): Promise<AnalyticsViewModel> {
-    const stats = await this.repository.getStats();
-    const allContents = await this.repository.getAll();
-
-    // Generate chart data based on stats
-    const engagementChart: AnalyticsChartData = {
-      labels: ['จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส', 'อา'],
-      data: [65, 78, 90, 81, 56, 55, 40],
-    };
-
-    const contentTypeChart: AnalyticsChartData = {
-      labels: ['ข่าว', 'อาหาร', 'เทค', 'เกม', 'มีม', 'คำคม'],
-      data: [25, 18, 15, 12, 20, 10],
-    };
+    const [stats, allContents, metrics] = await Promise.all([
+      this.repository.getStats(),
+      this.repository.getAll(),
+      this.repository.getAnalyticsMetrics()
+    ]);
 
     const goals: AnalyticsGoal[] = [
       { id: 'posts', label: 'โพสต์รายเดือน', current: stats.totalContents, target: 30, unit: 'โพสต์' },
@@ -82,36 +74,37 @@ export class AnalyticsPresenter {
       { id: 'shares', label: 'ยอดแชร์', current: stats.totalShares, target: 500, unit: 'แชร์' },
     ];
 
-    // Calculate growth rate (mock for now)
-    const growthRate = 15.4;
+    const growthRate = metrics.growth.rate;
 
-    // ✅ Weekly engagement data
-    const weeklyData: ChartDataPoint[] = [
-      { label: 'จ', value: 142 },
-      { label: 'อ', value: 189 },
-      { label: 'พ', value: 156 },
-      { label: 'พฤ', value: 234 },
-      { label: 'ศ', value: 312 },
-      { label: 'ส', value: 278 },
-      { label: 'อา', value: 198 },
-    ];
+    // Transform repository dailyEngagement to weekly UI labels
+    const days = ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส'];
+    const engagementChart: AnalyticsChartData = { labels: [], data: [] };
+    const weeklyData: ChartDataPoint[] = metrics.dailyEngagement.map(d => {
+      const dateObj = new Date(d.date);
+      const label = days[dateObj.getDay()];
+      engagementChart.labels.push(label);
+      engagementChart.data.push(d.total);
+      return { label, value: d.total };
+    });
 
-    // ✅ Monthly data
-    const monthlyData: ChartDataPoint[] = [
-      { label: 'W1', value: 850 },
-      { label: 'W2', value: 1200 },
-      { label: 'W3', value: 980 },
-      { label: 'W4', value: 1450 },
-    ];
+    // Types Data Mapping
+    const typeColors = ['#FFB347', '#FF6B6B', '#4ECDC4', '#C9B1FF', '#45B7D1'];
+    const contentTypeChart: AnalyticsChartData = { 
+      labels: metrics.contentTypes.map(t => t.id), 
+      data: metrics.contentTypes.map(t => t.count) 
+    };
+    
+    const contentTypeData: ChartDataPoint[] = metrics.contentTypes.map((t, idx) => ({
+      label: t.id,
+      value: t.count,
+      color: typeColors[idx % typeColors.length]
+    }));
 
-    // ✅ Content type distribution
-    const contentTypeData: ChartDataPoint[] = [
-      { label: 'Morning News', value: 35, color: '#FFB347' },
-      { label: 'Food', value: 25, color: '#FF6B6B' },
-      { label: 'Tech Tips', value: 20, color: '#4ECDC4' },
-      { label: 'Entertainment', value: 12, color: '#C9B1FF' },
-      { label: 'Motivation', value: 8, color: '#45B7D1' },
-    ];
+    // Monthly Trends
+    const monthlyData: ChartDataPoint[] = metrics.weeklyTrends.map(w => ({
+      label: w.weekLabel,
+      value: w.total
+    }));
 
     // ✅ Top performers from actual content
     const sortedByLikes = [...allContents].sort((a, b) => (b.likes || 0) - (a.likes || 0));

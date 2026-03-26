@@ -84,6 +84,32 @@ export interface PaginatedResult<T> {
   perPage: number;
 }
 
+export interface AnalyticsDailyStats {
+  date: string;
+  total: number;
+}
+
+export interface AnalyticsTypeStats {
+  id: string;
+  count: number;
+}
+
+export interface AnalyticsWeeklyTrend {
+  weekLabel: string;
+  total: number;
+}
+
+export interface AnalyticsMetrics {
+  growth: {
+    currentPeriod: number;
+    previousPeriod: number;
+    rate: number;
+  };
+  dailyEngagement: AnalyticsDailyStats[];
+  contentTypes: AnalyticsTypeStats[];
+  weeklyTrends: AnalyticsWeeklyTrend[];
+}
+
 /**
  * IContentRepository - Content data access interface
  */
@@ -138,4 +164,9 @@ export interface IContentRepository {
    * Returns an unsubscribe function
    */
   subscribe(callback: (event: ContentEvent) => void): () => void;
+
+  /**
+   * Get analytics aggregations
+   */
+  getAnalyticsMetrics(): Promise<AnalyticsMetrics>;
 }

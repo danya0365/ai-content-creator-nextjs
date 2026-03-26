@@ -3,7 +3,7 @@
  * Zustand store for content generation state
  */
 
-import { GeneratedContent } from '@/src/data/mock/mockContents';
+import { Content } from '@/src/application/repositories/IContentRepository';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { GenerateFormData } from '../components/generate/GenerateContentModal';
@@ -11,7 +11,7 @@ import { GenerateFormData } from '../components/generate/GenerateContentModal';
 interface GenerateState {
   isModalOpen: boolean;
   isGenerating: boolean;
-  generatedContent: GeneratedContent | null;
+  generatedContent: Content | null;
   error: string | null;
   initialData: Partial<GenerateFormData> | null;
 }
@@ -91,7 +91,7 @@ export const useGenerateStore = create<GenerateStore>()(
 
       // Step 3: Call the DB Contents API to save each variant sequentially 
       // (This could be optimized with a bulk insert endpoint later)
-      const savedContents: GeneratedContent[] = [];
+      const savedContents: Content[] = [];
       
       for (const payload of createPayloads) {
         const dbResponse = await fetch('/api/contents', {

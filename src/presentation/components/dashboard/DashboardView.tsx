@@ -184,6 +184,8 @@ export function DashboardView({ initialViewModel }: DashboardViewProps) {
     stats: { totalContents: 0, publishedCount: 0, scheduledCount: 0, draftCount: 0, totalLikes: 0, totalShares: 0 },
     recentContents: [],
     activities: [],
+    engagementWeeklyData: [],
+    engagementByType: [],
     scheduledContents: [],
     draftContents: [],
     contentTypes: [],
@@ -290,7 +292,7 @@ export function DashboardView({ initialViewModel }: DashboardViewProps) {
 
           {/* Charts Section */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 md:gap-6">
-            <EngagementChart />
+            <EngagementChart weeklyData={viewModel.engagementWeeklyData} typeData={viewModel.engagementByType} />
             <ActivityFeed activities={viewModel.activities} />
           </div>
 
