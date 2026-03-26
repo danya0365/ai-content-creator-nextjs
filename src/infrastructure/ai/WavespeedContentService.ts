@@ -21,11 +21,21 @@ import {
 } from './WavespeedModels';
 import { ContentType } from '@/src/data/master/contentTypes';
 import { getImageStyleById } from '@/src/data/master/imageStyles';
+import { getPlatformById } from '@/src/data/master/platforms';
+import { getToneById } from '@/src/data/master/tones';
 
 /**
  * Generate content prompt based on type and topic
  */
-function buildPrompt(contentType: ContentType, topic: string, timeSlot: string, language: string, imageStyleId: string): string {
+function buildPrompt(
+  contentType: ContentType,
+  topic: string,
+  timeSlot: string,
+  language: string,
+  imageStyleId: string,
+  platformId?: string,
+  toneId?: string
+): string {
   const timeContext = {
     morning: 'เช้าวันใหม่ที่สดใส',
     lunch: 'ช่วงพักเที่ยง',
@@ -34,29 +44,33 @@ function buildPrompt(contentType: ContentType, topic: string, timeSlot: string, 
   }[timeSlot] || '';
 
   const style = getImageStyleById(imageStyleId);
+  const platform = platformId ? getPlatformById(platformId) : null;
+  const tone = toneId ? getToneById(toneId) : null;
 
-  return `
-You are a creative content creator specializing in ${contentType.name} content. 
+  let prompt = `You are a creative content creator specializing in ${contentType.name} content.
 Create engaging social media content about: "${topic}"
 
 Context: This content will be posted during ${timeContext}.
 Content Type: ${contentType.name} - ${contentType.description}
-Language: ${language === 'th' ? 'Thai' : 'English'}
+Language: ${language === 'th' ? 'Thai' : 'English'}`;
 
-Please provide:
-1. A catchy title (max 50 chars)
-2. An engaging description (100-200 chars)
-3. A prompt for generating a ${style.nameEn} image
-4. 5 relevant hashtags
+  if (platform) {
+    prompt += `\n\n[CRITICAL SOCIAL PLATFORM CONSTRAINTS: ${platform.nameEn}]\n${platform.promptGuidance}`;
+  }
 
-Format your response as JSON:
+  if (tone) {
+    prompt += `\n\n[TONE OF VOICE: ${tone.nameEn}]\n${tone.promptModifier}`;
+  }
+
+  prompt += `\n\nPlease provide your response in this exact JSON format (no markdown, just raw JSON):
 {
-  "title": "...",
-  "description": "...",
+  "title": "A catchy title (max 50 chars)",
+  "description": "An engaging description (100-200 chars)",
   "imagePrompt": "Create ${style.contentPromptInstruction}...",
-  "hashtags": ["#tag1", "#tag2", ...]
-}
-`;
+  "hashtags": ["#tag1", "#tag2", "#tag3", "#tag4", "#tag5"]
+}`;
+
+  return prompt;
 }
 
 /**
@@ -94,8 +108,8 @@ export class WavespeedContentService implements IContentService {
     }
 
     try {
-      const { contentType, topic, timeSlot, language = 'th', imageStyle } = request;
-      const prompt = buildPrompt(contentType, topic, timeSlot, language, imageStyle);
+      const { contentType, topic, timeSlot, language = 'th', imageStyle, platform, tone } = request;
+      const prompt = buildPrompt(contentType, topic, timeSlot, language, imageStyle, platform, tone);
 
       console.log(`[WavespeedContentService] Submitting task for model: ${this.modelUuid}`);
       

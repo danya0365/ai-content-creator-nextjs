@@ -13,6 +13,8 @@ export interface GenerateContentRequest {
   timeSlot: string;
   language?: 'th' | 'en';
   imageStyle: string;
+  platform?: string;
+  tone?: string;
 }
 
 export interface GenerateContentResponse {

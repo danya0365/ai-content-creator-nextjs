@@ -14,6 +14,8 @@ import {
 } from '@/src/application/services/IContentService';
 import { ContentType } from '@/src/data/master/contentTypes';
 import { getImageStyleById } from '@/src/data/master/imageStyles';
+import { getPlatformById } from '@/src/data/master/platforms';
+import { getToneById } from '@/src/data/master/tones';
 
 /**
  * Generate content prompt based on type and topic
@@ -76,8 +78,8 @@ export class GeminiContentService implements IContentService {
     }
 
     try {
-      const { contentType, topic, timeSlot, language = 'th', imageStyle } = request;
-      const prompt = buildPrompt(contentType, topic, timeSlot, language, imageStyle);
+      const { contentType, topic, timeSlot, language = 'th', imageStyle, platform, tone } = request;
+      const prompt = buildPrompt(contentType, topic, timeSlot, language, imageStyle, platform, tone);
 
       const response = await fetch(
         `${this.baseUrl}/models/gemini-2.0-flash:generateContent?key=${this.apiKey}`,

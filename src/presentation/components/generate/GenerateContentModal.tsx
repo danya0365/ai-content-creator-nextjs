@@ -2,6 +2,8 @@
 
 import { CONTENT_TYPES, TIME_SLOTS, TimeSlot } from '@/src/data/master/contentTypes';
 import { IMAGE_STYLES } from '@/src/data/master/imageStyles';
+import { PLATFORMS } from '@/src/data/master/platforms';
+import { TONE_OF_VOICE } from '@/src/data/master/tones';
 import { useGenerateStore } from '@/src/presentation/stores/useGenerateStore';
 import { animated, config, useSpring } from '@react-spring/web';
 import { useEffect, useState } from 'react';
@@ -19,6 +21,8 @@ export interface GenerateFormData {
   scheduledDate: string;
   scheduledTime: string;
   imageStyle: string;
+  platform: string;
+  tone: string;
 }
 
 /**
@@ -38,6 +42,8 @@ export function GenerateContentModal({ isOpen, onClose, onGenerate }: GenerateCo
     scheduledDate: new Date().toISOString().split('T')[0],
     scheduledTime: '09:00',
     imageStyle: 'pixel-art',
+    platform: 'facebook',
+    tone: 'casual',
   });
 
   // Pre-fill form when modal is opening
@@ -50,6 +56,8 @@ export function GenerateContentModal({ isOpen, onClose, onGenerate }: GenerateCo
         scheduledTime: initialData?.scheduledTime || '09:00',
         timeSlot: initialData?.timeSlot || 'morning',
         imageStyle: initialData?.imageStyle || 'pixel-art',
+        platform: initialData?.platform || 'facebook',
+        tone: initialData?.tone || 'casual',
       }));
     }
   }, [isOpen, initialData]);
@@ -85,6 +93,8 @@ export function GenerateContentModal({ isOpen, onClose, onGenerate }: GenerateCo
         scheduledDate: new Date().toISOString().split('T')[0],
         scheduledTime: '09:00',
         imageStyle: 'pixel-art',
+        platform: 'facebook',
+        tone: 'casual',
       });
       onClose();
     } catch (error) {
@@ -234,6 +244,50 @@ export function GenerateContentModal({ isOpen, onClose, onGenerate }: GenerateCo
                 className="w-full px-4 py-3 rounded-xl glass-card text-foreground placeholder-muted focus:outline-none focus:ring-2 focus:ring-violet-500/50 resize-none"
                 rows={3}
               />
+            </div>
+
+            {/* Tone of Voice */}
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-2">
+                น้ำเสียง (Tone)
+              </label>
+              <div className="flex gap-2 flex-wrap">
+                {TONE_OF_VOICE.map((t) => (
+                  <button
+                    key={t.id}
+                    onClick={() => setFormData((prev) => ({ ...prev, tone: t.id }))}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-all duration-300 ${
+                      formData.tone === t.id
+                        ? 'bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white shadow-lg shadow-purple-500/25'
+                        : 'glass-card text-muted hover:text-foreground'
+                    }`}
+                  >
+                    {t.emoji} {t.nameTh}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Platform */}
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-2">
+                แพลตฟอร์มปลายทาง
+              </label>
+              <div className="flex gap-2 flex-wrap">
+                {PLATFORMS.map((p) => (
+                  <button
+                    key={p.id}
+                    onClick={() => setFormData((prev) => ({ ...prev, platform: p.id }))}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-all duration-300 ${
+                      formData.platform === p.id
+                        ? 'bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white shadow-lg shadow-purple-500/25'
+                        : 'glass-card text-muted hover:text-foreground'
+                    }`}
+                  >
+                    {p.emoji} {p.nameEn}
+                  </button>
+                ))}
+              </div>
             </div>
 
             {/* Image Style */}

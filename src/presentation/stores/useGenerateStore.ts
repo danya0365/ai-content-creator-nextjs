@@ -52,6 +52,8 @@ export const useGenerateStore = create<GenerateStore>((set) => ({
           topic: data.topic,
           timeSlot: data.timeSlot,
           imageStyle: data.imageStyle,
+          platform: data.platform,
+          tone: data.tone,
         }),
       });
 

@@ -21,6 +21,8 @@ interface AIGenerateRequest {
   timeSlot: TimeSlot;
   imageStyle: string; // Required: style of the generated image
   generateImage?: boolean; // Optional: whether to generate image
+  platform?: string;
+  tone?: string;
 }
 
 export async function POST(request: NextRequest) {
@@ -30,6 +32,15 @@ export async function POST(request: NextRequest) {
     const storageRepo = new SupabaseStorageRepository(supabase);
 
     const body: AIGenerateRequest = await request.json();
+    const { 
+      contentTypeId, 
+      topic, 
+      timeSlot, 
+      imageStyle, 
+      generateImage = true,
+      platform,
+      tone
+    } = body;
 
     // Validate request
     if (!body.contentTypeId || !body.topic) {
@@ -54,9 +65,11 @@ export async function POST(request: NextRequest) {
     // Generate text content
     const result = await contentService.generateContent({
       contentType,
-      topic: body.topic,
-      timeSlot: body.timeSlot,
-      imageStyle: body.imageStyle,
+      topic,
+      timeSlot,
+      imageStyle,
+      platform,
+      tone,
       language: 'th',
     });
 
@@ -69,7 +82,7 @@ export async function POST(request: NextRequest) {
 
     // Generate pixel art image if requested (default: true)
     let imageUrl: string | null = null;
-    if (body.generateImage !== false && result.imagePrompt) {
+    if (generateImage !== false && result.imagePrompt) {
       const imageResult = await imageService.generateImage({
         imagePrompt: result.imagePrompt,
         imageStyle: body.imageStyle,

@@ -14,6 +14,8 @@ import {
 } from '@/src/application/services/IContentService';
 import { ContentType } from '@/src/data/master/contentTypes';
 import { getImageStyleById } from '@/src/data/master/imageStyles';
+import { getPlatformById } from '@/src/data/master/platforms';
+import { getToneById } from '@/src/data/master/tones';
 
 export class MockContentService implements IContentService {
   private delay: number;
@@ -37,10 +39,16 @@ export class MockContentService implements IContentService {
     }[request.timeSlot] || '';
 
     const style = getImageStyleById(request.imageStyle);
+    const platform = request.platform ? getPlatformById(request.platform) : null;
+    const tone = request.tone ? getToneById(request.tone) : null;
+
+    let displayTopic = request.topic;
+    if (platform) displayTopic += ` [${platform.emoji} ${platform.nameEn}]`;
+    if (tone) displayTopic += ` [${tone.emoji} โทน${tone.nameTh}]`;
 
     return {
       success: true,
-      title: `${request.topic} 🎨`,
+      title: `${displayTopic} 🎨`,
       description: `คอนเทนต์สุดน่ารักเกี่ยวกับ ${request.topic} สำหรับ${timeContext} สร้างด้วย AI`,
       prompt: `Create content about ${request.topic}`,
       imagePrompt: `Create ${style.contentPromptInstruction} about ${request.topic}. ${style.promptModifier}`,
