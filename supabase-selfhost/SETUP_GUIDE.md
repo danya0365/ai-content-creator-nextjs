@@ -167,6 +167,28 @@ cp supabase/docker/.env.example /opt/supabase/.env
 cd /opt/supabase
 ```
 
+### 3. Database Migration (Push Local Schema to VPS)
+
+To move your local database structure to the VPS:
+
+1. **Open a Secure Tunnel** to the direct database port (54322):
+   ```bash
+   ssh -L 54322:localhost:54322 maros@95.216.221.18
+   ```
+
+2. **Run the Push Command** (Keep the tunnel open!):
+   ```bash
+   supabase db push --db-url "postgresql://postgres:<POSTGRES_PASSWORD>@127.0.0.1:54322/postgres?sslmode=disable"
+   ```
+
+---
+
+## 🔒 Security Best Practices
+
+- **Port 54322**: This port is exposed on the VPS `localhost` only by default in the script. Do NOT open it in UFW/Firewall to the public. Always use an SSH tunnel for migrations.
+- **Mixed Content**: The script automatically adds the `Content-Security-Policy` header to fix HTTPS warnings in the Supabase Studio.
+- **Credentials**: All secrets are stored in `/opt/supabase/.credentials`. Keep this file secure.
+
 ### 3.3 Generate Secrets
 
 ```bash

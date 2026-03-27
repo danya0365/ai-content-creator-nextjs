@@ -134,6 +134,7 @@ configure_env() {
     sed -i "s|PG_META_CRYPTO_KEY=.*|PG_META_CRYPTO_KEY=${PG_META_CRYPTO_KEY}|" .env
     sed -i "s|SUPABASE_PUBLIC_URL=.*|SUPABASE_PUBLIC_URL=https://${SUPABASE_DOMAIN}|" .env
     sed -i "s|API_EXTERNAL_URL=.*|API_EXTERNAL_URL=https://${SUPABASE_DOMAIN}|" .env
+    sed -i "s|SITE_URL=.*|SITE_URL=https://${SUPABASE_DOMAIN}|" .env
 
     log_success ".env configured"
 }
@@ -156,6 +157,14 @@ server {
         proxy_set_header X-Real-IP \$remote_addr;
         proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto \$scheme;
+
+        # WebSocket support
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection "upgrade";
+
+        # Fix Mixed Content (HTTPS -> HTTP Internal)
+        add_header Content-Security-Policy "upgrade-insecure-requests";
     }
 }
 EOF
@@ -171,6 +180,13 @@ EOF
 start_supabase() {
     log_step "Step 6: Starting Supabase"
     cd "$INSTALL_DIR"
+
+    # Expose Direct DB Port (54322) to bypass Supavisor for CLI Migration
+    if ! grep -q "54322:5432" docker-compose.yml; then
+        log_info "Exposing direct DB port 54322..."
+        sed -i '/container_name: supabase-db/a \    ports:\n      - 54322:5432' docker-compose.yml
+    fi
+
     docker compose pull
     docker compose up -d
     log_success "Supabase services started!"
