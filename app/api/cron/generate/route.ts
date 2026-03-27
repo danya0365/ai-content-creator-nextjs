@@ -63,12 +63,12 @@ export async function POST(request: NextRequest) {
       }
     } else {
       // Get content types for current time slot
-      const contentTypes = getContentTypesByTimeSlot(currentTimeSlot.id);
+      const contentTypes = getContentTypesByTimeSlot(currentTimeSlot!.id);
       if (contentTypes.length === 0) {
         return NextResponse.json({
           success: true,
-          message: `No content types configured for ${currentTimeSlot.name}`,
-          timeSlot: currentTimeSlot.id,
+          message: `No content types configured for ${currentTimeSlot!.name}`,
+          timeSlot: currentTimeSlot!.id,
         });
       }
       // Pick a random content type from available ones

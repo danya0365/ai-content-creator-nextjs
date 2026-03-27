@@ -58,7 +58,7 @@ export class MockContentService implements IContentService {
 
   async generateTopicIdea(
     contentType: ContentType,
-    options?: { trends?: string[]; brandContext?: string }
+    options?: { trends?: string[]; brandContext?: string; mode?: string }
   ): Promise<GenerateTopicIdeaResponse> {
     await new Promise((resolve) => setTimeout(resolve, this.delay));
     const postfix = options?.trends && options.trends.length > 0 ? ` (เกาะกระแส: ${options.trends[0]})` : '';
