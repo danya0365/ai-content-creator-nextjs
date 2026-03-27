@@ -100,7 +100,7 @@ export async function POST(request: NextRequest) {
       topic,
       timeSlot: currentTimeSlotConfig?.id || 'morning',
       language: 'th',
-      imageStyle: 'pixel-art', // Required field
+      imageStyle: selectedContentType.imageStyle || 'realistic', // Dynamic style
       platform: 'facebook', // Default
       tone: selectedContentType.category === 'islamic' ? 'respectful' : 'casual',
       brandContext: '',
@@ -118,7 +118,7 @@ export async function POST(request: NextRequest) {
     if (contentResult.imagePrompt) {
       const imageResult = await imageService.generateImage({
         imagePrompt: contentResult.imagePrompt,
-        imageStyle: 'pixel-art', // Required field
+        imageStyle: selectedContentType.imageStyle || 'realistic', // Dynamic style
       });
 
       // Upload to storage if generation was successful

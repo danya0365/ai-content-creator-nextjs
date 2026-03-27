@@ -224,6 +224,7 @@ export class AIServiceFactory {
   static getAvailableProviders(): {
     content: { id: AIProvider; name: string; hasApiKey: boolean; free: boolean }[];
     image: { id: AIProvider; name: string; hasApiKey: boolean; free: boolean }[];
+    video: { id: AIProvider; name: string; hasApiKey: boolean; free: boolean }[];
   } {
     return {
       content: [
