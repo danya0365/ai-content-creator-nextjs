@@ -87,6 +87,30 @@ sudo ./maintenance.sh creds
 
 ---
 
+## 2.1 ติดตั้งบนเครื่องที่มีโปรเจคอื่นอยู่แล้ว (Existing VPS)
+
+> [!IMPORTANT]
+> **ใช้กรณีนี้เมื่อ:** VPS ของคุณรันโปรเจคอื่นอยู่แล้ว (เช่น Laravel Sail) และมีการใช้ Port 80/443 ไปแล้ว เพื่อป้องกันไม่ให้เว็บเดิมล่ม
+
+### Step 1: Upload script เฉพาะกิจ
+```bash
+# จาก local machine
+scp supabase-selfhost/setup-supabase-vps-existing.sh maros@<VPS_IP>:~/
+```
+
+### Step 2: รัน installer (โหมด VPS เดิม)
+```bash
+ssh -t maros@<VPS_IP> "chmod +x setup-supabase-vps-existing.sh && sudo ./setup-supabase-vps-existing.sh"
+```
+
+### Step 3: ทำ SSL ด้วย Certbot
+เนื่องจากเราใช้ Shared Nginx เราต้องรัน Certbot เพื่อขอใบรับรองให้ Domain ใหม่:
+```bash
+sudo certbot --nginx -d supabase.social-generator.vibify.site
+```
+
+---
+
 ## 3. ติดตั้งแบบ Manual
 
 > ถ้าต้องการควบคุมทุกขั้นตอนเอง
