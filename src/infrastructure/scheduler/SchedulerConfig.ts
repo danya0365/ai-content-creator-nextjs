@@ -120,6 +120,71 @@ export const SCHEDULED_TASKS: ScheduledTask[] = [
     enabled: true,
     timezone: 'Asia/Bangkok',
   },
+
+  // ==========================================
+  // Islamic Content - Quran (04:30)
+  // ==========================================
+  {
+    name: 'islamic-quran-fajr',
+    description: 'Generate Quranic reflection for Fajr',
+    handler: '/api/cron/generate?type=islamic-quran',
+    frequency: 'dailyAt',
+    at: '04:30',
+    enabled: true,
+    timezone: 'Asia/Bangkok',
+  },
+
+  // ==========================================
+  // Islamic Content - Seerah (08:30)
+  // ==========================================
+  {
+    name: 'islamic-seerah-morning',
+    description: 'Generate Prophetic stories for morning inspiration',
+    handler: '/api/cron/generate?type=islamic-seerah',
+    frequency: 'dailyAt',
+    at: '08:30',
+    enabled: true,
+    timezone: 'Asia/Bangkok',
+  },
+
+  // ==========================================
+  // Islamic Content - Hadith (12:15)
+  // ==========================================
+  {
+    name: 'islamic-hadith-noon',
+    description: 'Generate Daily Hadith for Dhuhr',
+    handler: '/api/cron/generate?type=islamic-hadith',
+    frequency: 'dailyAt',
+    at: '12:15',
+    enabled: true,
+    timezone: 'Asia/Bangkok',
+  },
+
+  // ==========================================
+  // Islamic Content - History (18:30)
+  // ==========================================
+  {
+    name: 'islamic-history-evening',
+    description: 'Generate Islamic history for evening knowledge',
+    handler: '/api/cron/generate?type=islamic-history',
+    frequency: 'dailyAt',
+    at: '18:30',
+    enabled: true,
+    timezone: 'Asia/Bangkok',
+  },
+
+  // ==========================================
+  // Islamic Content - Wisdom (21:00)
+  // ==========================================
+  {
+    name: 'islamic-wisdom-night',
+    description: 'Generate Islamic wisdom for night reflection',
+    handler: '/api/cron/generate?type=islamic-wisdom',
+    frequency: 'dailyAt',
+    at: '21:00',
+    enabled: true,
+    timezone: 'Asia/Bangkok',
+  },
 ];
 
 /**

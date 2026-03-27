@@ -24,6 +24,7 @@ export interface ContentType {
   promptTemplate: string;
   icon: string;
   color: string;
+  category: 'general' | 'islamic';
 }
 
 export const TIME_SLOTS: TimeSlotConfig[] = [
@@ -69,9 +70,10 @@ export const CONTENT_TYPES: ContentType[] = [
     description: 'Cute pixel art summarizing morning news',
     descriptionTh: 'สรุปข่าวเช้าพร้อมรูป pixel art น่ารักๆ',
     suggestedTimeSlots: ['morning'],
-    promptTemplate: 'Create a cute pixel art illustration summarizing today\'s news: {topic}. Style: retro 16-bit, cheerful colors.',
+    promptTemplate: "Create a cute pixel art illustration summarizing today's news: {topic}. Style: retro 16-bit, cheerful colors.",
     icon: '📰',
     color: '#FFB347',
+    category: 'general',
   },
   {
     id: 'food',
@@ -83,6 +85,7 @@ export const CONTENT_TYPES: ContentType[] = [
     promptTemplate: 'Create a mouth-watering pixel art of {food}. Style: retro 16-bit, vibrant and appetizing.',
     icon: '🍜',
     color: '#FF6B6B',
+    category: 'general',
   },
   {
     id: 'entertainment',
@@ -94,6 +97,7 @@ export const CONTENT_TYPES: ContentType[] = [
     promptTemplate: 'Create a funny pixel art scene about: {joke}. Style: retro 16-bit, expressive characters.',
     icon: '😂',
     color: '#C9B1FF',
+    category: 'general',
   },
   {
     id: 'tech-tips',
@@ -105,17 +109,19 @@ export const CONTENT_TYPES: ContentType[] = [
     promptTemplate: 'Create a pixel art illustration explaining: {tip}. Style: retro 16-bit, clean and informative.',
     icon: '💻',
     color: '#4ECDC4',
+    category: 'general',
   },
   {
     id: 'daily-motivation',
     name: 'Daily Motivation',
     nameTh: 'คำคมประจำวัน',
     description: 'Inspirational quotes with pixel art',
-    descriptionTh: 'คำคมสร้างแรงบันดาลใจพร้อม pixel art',
+    descriptionTh: 'คำคมสร้างแรงบันาลใจพร้อม pixel art',
     suggestedTimeSlots: ['morning', 'evening'],
     promptTemplate: 'Create an inspiring pixel art scene for the quote: "{quote}". Style: retro 16-bit, warm and uplifting.',
     icon: '✨',
     color: '#45B7D1',
+    category: 'general',
   },
   {
     id: 'gaming',
@@ -127,6 +133,70 @@ export const CONTENT_TYPES: ContentType[] = [
     promptTemplate: 'Create a pixel art scene about gaming: {topic}. Style: retro 16-bit, nostalgic gaming vibes.',
     icon: '🎮',
     color: '#96CEB4',
+    category: 'general',
+  },
+  // ==========================================
+  // Islamic Content Category
+  // ==========================================
+  {
+    id: 'islamic-quran',
+    name: 'Quranic Reflection',
+    nameTh: 'อัลกุรอานและการเตือนสติ',
+    description: 'Daily Quranic verse with reflection',
+    descriptionTh: 'ข้อคิดจากอัลกุรอานและคำแปล',
+    suggestedTimeSlots: ['morning'],
+    promptTemplate: 'Create a serene Islamic pixel art with Quranic verse: {topic}. Style: respectful, green and gold accents.',
+    icon: '📖',
+    color: '#059669',
+    category: 'islamic',
+  },
+  {
+    id: 'islamic-seerah',
+    name: 'Prophetic Stories',
+    nameTh: 'ประวัตินบี',
+    description: 'Life lessons from Prophetic biographies',
+    descriptionTh: 'บทเรียนชีวิตจากจริยวัตรของท่านนบี',
+    suggestedTimeSlots: ['morning'],
+    promptTemplate: 'Create an inspiring Islamic pixel art about Prophet story: {topic}. Style: retro 16-bit, educational and peaceful.',
+    icon: '🌟',
+    color: '#10B981',
+    category: 'islamic',
+  },
+  {
+    id: 'islamic-hadith',
+    name: 'Daily Hadith',
+    nameTh: 'ฮะดีซประจำวัน',
+    description: 'Prophetic teachings and examples',
+    descriptionTh: 'คำสอนและแบบอย่างจากท่านนบี',
+    suggestedTimeSlots: ['lunch'],
+    promptTemplate: 'Create an educational Islamic pixel art about Hadith: {topic}. Style: retro 16-bit, clean and insightful.',
+    icon: '📿',
+    color: '#34D399',
+    category: 'islamic',
+  },
+  {
+    id: 'islamic-history',
+    name: 'Islamic History',
+    nameTh: 'ประวัติศาสตร์อิสลาม',
+    description: 'Key events and knowledge from history',
+    descriptionTh: 'ความรู้และเหตุการณ์สำคัญทางประวัติศาสตร์',
+    suggestedTimeSlots: ['evening'],
+    promptTemplate: 'Create a historical Islamic pixel art about: {topic}. Style: retro 16-bit, informative and noble.',
+    icon: '🕌',
+    color: '#6EE7B7',
+    category: 'islamic',
+  },
+  {
+    id: 'islamic-wisdom',
+    name: 'Islamic Wisdom',
+    nameTh: 'ข้อคิด/คำคมอิสลาม',
+    description: 'Spiritual advice for daily life',
+    descriptionTh: 'คติเตือนใจจากศาสนาอิสลาม',
+    suggestedTimeSlots: ['evening'],
+    promptTemplate: 'Create a peaceful Islamic pixel art for wisdom: {topic}. Style: warm, spiritual, simplified pixel art.',
+    icon: '✨',
+    color: '#A7F3D0',
+    category: 'islamic',
   },
 ];
 

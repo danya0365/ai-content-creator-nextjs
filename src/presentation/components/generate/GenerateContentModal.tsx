@@ -39,6 +39,7 @@ export function GenerateContentModal({ isOpen, onClose, onGenerate }: GenerateCo
   const [brandContext, setBrandContext] = useState('');
 
   const [isGeneratingIdea, setIsGeneratingIdea] = useState(false);
+  const [activeCategory, setActiveCategory] = useState<'general' | 'islamic'>('general');
   const [formData, setFormData] = useState<GenerateFormData>({
     contentTypeId: '',
     timeSlot: 'morning',
@@ -203,13 +204,40 @@ export function GenerateContentModal({ isOpen, onClose, onGenerate }: GenerateCo
         {/* Step 1: Select Content Type */}
         {step === 1 && (
           <div className="space-y-4">
-            <h3 className="text-sm font-medium text-muted mb-3">เลือกประเภทคอนเทนต์</h3>
-            <div className="grid grid-cols-2 gap-3">
-              {CONTENT_TYPES.map((type) => (
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-medium text-muted">เลือกประเภทคอนเทนต์</h3>
+              
+              {/* Category Tabs */}
+              <div className="flex bg-black/20 p-1 rounded-lg border border-white/5">
+                <button
+                  onClick={() => setActiveCategory('general')}
+                  className={`px-3 py-1 rounded-md text-[10px] font-bold transition-all duration-300 ${
+                    activeCategory === 'general'
+                      ? 'bg-violet-600 text-white shadow-sm'
+                      : 'text-muted hover:text-foreground'
+                  }`}
+                >
+                  ทั่วไป
+                </button>
+                <button
+                  onClick={() => setActiveCategory('islamic')}
+                  className={`px-3 py-1 rounded-md text-[10px] font-bold transition-all duration-300 ${
+                    activeCategory === 'islamic'
+                      ? 'bg-emerald-600 text-white shadow-sm'
+                      : 'text-muted hover:text-foreground'
+                  }`}
+                >
+                  อิสลาม 🕌
+                </button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 min-h-[200px]">
+              {CONTENT_TYPES.filter(t => t.category === activeCategory).map((type) => (
                 <button
                   key={type.id}
                   onClick={() => handleContentTypeSelect(type.id)}
-                  className="glass-card-hover p-4 text-left group"
+                  className="glass-card-hover p-4 text-left group animate-in fade-in slide-in-from-bottom-2 duration-300"
                 >
                   <div
                     className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl mb-3 group-hover:scale-110 transition-transform duration-300"
