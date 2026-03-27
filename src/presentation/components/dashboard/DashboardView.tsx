@@ -244,7 +244,7 @@ export function DashboardView({ initialViewModel }: DashboardViewProps) {
               <h1 className="text-xl md:text-2xl font-bold gradient-text-purple">Dashboard</h1>
               <p className="text-xs md:text-sm text-muted">จัดการและติดตามคอนเทนต์ของคุณ</p>
             </div>
-            <JellyButton onClick={openModal} variant="primary" size="lg" className="w-full sm:w-auto">
+            <JellyButton onClick={() => openModal()} variant="primary" size="lg" className="w-full sm:w-auto">
               <span>✨</span>
               <span>สร้างคอนเทนต์ใหม่</span>
             </JellyButton>
@@ -361,7 +361,7 @@ export function DashboardView({ initialViewModel }: DashboardViewProps) {
                       key={type.id} 
                       contentType={type} 
                       delay={400 + index * 50} 
-                      onClick={openModal}
+                      onClick={() => openModal({ contentTypeId: type.id })}
                     />
                   ))}
                 </div>

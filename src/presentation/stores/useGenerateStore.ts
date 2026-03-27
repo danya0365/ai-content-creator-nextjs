@@ -39,7 +39,13 @@ export const useGenerateStore = create<GenerateStore>()(
     (set) => ({
       ...initialState,
 
-  openModal: (data) => set({ isModalOpen: true, initialData: data || null }),
+      openModal: (data) => {
+        // Prevent passing React Events or non-object data that could cause circular references during persistence
+        const validData = (data && typeof data === 'object' && !('nativeEvent' in data)) 
+          ? data 
+          : null;
+        set({ isModalOpen: true, initialData: validData });
+      },
   
   closeModal: () => set({ isModalOpen: false, error: null, initialData: null }),
 

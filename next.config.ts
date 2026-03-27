@@ -59,6 +59,14 @@ const nextConfig: NextConfig = {
         protocol: 'https',
         hostname: 'api.dicebear.com',
       },
+      {
+        protocol: 'https',
+        hostname: 'supabase.social-generator.vibify.site',
+      },
+      {
+        protocol: 'https',
+        hostname: '*.vibify.site',
+      },
     ],
   },
 };
