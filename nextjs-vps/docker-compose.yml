@@ -3,10 +3,10 @@ services:
     build:
       context: ..
       dockerfile: nextjs-vps/Dockerfile
-    container_name: nextjs-ai-creator
+    container_name: ${CONTAINER_NAME:-nextjs-ai-creator}
     restart: always
     ports:
-      - "3005:3000"
+      - "${APP_PORT:-3005}:3000"
     env_file:
       - .env.production
     logging:

@@ -12,13 +12,16 @@
 set -euo pipefail
 
 # ==========================================
-# Configuration
+# Configuration — อัตโนมัติเกือบทั้งหมด
 # ==========================================
 APP_DOMAIN="social-generator.vibify.site"
-INSTALL_DIR="/opt/nextjs-ai-creator"
+# สร้าง Project ID จาก Domain (เช่น social-generator)
+PROJECT_ID=$(echo "$APP_DOMAIN" | cut -d'.' -f1)
+INSTALL_DIR="/opt/nextjs-${PROJECT_ID}"
+CONTAINER_NAME="nextjs-${PROJECT_ID}-app"
 
 # ==========================================
-# Colors
+# Colors & Helpers
 # ==========================================
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -32,6 +35,29 @@ log_success() { echo -e "${GREEN}[✓]${NC} $1"; }
 log_warn()    { echo -e "${YELLOW}[⚠]${NC} $1"; }
 log_error()   { echo -e "${RED}[✗]${NC} $1"; }
 log_step()    { echo -e "\n${CYAN}============================================${NC}"; echo -e "${CYAN}  $1${NC}"; echo -e "${CYAN}============================================${NC}"; }
+
+# Check if port is in use
+is_port_busy() {
+    command -v netstat &> /dev/null && netstat -tuln | grep -q ":$1 "
+}
+
+# Find next available port
+find_free_port() {
+    local port=$1
+    while is_port_busy "$port"; do
+        log_warn "Port $port is busy, trying next..."
+        port=$((port + 1))
+    done
+    echo "$port"
+}
+
+# ==========================================
+# Pre-flight checks
+# ==========================================
+if [ "$EUID" -ne 0 ]; then
+    log_error "กรุณารัน script ด้วย sudo"
+    exit 1
+fi
 
 # ==========================================
 # Step 1: Install Docker
@@ -70,7 +96,7 @@ install_caddy() {
 }
 
 # ==========================================
-# Step 3: Setup App
+# Step 3: Setup App & Environment
 # ==========================================
 setup_app() {
     log_step "Step 3: Setting up app and environment"
@@ -82,18 +108,43 @@ setup_app() {
     elif [ -f ".env.production.vps" ]; then
         log_info "Syncing from .env.production.vps..."
         cp .env.production.vps .env.production
-    elif [ ! -f ".env.production" ]; then
-        cp .env.example .env.production || touch .env.production
-        log_success ".env.production created from .env.example"
+    fi
+
+    if [ ! -f ".env.production" ]; then
+        log_info "Creating new .env.production from example..."
+        cp .env.example .env.production 2>/dev/null || touch .env.production
+    fi
+
+    # 1. Handle APP_PORT
+    if grep -q "^APP_PORT=" .env.production; then
+        BASE_PORT=$(grep "^APP_PORT=" .env.production | cut -d '=' -f2)
+    else
+        BASE_PORT=3005
     fi
     
-    # Ensure CRON_SECRET is set
-    if ! grep -q "CRON_SECRET=" .env.production; then
+    # Detect free port
+    APP_PORT=$(find_free_port "$BASE_PORT")
+    
+    # Update .env.production
+    sed -i "/^APP_PORT=/d" .env.production
+    echo "APP_PORT=$APP_PORT" >> .env.production
+    
+    sed -i "/^CONTAINER_NAME=/d" .env.production
+    echo "CONTAINER_NAME=$CONTAINER_NAME" >> .env.production
+
+    # 2. Handle CRON_SECRET
+    if grep -q "^CRON_SECRET=" .env.production; then
+        CRON_SECRET=$(grep "^CRON_SECRET=" .env.production | cut -d '=' -f2)
+    else
         log_info "Generating new CRON_SECRET..."
         CRON_SECRET=$(openssl rand -base64 32 | tr -dc 'a-zA-Z0-9' | head -c 32)
         echo "CRON_SECRET=$CRON_SECRET" >> .env.production
     fi
-    
+
+    # Export for Docker Compose
+    export APP_PORT
+    export CONTAINER_NAME
+
     cd nextjs-vps
     docker compose build
     docker compose up -d
@@ -107,24 +158,50 @@ setup_caddy() {
     log_step "Step 4: Configuring Caddy"
     cat > /etc/caddy/Caddyfile << EOF
 ${APP_DOMAIN} {
-    # Proxy ไปที่ Docker container port 3005
-    reverse_proxy localhost:3005
+    # Proxy ไปยัง Docker container port สดๆ
+    reverse_proxy localhost:${APP_PORT}
 }
 EOF
     systemctl restart caddy
-    log_success "Caddy configured (Proxy to port 3005)"
+    log_success "Caddy configured (Proxy to port $APP_PORT)"
 }
 
 # ==========================================
-# Step 5: Cron Setup
+# Step 5: Cron Setup (Tagged)
 # ==========================================
 setup_cron() {
     log_step "Step 5: Setting up Cron Job"
-    CRON_SECRET=$(grep "^CRON_SECRET=" .env.production | cut -d '=' -f2)
-    CRON_LINE="* * * * * curl -s -H \"x-cron-secret: $CRON_SECRET\" http://localhost:3005/api/cron/run >/dev/null 2>&1"
-    (crontab -l 2>/dev/null | grep -v "api/cron/run"; echo "$CRON_LINE") | crontab -
-    log_success "Cron job added (Target port 3005)"
+    
+    CRON_TAG="# cron-nextjs-${PROJECT_ID}"
+    CRON_LINE="* * * * * curl -s -H \"x-cron-secret: $CRON_SECRET\" http://localhost:${APP_PORT}/api/cron/run >/dev/null 2>&1 ${CRON_TAG}"
+    
+    # Remove old tagged cron and add new one
+    (crontab -l 2>/dev/null | grep -v "${CRON_TAG}"; echo "$CRON_LINE") | crontab -
+    
+    log_success "Cron job added (using port $APP_PORT)"
 }
+
+# ==========================================
+# Main
+# ==========================================
+main() {
+    install_docker
+    install_caddy
+    setup_app
+    setup_caddy
+    setup_cron
+    
+    echo -e "\n${GREEN}============================================${NC}"
+    echo -e "${GREEN}  ✅ ${PROJECT_ID} Setup Complete!${NC}"
+    echo -e "${GREEN}============================================${NC}"
+    echo -e "🔗 URL: https://${APP_DOMAIN}"
+    echo -e "🚢 Container: ${CONTAINER_NAME}"
+    echo -e "🔌 Local Port: ${APP_PORT}"
+    echo -e "🔑 Cron Secret: ${CRON_SECRET:0:5}****************"
+    echo -e "${GREEN}============================================${NC}"
+}
+
+main "$@"
 
 # ==========================================
 # Main
