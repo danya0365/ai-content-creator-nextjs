@@ -3,10 +3,9 @@ import { createServerClient } from '@supabase/ssr';
 import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 
-// กำหนดค่าเริ่มต้นสำหรับ Supabase URL และ API key
-// กำหนดค่าเริ่มต้นสำหรับ Supabase URL และ API key
-const supabaseUrl = process.env.SUPABASE_INTERNAL_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder-for-build.supabase.co';
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key-for-build';
+// กำหนดค่าจาก environment variables
+const supabaseUrl = process.env.SUPABASE_INTERNAL_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 
 /**
@@ -14,6 +13,11 @@ const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
  * ⚠️ Subject to RLS policies
  */
 export async function createClient() {
+  if (!supabaseUrl || !supabaseAnonKey) {
+    console.error('❌ Server: Supabase URL or Anon Key is missing!');
+    throw new Error('Supabase configuration missing');
+  }
+
   const cookieStore = await cookies();
 
   return createServerClient<Database>(

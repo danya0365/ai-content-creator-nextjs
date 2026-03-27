@@ -2,9 +2,9 @@ import { Database } from '@/src/domain/types/supabase';
 import { createBrowserClient } from '@supabase/ssr';
 import { SupabaseClient } from '@supabase/supabase-js';
 
-// กำหนดค่าเริ่มต้นสำหรับ Supabase URL และ API key
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder-for-build.supabase.co';
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key-for-build';
+// กำหนดค่าจาก environment variables
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 
 // ✅ Use singleton pattern for better memory management
 let clientInstance: SupabaseClient<Database> | null = null;
@@ -24,7 +24,10 @@ export function createClient(): SupabaseClient<Database> {
 
   console.log('Initializing Supabase Client (Singleton)...');
   
-  // Create client with optimized configuration
+  if (!supabaseUrl || !supabaseAnonKey) {
+    console.error('❌ Supabase URL or Anon Key is missing! Client initialization failed.');
+    throw new Error('Supabase configuration missing');
+  }
   clientInstance = createBrowserClient<Database>(
     supabaseUrl,
     supabaseAnonKey,

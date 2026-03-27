@@ -48,23 +48,36 @@ fi
 setup_env() {
     log_step "Step 1: Setting up environment"
     
-    # Generate CRON_SECRET if not exists
-    CRON_SECRET=$(openssl rand -base64 32 | tr -d '\n')
-    
-    if [ ! -f ".env.production" ]; then
+    # Check if .env.production.vps exists (Source of Truth)
+    if [ -f "nextjs-vps/.env.production.vps" ]; then
+        log_info "Syncing from .env.production.vps..."
+        cp nextjs-vps/.env.production.vps .env.production
+        log_success ".env.production updated from .env.production.vps"
+    elif [ -f ".env.production.vps" ]; then
+        log_info "Syncing from .env.production.vps..."
+        cp .env.production.vps .env.production
+        log_success ".env.production updated from .env.production.vps"
+    elif [ ! -f ".env.production" ]; then
         log_info "Creating .env.production from .env.example..."
         if [ -f ".env.example" ]; then
             cp .env.example .env.production
         else
             touch .env.production
         fi
-        
-        # Add CRON_SECRET
-        echo "CRON_SECRET=$CRON_SECRET" >> .env.production
-        log_success ".env.production created"
+        log_success ".env.production created from .env.example"
     else
         log_warn ".env.production already exists, skipping creation"
-        CRON_SECRET=$(grep CRON_SECRET .env.production | cut -d '=' -f2)
+    fi
+
+    # Ensure CRON_SECRET is set
+    if grep -q "CRON_SECRET=" .env.production; then
+        CRON_SECRET=$(grep "^CRON_SECRET=" .env.production | cut -d '=' -f2)
+        log_info "Using existing CRON_SECRET"
+    else
+        log_info "Generating new CRON_SECRET..."
+        CRON_SECRET=$(openssl rand -base64 32 | tr -dc 'a-zA-Z0-9' | head -c 32)
+        echo "CRON_SECRET=$CRON_SECRET" >> .env.production
+        log_success "New CRON_SECRET added to .env.production"
     fi
 }
 
@@ -74,11 +87,14 @@ setup_env() {
 start_app() {
     log_step "Step 2: Building and starting Next.js app"
     
-    # Run from the nextjs-vps directory to find docker-compose.yml
-    cd nextjs-vps
+    # Check if we are already in nextjs-vps directory or need to cd into it
+    if [[ "$PWD" != *"/nextjs-vps" ]]; then
+        cd nextjs-vps
+    fi
+    
     docker compose build
     docker compose up -d
-    log_success "Next.js app started on port 3000"
+    log_success "Next.js app started on port 3005"
     cd ..
 }
 
@@ -95,7 +111,7 @@ server {
     server_name ${APP_DOMAIN};
 
     location / {
-        proxy_pass http://localhost:3000;
+        proxy_pass http://localhost:3005;
         proxy_set_header Host \$host;
         proxy_set_header X-Real-IP \$remote_addr;
         proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
@@ -120,7 +136,7 @@ EOF
 setup_cron() {
     log_step "Step 4: Setting up Cron Job"
     
-    CRON_LINE="* * * * * curl -s -H \"x-cron-secret: $CRON_SECRET\" http://localhost:3000/api/cron/run >/dev/null 2>&1"
+    CRON_LINE="* * * * * curl -s -H \"x-cron-secret: $CRON_SECRET\" http://localhost:3005/api/cron/run >/dev/null 2>&1"
     
     # Check if already exists in crontab
     if crontab -l 2>/dev/null | grep -q "api/cron/run"; then

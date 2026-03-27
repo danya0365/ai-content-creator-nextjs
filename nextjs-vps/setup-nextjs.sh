@@ -75,12 +75,23 @@ install_caddy() {
 setup_app() {
     log_step "Step 3: Setting up app and environment"
     
-    CRON_SECRET=$(openssl rand -base64 32 | tr -d '\n')
-    
-    if [ ! -f ".env.production" ]; then
+    # Check if .env.production.vps exists (Source of Truth)
+    if [ -f "nextjs-vps/.env.production.vps" ]; then
+        log_info "Syncing from .env.production.vps..."
+        cp nextjs-vps/.env.production.vps .env.production
+    elif [ -f ".env.production.vps" ]; then
+        log_info "Syncing from .env.production.vps..."
+        cp .env.production.vps .env.production
+    elif [ ! -f ".env.production" ]; then
         cp .env.example .env.production || touch .env.production
+        log_success ".env.production created from .env.example"
+    fi
+    
+    # Ensure CRON_SECRET is set
+    if ! grep -q "CRON_SECRET=" .env.production; then
+        log_info "Generating new CRON_SECRET..."
+        CRON_SECRET=$(openssl rand -base64 32 | tr -dc 'a-zA-Z0-9' | head -c 32)
         echo "CRON_SECRET=$CRON_SECRET" >> .env.production
-        log_success ".env.production created"
     fi
     
     cd nextjs-vps
@@ -96,11 +107,12 @@ setup_caddy() {
     log_step "Step 4: Configuring Caddy"
     cat > /etc/caddy/Caddyfile << EOF
 ${APP_DOMAIN} {
-    reverse_proxy localhost:3000
+    # Proxy ไปที่ Docker container port 3005
+    reverse_proxy localhost:3005
 }
 EOF
     systemctl restart caddy
-    log_success "Caddy configured"
+    log_success "Caddy configured (Proxy to port 3005)"
 }
 
 # ==========================================
@@ -108,10 +120,10 @@ EOF
 # ==========================================
 setup_cron() {
     log_step "Step 5: Setting up Cron Job"
-    CRON_SECRET=$(grep CRON_SECRET .env.production | cut -d '=' -f2)
-    CRON_LINE="* * * * * curl -s -H \"x-cron-secret: $CRON_SECRET\" http://localhost:3000/api/cron/run >/dev/null 2>&1"
+    CRON_SECRET=$(grep "^CRON_SECRET=" .env.production | cut -d '=' -f2)
+    CRON_LINE="* * * * * curl -s -H \"x-cron-secret: $CRON_SECRET\" http://localhost:3005/api/cron/run >/dev/null 2>&1"
     (crontab -l 2>/dev/null | grep -v "api/cron/run"; echo "$CRON_LINE") | crontab -
-    log_success "Cron job added"
+    log_success "Cron job added (Target port 3005)"
 }
 
 # ==========================================
