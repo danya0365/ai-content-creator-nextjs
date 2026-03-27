@@ -66,6 +66,32 @@ export const WAVESPEED_IMAGE_MODELS: WavespeedImageModel[] = [
 export const WAVESPEED_DEFAULT_IMAGE_MODEL: WavespeedImageModel = 'wavespeed-ai/flux-schnell';
 
 // ============================================================
+// Video Models (Text-to-Video)
+// ============================================================
+
+/** Wavespeed video models available for text-to-video generation */
+export type WavespeedVideoModel =
+  | 'wavespeed-ai/vidu-2.0'
+  | 'wavespeed-ai/kling-v1.5'
+  | 'wavespeed-ai/minimax-video'
+  | 'wavespeed-ai/hunyuan-video'
+  | 'wavespeed-ai/haile-v0.2'
+  | 'bytedance/seedance-v1.5/pro';
+
+/** All valid video models (runtime array for validation) */
+export const WAVESPEED_VIDEO_MODELS: WavespeedVideoModel[] = [
+  'wavespeed-ai/vidu-2.0',
+  'wavespeed-ai/kling-v1.5',
+  'wavespeed-ai/minimax-video',
+  'wavespeed-ai/hunyuan-video',
+  'wavespeed-ai/haile-v0.2',
+  'bytedance/seedance-v1.5/pro',
+];
+
+/** Default video model */
+export const WAVESPEED_DEFAULT_VIDEO_MODEL: WavespeedVideoModel = 'wavespeed-ai/vidu-2.0';
+
+// ============================================================
 // Validation Helpers
 // ============================================================
 
@@ -77,6 +103,11 @@ export function isValidWavespeedContentModel(model: string): model is WavespeedC
 /** Type guard: check if a string is a valid Wavespeed image model */
 export function isValidWavespeedImageModel(model: string): model is WavespeedImageModel {
   return WAVESPEED_IMAGE_MODELS.includes(model as WavespeedImageModel);
+}
+
+/** Type guard: check if a string is a valid Wavespeed video model */
+export function isValidWavespeedVideoModel(model: string): model is WavespeedVideoModel {
+  return WAVESPEED_VIDEO_MODELS.includes(model as WavespeedVideoModel);
 }
 
 /**
@@ -115,4 +146,23 @@ export function resolveWavespeedImageModel(envModel?: string): WavespeedImageMod
     );
   }
   return WAVESPEED_DEFAULT_IMAGE_MODEL;
+}
+
+/**
+ * Resolve Wavespeed video model from env or fallback
+ * Reads WAVESPEED_VIDEO_MODEL from environment
+ */
+export function resolveWavespeedVideoModel(envModel?: string): WavespeedVideoModel {
+  const model = envModel || process.env.WAVESPEED_VIDEO_MODEL;
+  if (model && isValidWavespeedVideoModel(model)) {
+    return model;
+  }
+  if (model) {
+    console.warn(
+      `[WavespeedModels] Invalid video model "${model}". ` +
+      `Valid options: ${WAVESPEED_VIDEO_MODELS.join(', ')}. ` +
+      `Falling back to "${WAVESPEED_DEFAULT_VIDEO_MODEL}".`
+    );
+  }
+  return WAVESPEED_DEFAULT_VIDEO_MODEL;
 }

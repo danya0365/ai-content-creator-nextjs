@@ -20,6 +20,7 @@
 
 import { IContentService } from '@/src/application/services/IContentService';
 import { IImageService } from '@/src/application/services/IImageService';
+import { IVideoService } from '@/src/application/services/IVideoService';
 import { DiceBearImageService } from './DiceBearImageService';
 import { GeminiContentService } from './GeminiContentService';
 import { GeminiImageService } from './GeminiImageService';
@@ -31,6 +32,7 @@ import { PollinationsImageService } from './PollinationsImageService';
 import { TogetherAIImageService } from './TogetherAIImageService';
 import { WavespeedContentService } from './WavespeedContentService';
 import { WavespeedImageService } from './WavespeedImageService';
+import { WavespeedVideoService } from './WavespeedVideoService';
 
 export type AIProvider = 'gemini' | 'groq' | 'openrouter' | 'together' | 'pollinations' | 'dicebear' | 'wavespeed' | 'mock';
 
@@ -61,6 +63,17 @@ function getDefaultImageProvider(): AIProvider {
   }
   // If no image provider set, use dicebear (FREE & STABLE)
   return 'dicebear';
+}
+
+/**
+ * Get default video provider from environment
+ */
+function getDefaultVideoProvider(): AIProvider {
+  const provider = process.env.AI_VIDEO_PROVIDER as AIProvider;
+  if (!provider) {
+    return 'wavespeed'; // default
+  }
+  return provider;
 }
 
 /**
@@ -180,6 +193,32 @@ export class AIServiceFactory {
   }
 
   /**
+   * Create video service based on provider
+   */
+  static createVideoService(config?: Partial<AIServiceConfig>): IVideoService {
+    const provider = config?.provider || getDefaultVideoProvider();
+    const apiKey = config?.apiKey || getApiKey(provider);
+
+    console.log(`[AIServiceFactory] Creating video service: ${provider}`);
+
+    switch (provider) {
+      case 'wavespeed':
+        if (!apiKey) {
+          throw new Error('[AIServiceFactory] No WAVESPEED_API_KEY provided for video generation');
+        }
+        return new WavespeedVideoService(apiKey, config?.model);
+
+      case 'mock':
+        // For testing, we could have a MockVideoService, but let's just throw for now as per instructions
+        // or support it if needed. The user said "ส่วน provider ไหน ที่ไม่รองรับ ให้ thrown error"
+        throw new Error(`[AIServiceFactory] Provider "${provider}" does not support video generation yet.`);
+
+      default:
+        throw new Error(`[AIServiceFactory] Provider "${provider}" does not support video generation yet.`);
+    }
+  }
+
+  /**
    * Get list of available providers
    */
   static getAvailableProviders(): {
@@ -201,6 +240,9 @@ export class AIServiceFactory {
         { id: 'pollinations', name: 'Pollinations.ai (FREE - AI Art)', hasApiKey: true, free: true },
         { id: 'dicebear', name: 'DiceBear (FREE Dev Fallback - Avatars)', hasApiKey: true, free: true },
         { id: 'mock', name: 'Mock (Placeholder)', hasApiKey: true, free: true },
+      ],
+      video: [
+        { id: 'wavespeed', name: 'Wavespeed AI (Sora-level Video)', hasApiKey: !!process.env.WAVESPEED_API_KEY, free: false },
       ],
     };
   }
