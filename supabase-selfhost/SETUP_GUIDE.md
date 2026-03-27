@@ -188,7 +188,32 @@ To move your local database structure to the VPS:
 - **Port 54322**: This port is exposed on the VPS `localhost` only by default in the script. Do NOT open it in UFW/Firewall to the public. Always use an SSH tunnel for migrations.
 - **Mixed Content**: The script automatically adds the `Content-Security-Policy` header to fix HTTPS warnings in the Supabase Studio.
 - **Credentials**: All secrets are stored in `/opt/supabase/.credentials`. Keep this file secure.
+---
 
+## 🛠️ Troubleshooting & Lessons Learned
+
+### 1. หน้าจอ "Not Secure" ทั้งที่ลง SSL แล้ว (Mixed Content)
+- **ปัญหา**: หน้าเว็บ HTTPS พยายามโหลดไฟล์ผ่าน HTTP ธรรมดา
+- **วิธีแก้**: เพิ่ม Header ใน Nginx: `add_header Content-Security-Policy "upgrade-insecure-requests";` และเช็ก `SITE_URL` ใน `.env`
+
+### 2. WebSocket (Realtime) เชื่อมต่อไม่ได้ (WSS Failed)
+- **ปัญหา**: Nginx บล็อกการขอ Upgrade โปรโตคอลเป็น WebSocket
+- **วิธีแก้**: เพิ่มคำสั่ง `proxy_http_version 1.1;`, `Upgrade`, และ `Connection` ใน Nginx location block
+
+### 3. `supabase db push` ขึ้นว่า "Tenant not found"
+- **ปัญหา**: Port 5432 บน Host ถูกจองโดย Supavisor (Pooler) ซึ่งไม่รับการต่อตรงจาก CLI
+- **วิธีแก้**: เปิด Port **54322** ตรงเข้า Container `db` และใช้ SSH Tunnel เชื่อมต่อไปที่หา Port นี้แทน
+
+### 4. ตัวแปรใน `.env` มีปัญหาเวลาใช้ `sed`
+- **ปัญหา**: ค่าที่ถูก Generate (เช่น Base64) แอบมี Newline ติดมาด้วย
+- **วิธีแก้**: ใช้ `tr -d '\n'` ทุกครั้งหลังจาก Generate Secret เพื่อให้เป็นบรรทัดเดียวเสมอ
+
+---
+
+## 📂 สรุปไฟล์ที่สำคัญ
+- `setup-supabase-vps-existing.sh`: สคริปต์ติดตั้งหลัก (รวม Fix ทั้งหมดแล้ว)
+- `/opt/supabase/.credentials`: ที่เก็บรหัสผ่านทั้งหมดบน VPS
+- `nginx/sites-available/supabase`: คอนฟิก Nginx ที่มีแก้เรื่อง WebSocket และ SSL
 ### 3.3 Generate Secrets
 
 ```bash

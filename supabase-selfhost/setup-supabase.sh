@@ -253,6 +253,9 @@ setup_caddy() {
 ${SUPABASE_DOMAIN} {
     # Proxy ไปยัง Kong API Gateway (port 8000)
     reverse_proxy localhost:8000
+    
+    # Fix Mixed Content
+    header Content-Security-Policy "upgrade-insecure-requests"
 }
 EOF
 
@@ -276,6 +279,13 @@ start_supabase() {
     docker compose pull
 
     log_info "Starting services..."
+    
+    # Expose Direct DB Port (54322) to bypass Supavisor for CLI Migration
+    if ! grep -q "54322:5432" docker-compose.yml; then
+        log_info "Exposing direct DB port 54322..."
+        sed -i '/container_name: supabase-db/a \    ports:\n      - 54322:5432' docker-compose.yml
+    fi
+
     docker compose up -d
 
     log_info "Waiting for services to be healthy..."
