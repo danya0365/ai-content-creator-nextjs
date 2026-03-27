@@ -141,9 +141,9 @@ generate_secrets() {
     # Generate all secrets
     POSTGRES_PASSWORD=$(openssl rand -base64 32 | tr -dc 'a-zA-Z0-9' | head -c 32)
     JWT_SECRET=$(openssl rand -base64 48 | tr -dc 'a-zA-Z0-9' | head -c 64)
-    SECRET_KEY_BASE=$(openssl rand -base64 48)
+    SECRET_KEY_BASE=$(openssl rand -base64 48 | tr -d '\n')
     VAULT_ENC_KEY=$(openssl rand -hex 16)
-    PG_META_CRYPTO_KEY=$(openssl rand -base64 24)
+    PG_META_CRYPTO_KEY=$(openssl rand -base64 24 | tr -d '\n')
     LOGFLARE_PUBLIC_TOKEN=$(openssl rand -base64 24 | tr -dc 'a-zA-Z0-9' | head -c 32)
     LOGFLARE_PRIVATE_TOKEN=$(openssl rand -base64 24 | tr -dc 'a-zA-Z0-9' | head -c 32)
     S3_ACCESS_KEY_ID=$(openssl rand -hex 16)
@@ -173,14 +173,14 @@ generate_jwt_keys() {
     local EXP=$(( IAT + 157680000 ))
 
     # ANON KEY payload
-    local ANON_PAYLOAD=$(echo -n "{\"role\":\"anon\",\"iss\":\"supabase\",\"iat\":${IAT},\"exp\":${EXP}}" | base64 | tr '+/' '-_' | tr -d '=')
-    local HEADER=$(echo -n '{"alg":"HS256","typ":"JWT"}' | base64 | tr '+/' '-_' | tr -d '=')
-    local ANON_SIGNATURE=$(echo -n "${HEADER}.${ANON_PAYLOAD}" | openssl dgst -sha256 -hmac "$JWT_SECRET" -binary | base64 | tr '+/' '-_' | tr -d '=')
+    local ANON_PAYLOAD=$(echo -n "{\"role\":\"anon\",\"iss\":\"supabase\",\"iat\":${IAT},\"exp\":${EXP}}" | base64 | tr -d '\n' | tr '+/' '-_' | tr -d '=')
+    local HEADER=$(echo -n '{"alg":"HS256","typ":"JWT"}' | base64 | tr -d '\n' | tr '+/' '-_' | tr -d '=')
+    local ANON_SIGNATURE=$(echo -n "${HEADER}.${ANON_PAYLOAD}" | openssl dgst -sha256 -hmac "$JWT_SECRET" -binary | base64 | tr -d '\n' | tr '+/' '-_' | tr -d '=')
     ANON_KEY="${HEADER}.${ANON_PAYLOAD}.${ANON_SIGNATURE}"
 
     # SERVICE_ROLE KEY payload
-    local SERVICE_PAYLOAD=$(echo -n "{\"role\":\"service_role\",\"iss\":\"supabase\",\"iat\":${IAT},\"exp\":${EXP}}" | base64 | tr '+/' '-_' | tr -d '=')
-    local SERVICE_SIGNATURE=$(echo -n "${HEADER}.${SERVICE_PAYLOAD}" | openssl dgst -sha256 -hmac "$JWT_SECRET" -binary | base64 | tr '+/' '-_' | tr -d '=')
+    local SERVICE_PAYLOAD=$(echo -n "{\"role\":\"service_role\",\"iss\":\"supabase\",\"iat\":${IAT},\"exp\":${EXP}}" | base64 | tr -d '\n' | tr '+/' '-_' | tr -d '=')
+    local SERVICE_SIGNATURE=$(echo -n "${HEADER}.${SERVICE_PAYLOAD}" | openssl dgst -sha256 -hmac "$JWT_SECRET" -binary | base64 | tr -d '\n' | tr '+/' '-_' | tr -d '=')
     SERVICE_ROLE_KEY="${HEADER}.${SERVICE_PAYLOAD}.${SERVICE_SIGNATURE}"
 
     log_success "JWT keys generated"

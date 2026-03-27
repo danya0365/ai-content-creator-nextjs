@@ -222,7 +222,18 @@ sudo systemctl restart caddy
 
 > Caddy จะ request SSL certificate จาก Let's Encrypt อัตโนมัติ ไม่ต้องทำอะไรเพิ่ม!
 
-### 3.6 Start Supabase
+### 3.7 การเข้าถึงแบบปลอดภัยด้วย SSH Tunnel (แนะนำ)
+
+เพื่อความปลอดภัยสูงสุด คุณสามารถใช้ SSH Tunnel เพื่อเข้าจัดการฐานข้อมูลและ Studio โดยตรงจากเครื่อง Local โดยไม่ต้องผ่าน Internet:
+
+```bash
+# รันที่เครื่อง Local ของคุณ
+ssh -L 8000:localhost:8000 root@<VPS_IP>
+```
+
+หลังจากนั้นเปิด Browser ไปที่: `http://localhost:8000`
+
+---
 
 ```bash
 cd /opt/supabase
