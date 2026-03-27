@@ -60,7 +60,22 @@ jobs:
     needs: quality-check
     
     steps:
-      - name: 🔐 SSH Remote Deployment
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 📤 Upload Code to VPS
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          port: ${{ secrets.VPS_PORT || 22 }}
+          username: ${{ secrets.VPS_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          password: ${{ secrets.VPS_PASSWORD }}
+          source: "./*"
+          target: ${{ env.APP_PATH }}
+          rm: false # Keep existing files (like .env.production.vps)
+
+      - name: 🔐 SSH Execute Deployment
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.VPS_HOST }}
@@ -71,18 +86,13 @@ jobs:
           script_stop: true
           script: |
             echo "============================================"
-            echo "🚀 Starting deployment on VPS..."
+            echo "🚀 Starting isolated deployment on VPS..."
             echo "============================================"
             
             # Navigate to the app directory
             cd ${{ env.APP_PATH }}
             
-            # Update source code
-            echo "📥 Fetching latest code from release-vps..."
-            git fetch origin release-vps
-            git reset --hard origin/release-vps
-            
-            # Fix permissions
+            # Fix permissions for the uploaded scripts
             chmod +x nextjs-vps/*.sh
             
             # Execute the isolated deployment script
@@ -95,19 +105,21 @@ jobs:
             echo "============================================"
 
   # ==========================================
-  # Job 3: Notification
+  # Job 3: Status Notification
   # ==========================================
   notify:
-    name: 📢 Status Update
+    name: 📢 Status Notification
     runs-on: ubuntu-latest
     needs: deploy
-    if: always()
+    if: always() # Runs even if previous jobs failed
     
     steps:
-      - name: Check Status
+      - name: 🟢 Success Notification
+        if: needs.deploy.result == 'success'
+        run: echo "SUCCESS - Application deployed successfully!"
+
+      - name: 🔴 Failure Notification
+        if: needs.deploy.result == 'failure'
         run: |
-          if [ "${{ needs.deploy.result }}" == "success" ]; then
-            echo "SUCCESS: App deployed to https://social-generator.vibify.site"
-          else
-            echo "FAILURE: Deployment failed. Please check logs."
-          fi
+          echo "FAILURE - Deployment failed!"
+          exit 1 # This will make THIS job also show as failed (red)
