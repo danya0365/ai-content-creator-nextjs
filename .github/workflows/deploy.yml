@@ -98,7 +98,7 @@ jobs:
             # Execute the isolated deployment script
             # This handles port detection, .env sync, docker build, and nginx
             echo "🔄 Running automated setup script..."
-            sudo BUILD_COMMIT_SHA=${{ github.sha }} ./nextjs-vps/setup-nextjs-vps-existing.sh
+            echo "${{ secrets.VPS_PASSWORD }}" | sudo -S BUILD_COMMIT_SHA=${{ github.sha }} ./nextjs-vps/setup-nextjs-vps-existing.sh
             
             echo "============================================"
             echo "✅ Deployment Successful!"
