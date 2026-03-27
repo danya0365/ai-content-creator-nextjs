@@ -96,9 +96,10 @@ jobs:
             chmod +x nextjs-vps/*.sh
             
             # Execute the isolated deployment script
-            # This handles port detection, .env sync, docker build, and nginx
-            echo "🔄 Running automated setup script..."
-            echo "${{ secrets.VPS_PASSWORD }}" | sudo -S BUILD_COMMIT_SHA=${{ github.sha }} ./nextjs-vps/setup-nextjs-vps-existing.sh
+            # This handles environment sync, commit SHA, and docker restart
+            echo "🔄 Running lightweight deploy script..."
+            chmod +x nextjs-vps/deploy.sh
+            echo "${{ secrets.VPS_PASSWORD }}" | sudo -S BUILD_COMMIT_SHA=${{ github.sha }} ./nextjs-vps/deploy.sh
             
             echo "============================================"
             echo "✅ Deployment Successful!"
