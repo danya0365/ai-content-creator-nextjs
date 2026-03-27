@@ -19,58 +19,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 const AI_CONTENTS_BUCKET = 'ai-contents';
 
-// Sample topics for auto-generation
-const SAMPLE_TOPICS = {
-  'morning-news': [
-    'เทคโนโลยี AI ล่าสุดวันนี้',
-    'ข่าวเด่นประจำวัน',
-    'นวัตกรรมที่น่าสนใจ',
-    'เทรนด์ใหม่ในโลกดิจิทัล',
-    'ความก้าวหน้าทางวิทยาศาสตร์',
-  ],
-  'food': [
-    'ผัดกะเพราหมูสับ',
-    'ต้มยำกุ้ง',
-    'ข้าวมันไก่',
-    'ส้มตำ',
-    'ก๋วยเตี๋ยวเรือ',
-    'ข้าวผัดปู',
-    'แกงเขียวหวาน',
-  ],
-  'entertainment': [
-    'มุกตลกวันนี้',
-    'เรื่องขำขัน',
-    'ความบันเทิงออนไลน์',
-    'หนังดังที่ต้องดู',
-    'ซีรีส์น่าติดตาม',
-  ],
-  'tech-tips': [
-    'วิธีประหยัดแบตมือถือ',
-    'เทคนิคใช้ AI ให้เก่งขึ้น',
-    'แอปดีๆ ที่ควรมี',
-    'เคล็ดลับเพิ่มความเร็วคอม',
-    'การรักษาความปลอดภัยออนไลน์',
-  ],
-  'daily-motivation': [
-    'คำคมสร้างแรงบันดาลใจ',
-    'เริ่มต้นวันใหม่อย่างมีพลัง',
-    'ก้าวข้ามอุปสรรคในชีวิต',
-    'ความสำเร็จเริ่มจากก้าวแรก',
-    'วันนี้ดีกว่าเมื่อวาน',
-  ],
-  'gaming': [
-    'เกมใหม่น่าเล่น',
-    'เทคนิคเล่นเกมให้เก่งขึ้น',
-    'ข่าววงการเกม',
-    'อีสปอร์ตไทย',
-    'เกมมือถือยอดนิยม',
-  ],
-};
-
-function getRandomTopic(contentTypeId: string): string {
-  const topics = SAMPLE_TOPICS[contentTypeId as keyof typeof SAMPLE_TOPICS] || ['คอนเทนต์น่าสนใจประจำวัน'];
-  return topics[Math.floor(Math.random() * topics.length)];
-}
+// No more static sample topics - we use AI to generate ideas instead!
 
 export async function POST(request: NextRequest) {
   try {
@@ -87,9 +36,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get current time slot
+    // ✅ Check for specific content type requested via query param
+    const { searchParams } = new URL(request.url);
+    const requestedType = searchParams.get('type');
+    
+    // Get current time slot (optional if requestedType is present)
     const currentTimeSlot = getCurrentTimeSlot();
-    if (!currentTimeSlot) {
+    if (!currentTimeSlot && !requestedType) {
       return NextResponse.json({
         success: true,
         message: 'No content to generate at this time (outside time slots)',
@@ -97,14 +50,29 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Get content types for current time slot
-    const contentTypes = getContentTypesByTimeSlot(currentTimeSlot.id);
-    if (contentTypes.length === 0) {
-      return NextResponse.json({
-        success: true,
-        message: `No content types configured for ${currentTimeSlot.name}`,
-        timeSlot: currentTimeSlot.id,
-      });
+    let selectedContentType;
+    let currentTimeSlotConfig = currentTimeSlot;
+
+    if (requestedType) {
+      const { getContentTypeById } = await import('@/src/data/master/contentTypes');
+      selectedContentType = getContentTypeById(requestedType);
+      
+      // If requested type valid, we continue even if it doesn't match current time slot
+      if (!selectedContentType) {
+        return NextResponse.json({ error: 'Invalid content type requested' }, { status: 400 });
+      }
+    } else {
+      // Get content types for current time slot
+      const contentTypes = getContentTypesByTimeSlot(currentTimeSlot!.id);
+      if (contentTypes.length === 0) {
+        return NextResponse.json({
+          success: true,
+          message: `No content types configured for ${currentTimeSlot!.name}`,
+          timeSlot: currentTimeSlot!.id,
+        });
+      }
+      // Pick a random content type from available ones
+      selectedContentType = contentTypes[Math.floor(Math.random() * contentTypes.length)];
     }
 
     // ✅ Use admin client and repositories (single source of truth)
@@ -116,19 +84,26 @@ export async function POST(request: NextRequest) {
     const contentService = AIServiceFactory.createContentService();
     const imageService = AIServiceFactory.createImageService();
 
-    // Pick a random content type from available ones
-    const selectedContentType = contentTypes[Math.floor(Math.random() * contentTypes.length)];
-    const topic = getRandomTopic(selectedContentType.id);
+    // ✅ Generate dynamic topic idea using AI
+    console.log(`[Cron] 🎨 Generating dynamic idea for: ${selectedContentType.id}`);
+    const ideaResult = await contentService.generateTopicIdea(selectedContentType, {
+      mode: 'trending', // Try to get trending ideas for cron
+    });
+
+    const topic = ideaResult.success && ideaResult.idea 
+      ? ideaResult.idea 
+      : `${selectedContentType.nameTh} ที่น่าสนใจประจำวัน`; // Fallback if AI idea fails
 
     // Generate text content
     const contentResult = await contentService.generateContent({
       contentType: selectedContentType,
       topic,
-      timeSlot: currentTimeSlot.id,
+      timeSlot: currentTimeSlotConfig?.id || 'morning',
       language: 'th',
       imageStyle: 'pixel-art', // Required field
       platform: 'facebook', // Default
-      tone: 'casual', // Default
+      tone: selectedContentType.category === 'islamic' ? 'respectful' : 'casual',
+      brandContext: '',
     });
 
     if (!contentResult.success) {
@@ -179,7 +154,7 @@ export async function POST(request: NextRequest) {
       description: contentResult.description || '',
       imageUrl: imageUrl,
       prompt: contentResult.imagePrompt || '',
-      timeSlot: currentTimeSlot.id as 'morning' | 'lunch' | 'afternoon' | 'evening',
+      timeSlot: (currentTimeSlotConfig?.id || 'morning') as 'morning' | 'lunch' | 'afternoon' | 'evening',
       scheduledAt: scheduledAt.toISOString(),
       status: 'scheduled',
       tags: contentResult.hashtags || [],
@@ -190,7 +165,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: `Generated ${selectedContentType.nameTh} content for ${currentTimeSlot.nameTh}`,
+      message: `Generated ${selectedContentType.nameTh} content${currentTimeSlot ? ` for ${currentTimeSlot.nameTh}` : ''}`,
       providers: {
         content: process.env.AI_PROVIDER || 'gemini',
         image: process.env.AI_IMAGE_PROVIDER || 'mock',
@@ -199,7 +174,7 @@ export async function POST(request: NextRequest) {
         id: savedContent.id,
         title: savedContent.title,
         contentType: selectedContentType.nameTh,
-        timeSlot: currentTimeSlot.nameTh,
+        timeSlot: currentTimeSlot?.nameTh || 'Custom',
         imageUrl: savedContent.imageUrl,
         scheduledAt: savedContent.scheduledAt,
       },

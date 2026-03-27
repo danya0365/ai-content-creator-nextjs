@@ -174,7 +174,7 @@ export class OpenRouterContentService implements IContentService {
 
   async generateTopicIdea(
     contentType: ContentType,
-    options?: { trends?: string[]; brandContext?: string }
+    options?: { trends?: string[]; brandContext?: string; mode?: string }
   ): Promise<GenerateTopicIdeaResponse> {
     if (!this.apiKey) return { success: false, error: 'No OpenRouter API key' };
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';

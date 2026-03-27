@@ -48,6 +48,13 @@ export const TONE_OF_VOICE: ToneOfVoice[] = [
     nameTh: 'ให้ความรู้',
     emoji: '📚',
     promptModifier: 'Tone: educational, informative, clear, and easy to understand. Break down complex topics simply.',
+  },
+  {
+    id: 'respectful',
+    nameEn: 'Respectful',
+    nameTh: 'ความเคารพ/สุภาพ',
+    emoji: '🙏',
+    promptModifier: 'Tone: strictly respectful, polite, and humble. Use reverent language suitable for religious or highly formal topics.',
   }
 ];
 

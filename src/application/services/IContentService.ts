@@ -44,6 +44,7 @@ export interface IContentService {
     options?: {
       trends?: string[];
       brandContext?: string;
+      mode?: string;
     }
   ): Promise<GenerateTopicIdeaResponse>;
 }
