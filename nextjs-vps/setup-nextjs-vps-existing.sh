@@ -97,6 +97,13 @@ setup_env() {
     sed -i "/^CONTAINER_NAME=/d" .env.production
     echo "CONTAINER_NAME=$CONTAINER_NAME" >> .env.production
 
+    # 1.1 Handle BUILD_COMMIT_SHA
+    if [ -n "${BUILD_COMMIT_SHA:-}" ]; then
+        log_info "Baking BUILD_COMMIT_SHA: $BUILD_COMMIT_SHA"
+        sed -i "/^BUILD_COMMIT_SHA=/d" .env.production
+        echo "BUILD_COMMIT_SHA=$BUILD_COMMIT_SHA" >> .env.production
+    fi
+
     # 2. Handle CRON_SECRET
     if grep -q "^CRON_SECRET=" .env.production; then
         CRON_SECRET=$(grep "^CRON_SECRET=" .env.production | cut -d '=' -f2)

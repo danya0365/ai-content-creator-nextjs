@@ -3,9 +3,9 @@ import type { NextConfig } from "next";
 
 const getCommitSha = () => {
   try {
-    return process.env.VERCEL_GIT_COMMIT_SHA || execSync('git rev-parse HEAD').toString().trim();
+    return process.env.BUILD_COMMIT_SHA || process.env.VERCEL_GIT_COMMIT_SHA || execSync('git rev-parse HEAD').toString().trim();
   } catch (e) {
-    return '';
+    return process.env.BUILD_COMMIT_SHA || '';
   }
 };
 
