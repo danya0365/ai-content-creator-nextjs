@@ -18,6 +18,7 @@ APP_DOMAIN="social-generator.vibify.site"
 # สร้าง Project ID จาก Domain (เช่น social-generator)
 PROJECT_ID=$(echo "$APP_DOMAIN" | cut -d'.' -f1)
 INSTALL_DIR="/opt/nextjs-${PROJECT_ID}"
+NGINX_CONF_NAME="nextjs-${PROJECT_ID}"
 CONTAINER_NAME="nextjs-${PROJECT_ID}-app"
 
 # ==========================================
@@ -199,22 +200,6 @@ main() {
     echo -e "🔌 Local Port: ${APP_PORT}"
     echo -e "🔑 Cron Secret: ${CRON_SECRET:0:5}****************"
     echo -e "${GREEN}============================================${NC}"
-}
-
-main "$@"
-
-# ==========================================
-# Main
-# ==========================================
-main() {
-    install_docker
-    install_caddy
-    setup_app
-    setup_caddy
-    setup_cron
-    
-    echo -e "\n${GREEN}✅ Setup Complete (Clean VPS Mode)${NC}"
-    echo -e "🔗 URL: https://${APP_DOMAIN}"
 }
 
 main "$@"
