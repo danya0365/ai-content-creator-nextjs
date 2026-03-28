@@ -1,3 +1,4 @@
+// TODO: Refactor according to CREATE_PAGE_PATTERN.md - Move business logic and direct DB/Repository access to Server Presenter
 // app/api/auth/[action]/route.ts
 import { getAuthConfig } from '@/src/config/auth.config';
 import { createClient } from '@/src/infrastructure/supabase/server';

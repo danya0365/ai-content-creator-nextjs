@@ -1,3 +1,4 @@
+// TODO: Refactor according to CREATE_PAGE_PATTERN.md - Move business logic and direct DB/Repository access to Server Presenter
 /**
  * Cron Job API Route for Auto-generating Content
  * POST /api/cron/generate
