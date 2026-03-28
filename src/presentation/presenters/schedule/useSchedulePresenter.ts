@@ -19,6 +19,7 @@ export interface SchedulePresenterState {
   // UI state (moved from View)
   selectedDayIndex: number;
   selectedDay: ScheduleDay | null;
+  selectedContent: Content | null;
 }
 
 export interface SchedulePresenterActions {
@@ -28,6 +29,7 @@ export interface SchedulePresenterActions {
   // UI actions (moved from View)
   selectDay: (index: number) => void;
   getContentsForSlot: (slot: TimeSlotConfig) => Content[];
+  selectContent: (content: Content | null) => void;
 }
 
 export function useSchedulePresenter(
@@ -47,6 +49,7 @@ export function useSchedulePresenter(
   
   // UI state (moved from View)
   const [selectedDayIndex, setSelectedDayIndex] = useState(0);
+  const [selectedContent, setSelectedContent] = useState<Content | null>(null);
 
   // Computed: selected day
   const selectedDay = useMemo(() => {
@@ -81,6 +84,11 @@ export function useSchedulePresenter(
     return selectedDay.contents.filter((c) => c.timeSlot === slot.id);
   }, [selectedDay]);
 
+  // Select content for viewing details
+  const selectContent = useCallback((content: Content | null) => {
+    setSelectedContent(content);
+  }, []);
+
   useEffect(() => {
     if (!initialViewModel) {
       loadData();
@@ -94,6 +102,7 @@ export function useSchedulePresenter(
       error,
       selectedDayIndex,
       selectedDay,
+      selectedContent,
     },
     {
       loadData,
@@ -101,6 +110,7 @@ export function useSchedulePresenter(
       refresh,
       selectDay,
       getContentsForSlot,
+      selectContent,
     },
   ];
 }
