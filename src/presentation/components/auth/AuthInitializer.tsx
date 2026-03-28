@@ -16,14 +16,25 @@ export const AuthInitializer: React.FC = () => {
   }, [])
 
   useEffect(() => {
-    // Fetch initial session once on mount using the Server API
+    // 1. Subscribe to auth state changes for a true single source of truth across tabs/refreshes
+    const unsubscribe = presenter.onAuthStateChange((session) => {
+      console.log('Auth state changed via listener:', session ? 'Logged In' : 'Logged Out');
+      if (session) {
+        setSession(session);
+      } else {
+        reset();
+      }
+    });
+
+    // 2. Fetch initial session explicitly just in case onAuthStateChange doesn't fire immediately
     const initAuth = async () => {
       try {
         const session = await presenter.getSession();
-        console.log('Init auth session:', session);
+        console.log('Init auth session:', session ? 'Found' : 'Null');
         if (session) {
           setSession(session);
         } else {
+          // Only reset if we truly have no session
           reset();
         }
       } catch (err) {
@@ -33,7 +44,11 @@ export const AuthInitializer: React.FC = () => {
     };
 
     initAuth();
-  }, [setSession, reset]);
+
+    return () => {
+      unsubscribe();
+    };
+  }, [presenter, setSession, reset]);
 
   return null;
 };
