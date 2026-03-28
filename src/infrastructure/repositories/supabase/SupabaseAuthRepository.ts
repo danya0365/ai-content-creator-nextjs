@@ -49,8 +49,11 @@ export class SupabaseAuthRepository implements IAuthRepository {
   /**
    * Map Supabase profile to AuthProfile
    */
-  private mapProfile(profile: Database['public']['Tables']['profiles']['Row']): AuthProfile {
+  private mapProfile(profile: any): AuthProfile {
     const preferences = profile.preferences as { language?: string; notifications?: boolean; theme?: string } || {};
+    
+    // Role can be joined or a separate field
+    const role = (profile.profile_roles?.role || profile.role || 'user') as 'user' | 'moderator' | 'admin';
     
     return {
       id: profile.id,
@@ -71,6 +74,7 @@ export class SupabaseAuthRepository implements IAuthRepository {
       privacySettings: (profile.privacy_settings as Record<string, unknown>) || undefined,
       socialLinks: (profile.social_links as Record<string, string>) || undefined,
       verificationStatus: profile.verification_status as 'pending' | 'verified' | 'rejected',
+      role,
       loginCount: profile.login_count,
       lastLogin: profile.last_login || undefined,
       isActive: profile.is_active,
@@ -392,7 +396,7 @@ export class SupabaseAuthRepository implements IAuthRepository {
 
       const { data: profile, error } = await this.supabase
         .from('profiles')
-        .select('*')
+        .select('*, profile_roles(role)')
         .eq('auth_id', user.id)
         .eq('is_active', true)
         .limit(1)
@@ -420,10 +424,14 @@ export class SupabaseAuthRepository implements IAuthRepository {
         return [];
       }
 
-      const { data, error } = await this.supabase.rpc('get_user_profiles');
+      // Fetch all profiles for the user with roles
+      const { data, error } = await this.supabase
+        .from('profiles')
+        .select('*, profile_roles(role)')
+        .eq('auth_id', user.id);
 
       if (error) {
-        console.error('RPC get_user_profiles error:', error);
+        console.error('Error fetching profiles with roles:', error);
         return [];
       }
 

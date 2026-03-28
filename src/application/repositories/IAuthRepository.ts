@@ -32,6 +32,7 @@ export interface AuthProfile {
   privacySettings?: Record<string, unknown>;
   socialLinks?: Record<string, string>;
   verificationStatus: 'pending' | 'verified' | 'rejected';
+  role: 'user' | 'moderator' | 'admin';
   isActive: boolean;
   lastLogin?: string;
   loginCount: number;

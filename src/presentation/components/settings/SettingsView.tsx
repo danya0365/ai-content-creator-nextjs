@@ -3,6 +3,7 @@
 import { AppSettings } from '@/src/presentation/presenters/settings/SettingsPresenter';
 import { UserProfile, useSettingsPresenter } from '@/src/presentation/presenters/settings/useSettingsPresenter';
 import { animated, config, useSpring } from '@react-spring/web';
+import Link from 'next/link';
 import { JellyButton } from '../ui/JellyButton';
 import { JellyCard, JellyWrapper } from '../ui/JellyCard';
 
@@ -350,6 +351,17 @@ export function SettingsView({ initialViewModel }: SettingsViewProps) {
                 <option value="th">🇹🇭 ไทย</option>
                 <option value="en">🇺🇸 English</option>
               </select>
+            </SettingRow>
+          </SettingsSection>
+
+          {/* System & Debug */}
+          <SettingsSection title="System & Debug" icon="🛠️" delay={325}>
+            <SettingRow label="Scheduler Debug" description="ตรวจสอบและทดสอบการทำงานของ Cron Jobs ด้วยตัวเอง">
+              <Link href="/settings/scheduler">
+                <JellyButton variant="secondary" size="sm">
+                  🔍 ตรวจสอบ
+                </JellyButton>
+              </Link>
             </SettingRow>
           </SettingsSection>
 
