@@ -93,6 +93,11 @@ export function MainHeader() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   // Fetch profiles when dropdown opens
   useEffect(() => {
@@ -136,15 +141,16 @@ export function MainHeader() {
   const DROPDOWN_LINKS = [
     { label: 'โปรไฟล์', href: '/profile', icon: <IconUser className="w-4 h-4" /> },
     { label: 'ตั้งค่า', href: '/settings', icon: <IconSettings className="w-4 h-4" /> },
+    ...(isMounted && profile?.role === 'admin'
+      ? [
+          {
+            label: 'Scheduler Debug',
+            href: '/settings/scheduler',
+            icon: <IconCommandLine className="w-4 h-4 text-purple-500" />,
+          },
+        ]
+      : []),
   ];
-
-  if (profile?.role === 'admin') {
-    DROPDOWN_LINKS.push({ 
-      label: 'Scheduler Debug', 
-      href: '/settings/scheduler', 
-      icon: <IconCommandLine className="w-4 h-4 text-purple-500" /> 
-    });
-  }
 
   return (
     <header className="relative z-50 h-16 px-6 flex items-center justify-between border-b border-border/30 bg-surface/30 backdrop-blur-xl">
