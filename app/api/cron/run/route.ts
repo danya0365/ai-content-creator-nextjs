@@ -11,6 +11,7 @@
  */
 
 import { getNextRunDescription, getTasksToRun, SCHEDULED_TASKS, ScheduledTask } from '@/src/infrastructure/scheduler/SchedulerConfig';
+import { authorizeCronRequest } from '@/src/infrastructure/auth/cron-auth';
 import { NextRequest, NextResponse } from 'next/server';
 
 // Store last run times to prevent duplicate runs
@@ -91,15 +92,16 @@ export async function POST(request: NextRequest) {
   const startTime = Date.now();
   const now = new Date();
 
-  // Verify cron secret
-  const cronSecret = request.headers.get('x-cron-secret') || '';
-  const expectedSecret = process.env.CRON_SECRET;
-  const isLocalhost = request.headers.get('host')?.includes('localhost');
+  // Verify authorization (VPS Secret or Admin Session)
+  const isAuthorized = await authorizeCronRequest(request);
 
-  if (!isLocalhost && expectedSecret && cronSecret !== expectedSecret) {
+  if (!isAuthorized) {
     console.warn(`[Scheduler] Unauthorized access attempt from ${request.headers.get('x-forwarded-for') || 'unknown'}`);
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
+
+  // Get cron secret for calling sub-tasks internally
+  const cronSecret = request.headers.get('x-cron-secret') || process.env.CRON_SECRET || '';
 
   // Log heartbeat of the endpoint being hit
   console.log(`[Scheduler] API Hook triggered at ${now.toISOString()} (${now.toLocaleString('th-TH', { timeZone: 'Asia/Bangkok' })})`);
@@ -156,11 +158,8 @@ export async function GET(request: NextRequest) {
   const now = new Date();
   const tasksToRun = getTasksToRun(now);
 
-  // Verify cron secret for running tasks
-  const cronSecret = request.headers.get('x-cron-secret') || '';
-  const expectedSecret = process.env.CRON_SECRET;
-  const isLocalhost = request.headers.get('host')?.includes('localhost');
-  const isAuthorized = isLocalhost || !expectedSecret || cronSecret === expectedSecret;
+  // Verify authorization (VPS Secret or Admin Session)
+  const isAuthorized = await authorizeCronRequest(request);
 
   // If authorized and tasks need to run, run them
   if (isAuthorized && tasksToRun.length > 0) {

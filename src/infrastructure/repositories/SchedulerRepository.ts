@@ -39,7 +39,6 @@ export class SchedulerRepository implements ISchedulerRepository {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-cron-secret': process.env.NEXT_PUBLIC_CRON_SECRET || '', // Use public secret if available for debugging
         },
       });
 
@@ -71,7 +70,6 @@ export class SchedulerRepository implements ISchedulerRepository {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-cron-secret': process.env.NEXT_PUBLIC_CRON_SECRET || '',
         },
       });
 
