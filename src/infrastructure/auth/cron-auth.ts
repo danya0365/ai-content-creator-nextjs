@@ -12,7 +12,9 @@ export async function authorizeCronRequest(request: NextRequest): Promise<boolea
   // 1. Check for localhost (skip auth in local dev for convenience)
   // ⚠️ Ensure host header is checked carefully
   const host = request.headers.get('host');
-  const isLocalhost = host?.includes('localhost') || host?.includes('127.0.0.1');
+  const isLocalhost = host?.includes('localhost') || 
+                     host?.includes('127.0.0.1') || 
+                     host?.includes('nextjs-ai-creator'); // Allow container-to-self calls in Docker
 
   // 2. Check for VPS Secret (Static Key)
   const cronSecret = request.headers.get('x-cron-secret') || 
