@@ -7,7 +7,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { TimelineFilter, TimelineGroup, TimelinePresenter, TimelineStatusFilter, TimelineViewModel } from './TimelinePresenter';
+import { TimelineEntry, TimelineFilter, TimelineGroup, TimelinePresenter, TimelineStatusFilter, TimelineViewModel } from './TimelinePresenter';
 import { createClientTimelinePresenter } from './TimelinePresenterClientFactory';
 
 export interface TimelinePresenterState {
@@ -19,6 +19,7 @@ export interface TimelinePresenterState {
   // Computed values (moved from View)
   filteredGroups: TimelineGroup[];
   filteredCount: number;
+  selectedEntry: TimelineEntry | null;
 }
 
 export interface TimelinePresenterActions {
@@ -28,6 +29,8 @@ export interface TimelinePresenterActions {
   setError: (error: string | null) => void;
   refresh: () => Promise<void>;
   resetFilters: () => void;
+  viewEntry: (entry: TimelineEntry | null) => void;
+  closeEntry: () => void;
 }
 
 export function useTimelinePresenter(
@@ -46,6 +49,7 @@ export function useTimelinePresenter(
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<TimelineFilter>('all');
   const [statusFilter, setStatusFilter] = useState<TimelineStatusFilter>('all');
+  const [selectedEntry, setSelectedEntry] = useState<TimelineEntry | null>(null);
 
   // Computed: filtered groups (moved from View)
   const filteredGroups = useMemo(() => {
@@ -89,6 +93,14 @@ export function useTimelinePresenter(
     setStatusFilter('all');
   }, []);
 
+  const viewEntry = useCallback((entry: TimelineEntry | null) => {
+    setSelectedEntry(entry);
+  }, []);
+
+  const closeEntry = useCallback(() => {
+    setSelectedEntry(null);
+  }, []);
+
   useEffect(() => {
     if (!initialViewModel) {
       loadData();
@@ -104,6 +116,7 @@ export function useTimelinePresenter(
       statusFilter,
       filteredGroups,
       filteredCount,
+      selectedEntry,
     },
     {
       loadData,
@@ -112,6 +125,8 @@ export function useTimelinePresenter(
       setError,
       refresh,
       resetFilters,
+      viewEntry,
+      closeEntry,
     },
   ];
 }

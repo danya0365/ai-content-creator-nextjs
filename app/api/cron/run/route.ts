@@ -13,6 +13,7 @@
 import { getNextRunDescription, getTasksToRun, SCHEDULED_TASKS, ScheduledTask } from '@/src/infrastructure/scheduler/SchedulerConfig';
 import { authorizeCronRequest } from '@/src/infrastructure/auth/cron-auth';
 import { NextRequest, NextResponse } from 'next/server';
+import http from 'http';
 
 // Store last run times to prevent duplicate runs
 const lastRunTimes: Record<string, number> = {};
@@ -34,38 +35,60 @@ async function runTask(task: ScheduledTask, baseUrl: string, cronSecret: string)
   const startTime = Date.now();
   
   try {
-    // Build full URL
-    const url = `${baseUrl}${task.handler}`;
-    
-    // Make request to handler
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-cron-secret': cronSecret,
-        'x-scheduler-task': task.name,
-      },
+    // Use Node.js http module for more reliable internal communication in Docker
+    const result = await new Promise<TaskResult>((resolve) => {
+      const options = {
+        hostname: '127.0.0.1',
+        port: 3000,
+        path: task.handler,
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-cron-secret': cronSecret,
+          'x-scheduler-task': task.name,
+          'host': 'localhost:3000',
+        },
+      };
+
+      const req = http.request(options, (res) => {
+        let body = '';
+        res.on('data', (chunk) => body += chunk);
+        res.on('end', () => {
+          try {
+            const data = JSON.parse(body || '{}');
+            const isOk = res.statusCode ? (res.statusCode >= 200 && res.statusCode < 300) : false;
+            resolve({
+              name: task.name,
+              status: isOk ? 'success' : 'error',
+              message: data.message || data.error || (isOk ? 'Success' : `HTTP Error ${res.statusCode}`),
+              duration: Date.now() - startTime,
+            });
+          } catch (e) {
+            resolve({
+              name: task.name,
+              status: 'error',
+              message: `Invalid response: ${body.substring(0, 50)}`,
+              duration: Date.now() - startTime,
+            });
+          }
+        });
+      });
+
+      req.on('error', (err) => {
+        resolve({
+          name: task.name,
+          status: 'error',
+          message: `Internal connection failed: ${err.message}`,
+          duration: Date.now() - startTime,
+        });
+      });
+
+      req.end();
     });
 
-    const data = await response.json();
-    const duration = Date.now() - startTime;
-
-    if (response.ok) {
-      return {
-        name: task.name,
-        status: 'success',
-        message: data.message || 'Task completed successfully',
-        duration,
-      };
-    } else {
-      return {
-        name: task.name,
-        status: 'error',
-        message: data.error || `HTTP ${response.status}`,
-        duration,
-      };
-    }
+    return result;
   } catch (error) {
+    console.error(`[Scheduler] ❌ Error running task ${task.name}:`, error);
     return {
       name: task.name,
       status: 'error',
@@ -106,10 +129,13 @@ export async function POST(request: NextRequest) {
   // Log heartbeat of the endpoint being hit
   console.log(`[Scheduler] API Hook triggered at ${now.toISOString()} (${now.toLocaleString('th-TH', { timeZone: 'Asia/Bangkok' })})`);
 
-  // Get base URL
-  const protocol = request.headers.get('x-forwarded-proto') || 'http';
-  const host = request.headers.get('host') || 'localhost:3000';
-  const baseUrl = `${protocol}://${host}`;
+  // Get base URL for internal triggers
+  // 🐳 In Docker/VPS, we use the container hostname 'nextjs-ai-creator' 
+  // which is mapped to the internal IP by Docker DNS.
+  const isProduction = process.env.NODE_ENV === 'production';
+  const baseUrl = isProduction ? 'http://nextjs-ai-creator:3000' : 'http://localhost:3000';
+  
+  // NOTE: nextjs-ai-creator:3000 is the internal address of the container.
 
   // Get tasks that should run now
   const tasksToRun = getTasksToRun(now);

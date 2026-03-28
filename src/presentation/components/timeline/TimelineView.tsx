@@ -13,6 +13,7 @@ import { animated, config, useSpring } from '@react-spring/web';
 import { JellyButton } from '../ui/JellyButton';
 import { JellyCard } from '../ui/JellyCard';
 import { SmartImage } from '../ui/SmartImage';
+import { ContentDetailModal } from '../shared/ContentDetailModal';
 
 interface FilterButtonProps {
   label: string;
@@ -61,9 +62,10 @@ function StatusBadge({ status }: StatusBadgeProps) {
 interface TimelineCardProps {
   entry: TimelineEntry;
   isLeft: boolean;
+  onClick: (entry: TimelineEntry) => void;
 }
 
-function TimelineCard({ entry, isLeft }: TimelineCardProps) {
+function TimelineCard({ entry, isLeft, onClick }: TimelineCardProps) {
   const categoryConfig = TIMELINE_CATEGORIES[entry.category];
   
   const time = new Date(entry.createdAt).toLocaleTimeString('th-TH', {
@@ -74,7 +76,10 @@ function TimelineCard({ entry, isLeft }: TimelineCardProps) {
   return (
     <div className={`flex items-center gap-4 ${isLeft ? 'flex-row' : 'flex-row-reverse'} animate-fade-in`}>
       {/* Card */}
-      <JellyCard className="flex-1 glass-card-hover p-5 rounded-2xl group max-w-md">
+      <JellyCard 
+        className="flex-1 glass-card-hover p-5 rounded-2xl group max-w-md cursor-pointer border border-transparent hover:border-violet-500/30 transition-all"
+        onClick={() => onClick(entry)}
+      >
         {/* Header */}
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
@@ -382,6 +387,7 @@ export function TimelineView({ initialViewModel }: TimelineViewProps) {
                         key={entry.id}
                         entry={entry}
                         isLeft={entryIndex % 2 === 0}
+                        onClick={actions.viewEntry}
                       />
                     ))}
                   </div>
@@ -403,6 +409,14 @@ export function TimelineView({ initialViewModel }: TimelineViewProps) {
           )}
         </div>
       </div>
+
+      {/* Shared Detail Modal */}
+      {state.selectedEntry && (
+        <ContentDetailModal
+          content={state.selectedEntry}
+          onClose={actions.closeEntry}
+        />
+      )}
     </>
   );
 }

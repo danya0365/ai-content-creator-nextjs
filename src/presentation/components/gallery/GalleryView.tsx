@@ -7,6 +7,7 @@ import { animated, config, useSpring } from '@react-spring/web';
 import { JellyButton } from '../ui/JellyButton';
 import { JellyCard } from '../ui/JellyCard';
 import { SmartImage } from '../ui/SmartImage';
+import { ContentDetailModal } from '../shared/ContentDetailModal';
 
 // Types
 type SortOption = 'newest' | 'oldest' | 'likes' | 'shares';
@@ -31,105 +32,6 @@ function FilterButton({ label, count, isActive, onClick }: FilterButtonProps) {
   );
 }
 
-interface ContentDetailModalProps {
-  content: Content;
-  onClose: () => void;
-}
-
-function ContentDetailModal({ content, onClose }: ContentDetailModalProps) {
-  const backdropSpring = useSpring({
-    from: { opacity: 0 },
-    to: { opacity: 1 },
-    config: config.gentle,
-  });
-
-  const modalSpring = useSpring({
-    from: { opacity: 0, scale: 0.9, y: 20 },
-    to: { opacity: 1, scale: 1, y: 0 },
-    config: config.gentle,
-  });
-
-  const statusColors = {
-    draft: 'bg-gray-500/20 text-gray-400',
-    scheduled: 'bg-blue-500/20 text-blue-400',
-    published: 'bg-green-500/20 text-green-400',
-    failed: 'bg-red-500/20 text-red-400',
-  };
-
-  return (
-    <animated.div
-      style={backdropSpring}
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
-      onClick={onClose}
-    >
-      <animated.div
-        style={modalSpring}
-        className="glass-card p-6 max-w-lg w-full max-h-[90vh] overflow-auto"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <JellyButton
-          onClick={onClose}
-          variant="ghost"
-          size="sm"
-          className="absolute top-4 right-4 w-8 h-8 rounded-full"
-        >
-          ✕
-        </JellyButton>
-
-        <div className="w-full aspect-square rounded-xl bg-gradient-to-br from-violet-500/30 via-purple-500/20 to-fuchsia-500/30 mb-4 flex items-center justify-center overflow-hidden relative">
-          <SmartImage
-            src={content.imageUrl}
-            alt={content.title}
-            fill
-            className="object-cover"
-            sizes="(max-width: 768px) 100vw, 500px"
-            emojiClassName="text-6xl"
-            containerClassName="w-full h-full flex items-center justify-center absolute inset-0"
-          />
-        </div>
-
-        <div className="space-y-4">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className={`text-xs px-3 py-1 rounded-full ${statusColors[content.status]}`}>
-              {content.status.toUpperCase()}
-            </span>
-            <span className="text-xs text-muted">{content.timeSlot}</span>
-          </div>
-
-          <h2 className="text-xl font-bold text-foreground">{content.title}</h2>
-          <p className="text-sm text-muted">{content.description}</p>
-
-          {content.status === 'published' && (
-            <div className="flex items-center gap-6 py-3 border-t border-b border-border/30">
-              <div className="text-center">
-                <div className="text-xl font-bold text-foreground">{content.likes}</div>
-                <div className="text-xs text-muted">Likes</div>
-              </div>
-              <div className="text-center">
-                <div className="text-xl font-bold text-foreground">{content.shares}</div>
-                <div className="text-xs text-muted">Shares</div>
-              </div>
-            </div>
-          )}
-
-          <JellyCard className="glass-card p-3">
-            <div className="text-xs text-muted mb-1">AI Prompt:</div>
-            <div className="text-sm text-foreground">{content.prompt}</div>
-          </JellyCard>
-
-          <div className="flex gap-2">
-            <JellyButton variant="primary" className="flex-1">
-              ✨ Regenerate
-            </JellyButton>
-            <JellyButton variant="secondary">
-              📤 Share
-            </JellyButton>
-          </div>
-        </div>
-      </animated.div>
-    </animated.div>
-  );
-}
 
 interface GalleryCardProps {
   content: Content;

@@ -11,6 +11,7 @@ import { GenerateContentModal } from '../generate/GenerateContentModal';
 import { JellyButton } from '../ui/JellyButton';
 import { JellyCard } from '../ui/JellyCard';
 import { SmartImage } from '../ui/SmartImage';
+import { ContentDetailModal } from '../shared/ContentDetailModal';
 
 interface DayColumnProps {
   day: ScheduleDay;
@@ -58,9 +59,10 @@ interface TimeSlotRowProps {
   slot: TimeSlotConfig;
   contents: Content[];
   onAddContent: () => void;
+  onViewContent: (content: Content) => void;
 }
 
-function TimeSlotRow({ slot, contents, onAddContent }: TimeSlotRowProps) {
+function TimeSlotRow({ slot, contents, onAddContent, onViewContent }: TimeSlotRowProps) {
   return (
     <div className="flex gap-4 items-stretch">
       {/* Time label */}
@@ -80,7 +82,8 @@ function TimeSlotRow({ slot, contents, onAddContent }: TimeSlotRowProps) {
           contents.map((content) => (
             <JellyCard
               key={content.id}
-              className="flex-shrink-0 w-48 glass-card-hover p-3 rounded-xl"
+              className="flex-shrink-0 w-48 glass-card-hover p-3 rounded-xl cursor-pointer"
+              onClick={() => onViewContent(content)}
             >
               <div className="w-full aspect-video rounded-lg bg-gradient-to-br from-violet-500/20 to-fuchsia-500/20 mb-2 flex items-center justify-center overflow-hidden relative">
                 <SmartImage
@@ -256,6 +259,7 @@ export function ScheduleView({ initialViewModel }: ScheduleViewProps) {
                       scheduledDate: state.selectedDay?.dateString,
                       scheduledTime: `${slot.startHour}:00`
                     })}
+                    onViewContent={actions.selectContent}
                   />
                 ))}
               </div>
@@ -286,6 +290,14 @@ export function ScheduleView({ initialViewModel }: ScheduleViewProps) {
         onClose={closeModal}
         onGenerate={generateContent}
       />
+
+      {/* Shared Content Detail Modal */}
+      {state.selectedContent && (
+        <ContentDetailModal
+          content={state.selectedContent}
+          onClose={() => actions.selectContent(null)}
+        />
+      )}
     </>
   );
 }
