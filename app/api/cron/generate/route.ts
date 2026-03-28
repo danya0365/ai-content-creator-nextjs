@@ -1,3 +1,4 @@
+// TODO: Refactor according to CREATE_PAGE_PATTERN.md - Move business logic and direct DB/Repository access to Server Presenter
 /**
  * Cron Job API Route for Auto-generating Content
  * POST /api/cron/generate
@@ -15,6 +16,7 @@ import { AIServiceFactory } from '@/src/infrastructure/ai/AIServiceFactory';
 import { SupabaseContentRepository } from '@/src/infrastructure/repositories/SupabaseContentRepository';
 import { SupabaseStorageRepository } from '@/src/infrastructure/repositories/SupabaseStorageRepository';
 import { createAdminClient } from '@/src/infrastructure/supabase/server';
+import { authorizeCronRequest } from '@/src/infrastructure/auth/cron-auth';
 import { NextRequest, NextResponse } from 'next/server';
 
 const AI_CONTENTS_BUCKET = 'ai-contents';
@@ -23,13 +25,8 @@ const AI_CONTENTS_BUCKET = 'ai-contents';
 
 export async function POST(request: NextRequest) {
   try {
-    // Verify cron secret (security check)
-    const cronSecret = request.headers.get('x-cron-secret') || request.headers.get('authorization')?.replace('Bearer ', '');
-    const expectedSecret = process.env.CRON_SECRET;
-
-    // Allow localhost or valid secret
-    const isLocalhost = request.headers.get('host')?.includes('localhost');
-    if (!isLocalhost && expectedSecret && cronSecret !== expectedSecret) {
+    const isAuthorized = await authorizeCronRequest(request);
+    if (!isAuthorized) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }

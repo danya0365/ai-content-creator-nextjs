@@ -1,3 +1,4 @@
+// TODO: Refactor according to CREATE_PAGE_PATTERN.md - Move business logic and direct DB/Repository access to Server Presenter
 // app/api/auth/[action]/route.ts
 import { getAuthConfig } from '@/src/config/auth.config';
 import { createClient } from '@/src/infrastructure/supabase/server';
@@ -155,13 +156,20 @@ export async function GET(
 
           const { data: profileData, error: profileError } = await supabase
             .from('profiles')
-            .select('*')
+            .select('*, profile_roles(role)')
             .eq('auth_id', userData.user.id)
             .eq('is_active', true)
             .limit(1)
             .maybeSingle();
 
           if (profileError) return NextResponse.json({ data: null });
+          
+          // Flatten role from profile_roles to ensure consistent schema for single source of truth
+          if (profileData && (profileData as any).profile_roles) {
+            const pr = (profileData as any).profile_roles;
+            (profileData as any).role = Array.isArray(pr) ? (pr[0]?.role || 'user') : (pr.role || 'user');
+          }
+          
           data = profileData;
         }
         break;

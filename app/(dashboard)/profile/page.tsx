@@ -1,4 +1,5 @@
 import { ProfileView } from "@/src/presentation/components/profile/ProfileView";
+import { AuthGuard } from "@/src/presentation/components/auth/AuthGuard";
 import type { Metadata } from "next";
 
 // Tell Next.js this is a dynamic page
@@ -10,5 +11,9 @@ export const metadata: Metadata = {
 };
 
 export default function ProfilePage() {
-  return <ProfileView />;
+  return (
+    <AuthGuard>
+      <ProfileView />
+    </AuthGuard>
+  );
 }

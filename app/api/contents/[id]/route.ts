@@ -1,3 +1,4 @@
+// TODO: Refactor according to CREATE_PAGE_PATTERN.md - Move business logic and direct DB/Repository access to Server Presenter
 /**
  * Content by ID API Route
  * GET /api/contents/[id] - Get content by ID

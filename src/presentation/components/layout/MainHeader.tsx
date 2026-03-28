@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { useAuthPresenter } from '../../presenters/auth/useAuthPresenter';
 import { useProfilePresenter } from '../../presenters/profile/useProfilePresenter';
 import { ThemeToggle } from '../ui/ThemeToggle';
@@ -11,14 +12,16 @@ interface NavItem {
   label: string;
   href: string;
   icon: string;
+  isPublic?: boolean;
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { label: 'Dashboard', href: '/dashboard', icon: '📊' },
-  { label: 'Timeline', href: '/timeline', icon: '📜' },
-  { label: 'Trends', href: '/trends', icon: '🔥' },
-  { label: 'Gallery', href: '/gallery', icon: '🖼️' },
-  { label: 'Schedule', href: '/schedule', icon: '📅' },
+  { label: 'Dashboard', href: '/dashboard', icon: '📊', isPublic: false },
+  { label: 'Timeline', href: '/timeline', icon: '📜', isPublic: true },
+  { label: 'Trends', href: '/trends', icon: '🔥', isPublic: true },
+  { label: 'Gallery', href: '/gallery', icon: '🖼️', isPublic: true },
+  { label: 'Schedule', href: '/schedule', icon: '📅', isPublic: false },
+  { label: 'Analytics', href: '/analytics', icon: '📈', isPublic: false },
 ];
 
 // ─── Inline SVG Icons ───────────────────────────────────────────
@@ -84,11 +87,17 @@ function IconCommandLine({ className = 'w-4 h-4' }: { className?: string }) {
  * Fixed header with navigation, theme toggle, and profile dropdown
  */
 export function MainHeader() {
+  const pathname = usePathname();
   const [{ isAuthenticated, profile }, { signOut }] = useAuthPresenter();
   const [profileState, profileActions] = useProfilePresenter();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   // Fetch profiles when dropdown opens
   useEffect(() => {
@@ -132,15 +141,16 @@ export function MainHeader() {
   const DROPDOWN_LINKS = [
     { label: 'โปรไฟล์', href: '/profile', icon: <IconUser className="w-4 h-4" /> },
     { label: 'ตั้งค่า', href: '/settings', icon: <IconSettings className="w-4 h-4" /> },
+    ...(isMounted && profile?.role === 'admin'
+      ? [
+          {
+            label: 'Scheduler Debug',
+            href: '/settings/scheduler',
+            icon: <IconCommandLine className="w-4 h-4 text-purple-500" />,
+          },
+        ]
+      : []),
   ];
-
-  if (profile?.role === 'admin') {
-    DROPDOWN_LINKS.push({ 
-      label: 'Scheduler Debug', 
-      href: '/settings/scheduler', 
-      icon: <IconCommandLine className="w-4 h-4 text-purple-500" /> 
-    });
-  }
 
   return (
     <header className="relative z-50 h-16 px-6 flex items-center justify-between border-b border-border/30 bg-surface/30 backdrop-blur-xl">
@@ -158,18 +168,26 @@ export function MainHeader() {
         </div>
       </Link>
 
-      {/* Navigation */}
+      {/* Navigation - Public items are always visible, private items require auth */}
       <nav className="hidden md:flex items-center gap-1">
-        {NAV_ITEMS.map((item) => (
-          <Link
-            key={item.href}
-            href={item.href}
-            className="px-4 py-2 rounded-lg text-sm font-medium text-muted hover:text-foreground hover:bg-surface/50 transition-all duration-200 flex items-center gap-2"
-          >
-            <span>{item.icon}</span>
-            <span>{item.label}</span>
-          </Link>
-        ))}
+        {NAV_ITEMS.filter(item => item.isPublic || isAuthenticated).map((item) => {
+          const isActive = pathname === item.href;
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={`
+                px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 flex items-center gap-2
+                ${isActive 
+                  ? 'text-primary bg-primary/10 shadow-sm shadow-primary/5' 
+                  : 'text-muted hover:text-foreground hover:bg-surface/50'}
+              `}
+            >
+              <span>{item.icon}</span>
+              <span>{item.label}</span>
+            </Link>
+          );
+        })}
       </nav>
 
       {/* Right section */}
@@ -328,17 +346,25 @@ export function MainHeader() {
       {isMobileMenuOpen && (
         <div className="absolute top-16 left-0 right-0 bg-surface/95 backdrop-blur-xl border-b border-border/30 p-4 flex flex-col gap-4 md:hidden shadow-xl z-50">
           <nav className="flex flex-col gap-1">
-            {NAV_ITEMS.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={() => setIsMobileMenuOpen(false)}
-                className="px-4 py-3 rounded-xl text-base font-medium text-foreground hover:bg-surface/50 transition-all flex items-center gap-3"
-              >
-                <span className="text-xl">{item.icon}</span>
-                <span>{item.label}</span>
-              </Link>
-            ))}
+            {NAV_ITEMS.filter(item => item.isPublic || isAuthenticated).map((item) => {
+              const isActive = pathname === item.href;
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className={`
+                    px-4 py-3 rounded-xl text-base font-medium transition-all flex items-center gap-3
+                    ${isActive 
+                      ? 'text-primary bg-primary/10' 
+                      : 'text-foreground hover:bg-surface/50'}
+                  `}
+                >
+                  <span className="text-xl">{item.icon}</span>
+                  <span>{item.label}</span>
+                </Link>
+              );
+            })}
           </nav>
 
           <div className="h-px w-full bg-border/30 my-1" />
