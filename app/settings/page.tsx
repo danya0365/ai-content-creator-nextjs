@@ -1,5 +1,6 @@
 import { SettingsView } from "@/src/presentation/components/settings/SettingsView";
 import { createServerSettingsPresenter } from "@/src/presentation/presenters/settings/SettingsPresenterServerFactory";
+import { AuthGuard } from "@/src/presentation/components/auth/AuthGuard";
 import type { Metadata } from "next";
 import Link from "next/link";
 
@@ -24,25 +25,31 @@ export default async function SettingsPage() {
 
   try {
     const viewModel = await presenter.getViewModel();
-    return <SettingsView initialViewModel={viewModel} />;
+    return (
+      <AuthGuard>
+        <SettingsView initialViewModel={viewModel} />
+      </AuthGuard>
+    );
   } catch (error) {
     console.error("Error fetching settings data:", error);
 
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-foreground mb-2">
-            เกิดข้อผิดพลาด
-          </h1>
-          <p className="text-muted mb-4">ไม่สามารถโหลดข้อมูล Settings ได้</p>
-          <Link
-            href="/"
-            className="bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary-dark transition-colors"
-          >
-            กลับหน้าแรก
-          </Link>
+      <AuthGuard>
+        <div className="min-h-screen bg-background flex items-center justify-center">
+          <div className="text-center">
+            <h1 className="text-2xl font-bold text-foreground mb-2">
+              เกิดข้อผิดพลาด
+            </h1>
+            <p className="text-muted mb-4">ไม่สามารถโหลดข้อมูล Settings ได้</p>
+            <Link
+              href="/"
+              className="bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary-dark transition-colors"
+            >
+              กลับหน้าแรก
+            </Link>
+          </div>
         </div>
-      </div>
+      </AuthGuard>
     );
   }
 }
