@@ -61,6 +61,7 @@ export class ApiAuthRepository implements IAuthRepository {
       privacySettings: profile.privacy_settings,
       socialLinks: profile.social_links,
       verificationStatus: profile.verification_status || 'pending',
+      role: profile.role || 'user',
       loginCount: profile.login_count || 0,
       lastLogin: profile.last_login || undefined,
       isActive: profile.is_active || false,

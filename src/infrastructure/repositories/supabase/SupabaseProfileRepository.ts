@@ -18,7 +18,7 @@ type ProfileRow = Database['public']['Tables']['profiles']['Row'];
 export class SupabaseProfileRepository implements IProfileRepository {
   constructor(private readonly supabase: SupabaseClient<Database>) {}
 
-  private mapProfile = (profile: ProfileRow): AuthProfile => {
+  private mapProfile = (profile: any): AuthProfile => {
     const preferences = profile.preferences as { language?: string; notifications?: boolean; theme?: string } || {};
     
     return {
@@ -40,6 +40,7 @@ export class SupabaseProfileRepository implements IProfileRepository {
       privacySettings: (profile.privacy_settings as Record<string, unknown>) || undefined,
       socialLinks: (profile.social_links as Record<string, string>) || undefined,
       verificationStatus: profile.verification_status as 'pending' | 'verified' | 'rejected',
+      role: (profile.profile_roles?.role || profile.role || 'user') as 'user' | 'moderator' | 'admin',
       isActive: profile.is_active,
       lastLogin: profile.last_login || undefined,
       loginCount: profile.login_count ?? 0,
@@ -52,10 +53,14 @@ export class SupabaseProfileRepository implements IProfileRepository {
     const { data: { user } } = await this.supabase.auth.getUser();
     if (!user) return [];
 
-    const { data, error } = await this.supabase.rpc('get_user_profiles');
+    // Fetch all profiles for the user with roles
+    const { data, error } = await this.supabase
+      .from('profiles')
+      .select('*, profile_roles(role)')
+      .eq('auth_id', user.id);
 
     if (error) {
-      console.error('RPC get_user_profiles error:', error);
+      console.error('Error fetching profiles with roles:', error);
       return [];
     }
 
@@ -69,7 +74,7 @@ export class SupabaseProfileRepository implements IProfileRepository {
 
     const { data, error } = await this.supabase
       .from('profiles')
-      .select('*')
+      .select('*, profile_roles(role)')
       .eq('id', id)
       .eq('auth_id', user.id)
       .single();
@@ -93,7 +98,7 @@ export class SupabaseProfileRepository implements IProfileRepository {
     if (profileId) {
       const { data: profile } = await this.supabase
         .from('profiles')
-        .select('*')
+        .select('*, profile_roles(role)')
         .eq('id', profileId)
         .single();
         
@@ -134,7 +139,7 @@ export class SupabaseProfileRepository implements IProfileRepository {
       .update(updateData)
       .eq('id', id)
       .eq('auth_id', user.id)
-      .select()
+      .select('*, profile_roles(role)')
       .single();
 
     if (error) {

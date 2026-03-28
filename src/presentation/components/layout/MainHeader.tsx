@@ -71,6 +71,14 @@ function IconCheck({ className = 'w-4 h-4' }: { className?: string }) {
   );
 }
 
+function IconCommandLine({ className = 'w-4 h-4' }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M17.25 6.75L22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3l-4.5 16.5" />
+    </svg>
+  );
+}
+
 /**
  * MainHeader component
  * Fixed header with navigation, theme toggle, and profile dropdown
@@ -125,6 +133,14 @@ export function MainHeader() {
     { label: 'โปรไฟล์', href: '/profile', icon: <IconUser className="w-4 h-4" /> },
     { label: 'ตั้งค่า', href: '/settings', icon: <IconSettings className="w-4 h-4" /> },
   ];
+
+  if (profile?.role === 'admin') {
+    DROPDOWN_LINKS.push({ 
+      label: 'Scheduler Debug', 
+      href: '/settings/scheduler', 
+      icon: <IconCommandLine className="w-4 h-4 text-purple-500" /> 
+    });
+  }
 
   return (
     <header className="relative z-50 h-16 px-6 flex items-center justify-between border-b border-border/30 bg-surface/30 backdrop-blur-xl">
