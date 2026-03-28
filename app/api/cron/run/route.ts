@@ -96,8 +96,12 @@ export async function POST(request: NextRequest) {
   const isLocalhost = request.headers.get('host')?.includes('localhost');
 
   if (!isLocalhost && expectedSecret && cronSecret !== expectedSecret) {
+    console.warn(`[Scheduler] Unauthorized access attempt from ${request.headers.get('x-forwarded-for') || 'unknown'}`);
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
+
+  // Log heartbeat of the endpoint being hit
+  console.log(`[Scheduler] API Hook triggered at ${now.toISOString()} (${now.toLocaleString('th-TH', { timeZone: 'Asia/Bangkok' })})`);
 
   // Get base URL
   const protocol = request.headers.get('x-forwarded-proto') || 'http';

@@ -181,7 +181,7 @@ setup_cron() {
     log_step "Step 5: Setting up Cron Job"
     
     CRON_TAG="# cron-nextjs-${PROJECT_ID}"
-    CRON_LINE="* * * * * curl -s -H \"x-cron-secret: $CRON_SECRET\" http://localhost:${APP_PORT}/api/cron/run >/dev/null 2>&1 ${CRON_TAG}"
+    CRON_LINE="* * * * * curl -s -X POST -H \"x-cron-secret: $CRON_SECRET\" http://localhost:${APP_PORT}/api/cron/run >/dev/null 2>&1 ${CRON_TAG}"
     
     # Remove old tagged cron and add new one
     (crontab -l 2>/dev/null | grep -v "${CRON_TAG}"; echo "$CRON_LINE") | crontab -

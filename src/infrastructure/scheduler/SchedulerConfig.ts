@@ -46,6 +46,17 @@ export interface ScheduledTask {
  */
 export const SCHEDULED_TASKS: ScheduledTask[] = [
   // ==========================================
+  // Heartbeat (Every Minute for Debugging)
+  // ==========================================
+  {
+    name: 'heartbeat',
+    description: 'Internal heartbeat to verify scheduler is alive',
+    handler: '/api/debug/heartbeat', // A simple route that just returns success
+    frequency: 'everyMinute',
+    enabled: true,
+  },
+
+  // ==========================================
   // Morning Content (6:00)
   // ==========================================
   {
