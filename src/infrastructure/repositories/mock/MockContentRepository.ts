@@ -173,6 +173,7 @@ export class MockContentRepository implements IContentRepository {
       comments: 0,
       tags: data.tags || [],
       emoji: data.emoji,
+      profileId: data.profileId,
     };
 
     this.items.unshift(newContent);

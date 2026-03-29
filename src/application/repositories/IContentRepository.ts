@@ -38,7 +38,7 @@ export interface CreateContentDTO {
   status?: Content['status'];
   tags?: string[];
   emoji?: string;
-  profileId?: string;
+  profileId: string;
 }
 
 export interface UpdateContentDTO {

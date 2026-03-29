@@ -135,15 +135,17 @@ export class CronGeneratorPresenter {
       }
 
       // 5. Identify Admin Profile for attribution
-      let adminProfileId: string | undefined = undefined;
+      let adminProfileId: string;
       try {
         const adminProfile = await this.profileRepository.getAdminProfile();
-        if (adminProfile) {
-          adminProfileId = adminProfile.id;
-          console.log(`[Cron Generator] 👤 Attributing content to Admin: ${adminProfileId}`);
+        if (!adminProfile) {
+          throw new Error('Could not find Admin profile for content attribution.');
         }
+        adminProfileId = adminProfile.id;
+        console.log(`[Cron Generator] 👤 Attributing content to Admin: ${adminProfileId}`);
       } catch (error) {
-        console.warn('[Cron Generator] ⚠️ Could not determine Admin profile identity:', error);
+        console.error('[Cron Generator] ❌ Error fetching admin profile:', error);
+        throw error;
       }
 
       const now = new Date();
