@@ -1,11 +1,11 @@
-// TODO: Refactor according to CREATE_PAGE_PATTERN.md - Move business logic and direct DB/Repository access to Server Presenter
-import { NextRequest, NextResponse } from 'next/server';
-import { AIServiceFactory } from '@/src/infrastructure/ai/AIServiceFactory';
+import { createServerAIPresenter } from '@/src/presentation/presenters/ai/AIPresenterServerFactory';
 import { CONTENT_TYPES } from '@/src/data/master/contentTypes';
+import { NextRequest, NextResponse } from 'next/server';
 
 /**
  * GET /api/ai/ideas
  * Generates a creative topic idea based on the provided contentTypeId
+ * ✅ Refactored to use AIPresenter (Clean Architecture)
  */
 export async function GET(request: NextRequest) {
   try {
@@ -24,37 +24,26 @@ export async function GET(request: NextRequest) {
     const contentType = CONTENT_TYPES.find(ct => ct.id === contentTypeId);
     if (!contentType) {
       return NextResponse.json(
-        { success: false, error: 'Invalid contentTypeId provide' },
+        { success: false, error: 'Invalid contentTypeId' },
         { status: 400 }
       );
     }
 
-    // 1. Fetch Trends if requested
-    let trends: string[] | undefined = undefined;
-    if (mode === 'trending') {
-      const { GoogleTrendsRepository } = await import('@/src/infrastructure/repositories/api/GoogleTrendsRepository');
-      const trendsRepo = new GoogleTrendsRepository();
-      trends = await trendsRepo.getTopTrends(5);
-    }
-
-    // 2. Initialize correct Content Service
-    const provider = process.env.AI_PROVIDER || 'mock';
-    const contentService = AIServiceFactory.createContentService(provider as any);
-
-    // 3. Request idea generation
-    const ideaResponse = await contentService.generateTopicIdea(contentType, {
-      trends,
+    // ✅ Delegate to AIPresenter
+    const presenter = createServerAIPresenter();
+    const result = await presenter.generateTopicIdea(contentType, {
+      mode: mode || undefined,
       brandContext: brandContext || undefined,
     });
 
-    if (!ideaResponse.success || !ideaResponse.idea) {
-      return NextResponse.json(ideaResponse, { status: 500 });
+    if (!result.success) {
+      return NextResponse.json(result, { status: 500 });
     }
 
-    return NextResponse.json(ideaResponse);
+    return NextResponse.json(result);
 
   } catch (error) {
-    console.error('API Error generating topic idea:', error);
+    console.error('[API AI Ideas] ❌ Error:', error);
     return NextResponse.json(
       { success: false, error: 'Internal Server Error' },
       { status: 500 }

@@ -27,7 +27,7 @@ export interface CronGeneratorResponse {
     scheduledAt: string;
   };
   error?: string;
-  details?: any;
+  details?: string | Record<string, unknown>;
 }
 
 export class CronGeneratorPresenter {

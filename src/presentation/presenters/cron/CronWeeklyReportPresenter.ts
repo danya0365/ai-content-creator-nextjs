@@ -1,11 +1,11 @@
-import { IContentRepository } from '@/src/application/repositories/IContentRepository';
+import { IContentRepository, ContentReportData } from '@/src/application/repositories/IContentRepository';
 import { IWeeklyReportRepository, CreateWeeklyReportDTO } from '@/src/application/repositories/IWeeklyReportRepository';
 
 export interface WeeklyReportResponse {
   success: boolean;
   message: string;
   reportId?: string;
-  report?: any;
+  report?: CreateWeeklyReportDTO;
   error?: string;
 }
 

@@ -4,7 +4,7 @@
  * ✅ Uses dependency injection for repository
  */
 
-import { Content, IContentRepository } from '@/src/application/repositories/IContentRepository';
+import { Content, IContentRepository, ContentFilter } from '@/src/application/repositories/IContentRepository';
 import { Metadata } from 'next';
 // ✅ Import from master data (Single Source of Truth)
 import type { TimelineCategory } from '@/src/data/master/timelineCategories';
@@ -155,7 +155,7 @@ export class TimelinePresenter {
     statusFilter: TimelineStatusFilter = 'all'
   ): Promise<TimelineViewModel> {
     // 1. Prepare repository filter for DB-level filtering
-    const repoFilter: any = {}; // Using any for brevity with the new fields
+    const repoFilter: ContentFilter = {}; 
     
     if (statusFilter !== 'all') {
       repoFilter.status = statusFilter;
