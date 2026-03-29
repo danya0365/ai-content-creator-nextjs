@@ -141,11 +141,13 @@ interface SchedulerViewProps {
 export function SchedulerView({ initialViewModel }: SchedulerViewProps) {
   const [state, actions] = useSchedulerPresenter(initialViewModel);
   
-  const viewModel = state.viewModel || initialViewModel || {
+  const viewModel = (state.viewModel || initialViewModel || {
     tasks: [],
     stats: { totalTasks: 0, enabledTasks: 0, runningTasks: 0 },
     lastRunResults: {},
-  };
+    timestamp: new Date().toISOString(),
+    localTime: new Date().toLocaleString(),
+  }) as SchedulerViewModel;
 
   const headerSpring = useSpring({
     from: { opacity: 0, y: -10 },
