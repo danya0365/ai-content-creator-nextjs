@@ -33,20 +33,25 @@ export class GalleryPresenter {
    * Get view model for the page
    */
   async getViewModel(filter: ContentFilter = 'all'): Promise<GalleryViewModel> {
-    // Build filter for repository
-    const repoFilter: RepoContentFilter = {};
-    if (filter !== 'all') {
-      repoFilter.status = filter;
+    try {
+      // Build filter for repository
+      const repoFilter: RepoContentFilter = {};
+      if (filter !== 'all') {
+        repoFilter.status = filter;
+      }
+
+      const contents = await this.repository.getAll(repoFilter);
+
+      return {
+        contents,
+        contentTypes: CONTENT_TYPES,
+        filter,
+        totalCount: contents.length,
+      };
+    } catch (error) {
+      console.error('[GalleryPresenter] Error in getViewModel:', error);
+      throw error;
     }
-
-    const contents = await this.repository.getAll(repoFilter);
-
-    return {
-      contents,
-      contentTypes: CONTENT_TYPES,
-      filter,
-      totalCount: contents.length,
-    };
   }
 
   /**

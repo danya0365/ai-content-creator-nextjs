@@ -1,19 +1,27 @@
-'use client';
-
-import { ApiProfileRepository } from '@/src/infrastructure/repositories/api/ApiProfileRepository';
 import { ProfilePresenter } from './ProfilePresenter';
+import { ApiProfileRepository } from '@/src/infrastructure/repositories/api/ApiProfileRepository';
 
-let cachedRepository: ApiProfileRepository | null = null;
+let cachedPresenter: ProfilePresenter | null = null;
 
+/**
+ * ProfilePresenterClientFactory
+ * Factory for creating ProfilePresenter instances on the client side
+ * ✅ Following Clean Architecture - Static Class Pattern
+ */
 export class ProfilePresenterClientFactory {
   static create(): ProfilePresenter {
-    if (!cachedRepository) {
-      cachedRepository = new ApiProfileRepository();
-    }
-    return new ProfilePresenter(cachedRepository);
+    if (cachedPresenter) return cachedPresenter;
+
+    const repository = new ApiProfileRepository();
+    cachedPresenter = new ProfilePresenter(repository);
+    
+    return cachedPresenter;
   }
 }
 
+/**
+ * Standard factory function for easier invocation
+ */
 export function createClientProfilePresenter(): ProfilePresenter {
   return ProfilePresenterClientFactory.create();
 }

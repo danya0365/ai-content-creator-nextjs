@@ -23,7 +23,7 @@ export class TrendsPresenter {
       const trends = await this.repository.getDetailedTrends(limit);
       return { trends };
     } catch (error) {
-      console.error('Error getting Trends view model:', error);
+      console.error('[TrendsPresenter] Error getting Trends view model:', error);
       throw error;
     }
   }

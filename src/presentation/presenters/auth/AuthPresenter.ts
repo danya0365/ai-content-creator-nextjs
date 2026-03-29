@@ -74,7 +74,7 @@ export class AuthPresenter {
         isLoading: false,
       };
     } catch (error) {
-      console.error('Error getting auth view model:', error);
+      console.error('[AuthPresenter] Error getting auth view model:', error);
       return {
         user: null,
         profile: null,
@@ -126,7 +126,7 @@ export class AuthPresenter {
     try {
       return await this.withTimeout(this.repository.signUp(data));
     } catch (error) {
-      console.error('Sign up error:', error);
+      console.error('[AuthPresenter] Sign up error:', error);
       return {
         success: false,
         error: 'เกิดข้อผิดพลาดในการสมัครสมาชิก',
@@ -141,7 +141,7 @@ export class AuthPresenter {
     try {
       return await this.repository.signIn(data);
     } catch (error) {
-      console.error('Sign in error:', error);
+      console.error('[AuthPresenter] Sign in error:', error);
       return {
         success: false,
         error: 'เกิดข้อผิดพลาดในการเข้าสู่ระบบ',
@@ -156,7 +156,7 @@ export class AuthPresenter {
     try {
       return await this.repository.signInWithOTP(data);
     } catch (error) {
-      console.error('OTP sign in error:', error);
+      console.error('[AuthPresenter] OTP sign in error:', error);
       return {
         success: false,
         error: 'เกิดข้อผิดพลาดในการส่ง OTP',
@@ -171,7 +171,7 @@ export class AuthPresenter {
     try {
       return await this.repository.verifyOTP(data);
     } catch (error) {
-      console.error('Verify OTP error:', error);
+      console.error('[AuthPresenter] Verify OTP error:', error);
       return {
         success: false,
         error: 'เกิดข้อผิดพลาดในการยืนยัน OTP',
@@ -186,7 +186,7 @@ export class AuthPresenter {
     try {
       return await this.repository.signInWithOAuth(provider);
     } catch (error) {
-      console.error('OAuth sign in error:', error);
+      console.error('[AuthPresenter] OAuth sign in error:', error);
       return {
         success: false,
         error: 'เกิดข้อผิดพลาดในการเข้าสู่ระบบด้วย OAuth',
@@ -201,7 +201,7 @@ export class AuthPresenter {
     try {
       return await this.repository.signOut();
     } catch (error) {
-      console.error('Sign out error:', error);
+      console.error('[AuthPresenter] Sign out error:', error);
       return {
         success: false,
         error: 'เกิดข้อผิดพลาดในการออกจากระบบ',
@@ -216,7 +216,7 @@ export class AuthPresenter {
     try {
       return await this.repository.getCurrentUser();
     } catch (error) {
-      console.error('Get current user error:', error);
+      console.error('[AuthPresenter] Get current user error:', error);
       return null;
     }
   }
@@ -228,7 +228,7 @@ export class AuthPresenter {
     try {
       return await this.repository.getSession();
     } catch (error) {
-      console.error('Get session error:', error);
+      console.error('[AuthPresenter] Get session error:', error);
       return null;
     }
   }
@@ -240,7 +240,7 @@ export class AuthPresenter {
     try {
       return await this.repository.getProfile();
     } catch (error) {
-      console.error('Get profile error:', error);
+      console.error('[AuthPresenter] Get profile error:', error);
       return null;
     }
   }
@@ -249,7 +249,12 @@ export class AuthPresenter {
    * Update user profile
    */
   async updateProfile(data: UpdateProfileData): Promise<AuthProfile> {
-    return await this.repository.updateProfile(data);
+    try {
+      return await this.repository.updateProfile(data);
+    } catch (error) {
+      console.error('[AuthPresenter] Update profile error:', error);
+      throw error;
+    }
   }
 
   /**
@@ -259,7 +264,7 @@ export class AuthPresenter {
     try {
       return await this.repository.getProfiles();
     } catch (error) {
-      console.error('Get profiles error:', error);
+      console.error('[AuthPresenter] Get profiles error:', error);
       return [];
     }
   }
@@ -271,7 +276,7 @@ export class AuthPresenter {
     try {
       return await this.repository.switchProfile(profileId);
     } catch (error) {
-      console.error('Switch profile error:', error);
+      console.error('[AuthPresenter] Switch profile error:', error);
       return false;
     }
   }
@@ -283,7 +288,7 @@ export class AuthPresenter {
     try {
       return await this.repository.createProfile(data);
     } catch (error) {
-      console.error('Create profile error:', error);
+      console.error('[AuthPresenter] Create profile error:', error);
       return null;
     }
   }
@@ -295,7 +300,7 @@ export class AuthPresenter {
     try {
       return await this.repository.resetPassword(data);
     } catch (error) {
-      console.error('Reset password error:', error);
+      console.error('[AuthPresenter] Reset password error:', error);
       return {
         success: false,
         error: 'เกิดข้อผิดพลาดในการส่งลิงก์รีเซ็ตรหัสผ่าน',
@@ -310,7 +315,7 @@ export class AuthPresenter {
     try {
       return await this.repository.updatePassword(data);
     } catch (error) {
-      console.error('Update password error:', error);
+      console.error('[AuthPresenter] Update password error:', error);
       return {
         success: false,
         error: 'เกิดข้อผิดพลาดในการเปลี่ยนรหัสผ่าน',
@@ -325,7 +330,7 @@ export class AuthPresenter {
     try {
       return await this.repository.resendEmailVerification(email);
     } catch (error) {
-      console.error('Resend email verification error:', error);
+      console.error('[AuthPresenter] Resend email verification error:', error);
       return {
         success: false,
         error: 'เกิดข้อผิดพลาดในการส่งอีเมลยืนยัน',
@@ -340,7 +345,7 @@ export class AuthPresenter {
     try {
       return await this.repository.verifyEmail(token);
     } catch (error) {
-      console.error('Verify email error:', error);
+      console.error('[AuthPresenter] Verify email error:', error);
       return {
         success: false,
         error: 'เกิดข้อผิดพลาดในการยืนยันอีเมล',
@@ -355,7 +360,7 @@ export class AuthPresenter {
     try {
       return await this.repository.refreshSession();
     } catch (error) {
-      console.error('Refresh session error:', error);
+      console.error('[AuthPresenter] Refresh session error:', error);
       return null;
     }
   }

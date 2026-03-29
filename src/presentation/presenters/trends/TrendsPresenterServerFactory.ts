@@ -2,10 +2,20 @@ import { GoogleTrendsRepository } from '@/src/infrastructure/repositories/api/Go
 import { TrendsPresenter } from './TrendsPresenter';
 
 /**
- * Factory for creating the TrendsPresenter on the server
- * Avoids circular dependencies and keeps server logic out of client components
+ * TrendsPresenterServerFactory
+ * Factory for creating TrendsPresenter instances on the server side
+ * ✅ Following Clean Architecture - Static Class Pattern
+ */
+export class TrendsPresenterServerFactory {
+  static create(): TrendsPresenter {
+    const repository = new GoogleTrendsRepository();
+    return new TrendsPresenter(repository);
+  }
+}
+
+/**
+ * Standard factory function for easier invocation
  */
 export function createServerTrendsPresenter(): TrendsPresenter {
-  const repository = new GoogleTrendsRepository();
-  return new TrendsPresenter(repository);
+  return TrendsPresenterServerFactory.create();
 }

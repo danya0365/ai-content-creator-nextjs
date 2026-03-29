@@ -1,15 +1,25 @@
-import { SupabaseProfileRepository } from '@/src/infrastructure/repositories/supabase/SupabaseProfileRepository';
-import { createClient } from '@/src/infrastructure/supabase/server';
 import { ProfilePresenter } from './ProfilePresenter';
+import { SupabaseProfileRepository } from '@/src/infrastructure/repositories/supabase/SupabaseProfileRepository';
+import { createAdminClient } from '@/src/infrastructure/supabase/server';
 
+/**
+ * ProfilePresenterServerFactory
+ * Factory for creating ProfilePresenter instances on the server side
+ * ✅ Following Clean Architecture - Static Class Pattern
+ */
 export class ProfilePresenterServerFactory {
-  static async create(): Promise<ProfilePresenter> {
-    const supabase = await createClient();
+  static create(): ProfilePresenter {
+    // Service role admin client for backend operations
+    const supabase = createAdminClient();
     const repository = new SupabaseProfileRepository(supabase);
+    
     return new ProfilePresenter(repository);
   }
 }
 
-export async function createServerProfilePresenter(): Promise<ProfilePresenter> {
+/**
+ * Standard factory function for easier invocation
+ */
+export function createServerProfilePresenter(): ProfilePresenter {
   return ProfilePresenterServerFactory.create();
 }

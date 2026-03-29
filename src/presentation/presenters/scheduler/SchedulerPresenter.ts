@@ -60,24 +60,29 @@ export class SchedulerPresenter {
    * Handle the POST request logic and response formatting
    */
   async handleRunRequest(cronSecret: string): Promise<SchedulerRunResponse> {
-    const startTime = Date.now();
-    
-    // Execute dispatcher in the repository
-    const results = await this.repository.dispatch(cronSecret);
-    
-    const status = await this.repository.getFullStatus();
-    const duration = Date.now() - startTime;
+    try {
+      const startTime = Date.now();
+      
+      // Execute dispatcher in the repository
+      const results = await this.repository.dispatch(cronSecret);
+      
+      const status = await this.repository.getFullStatus();
+      const duration = Date.now() - startTime;
 
-    return {
-      success: true,
-      timestamp: status.timestamp,
-      timezone: status.timezone,
-      localTime: status.localTime,
-      tasksChecked: status.totalTasks,
-      tasksRun: results.length,
-      results,
-      duration: duration,
-    };
+      return {
+        success: true,
+        timestamp: status.timestamp,
+        timezone: status.timezone,
+        localTime: status.localTime,
+        tasksChecked: status.totalTasks,
+        tasksRun: results.length,
+        results,
+        duration: duration,
+      };
+    } catch (error) {
+      console.error('[SchedulerPresenter] Error in handleRunRequest:', error);
+      throw error;
+    }
   }
 
   /**
@@ -98,34 +103,49 @@ export class SchedulerPresenter {
       } as SchedulerRunResponse;
     }
 
-    const status = await this.repository.getFullStatus();
+    try {
+      const status = await this.repository.getFullStatus();
 
-    // If authorized and tasks need to run, trigger the run logic (Dispatcher mode)
-    if (status.tasksToRunNow > 0) {
-      return this.handleRunRequest(cronSecret);
+      // If authorized and tasks need to run, trigger the run logic (Dispatcher mode)
+      if (status.tasksToRunNow > 0) {
+        return this.handleRunRequest(cronSecret);
+      }
+
+      // Add setup instructions in the presenter layer for the API response
+      return {
+        ...status,
+        setupInstructions: {
+          vps: "Add this single cron entry: * * * * * curl -s http://localhost:3000/api/cron/scheduler >/dev/null 2>&1",
+          vercel: "Vercel Cron is configured in vercel.json",
+        },
+      };
+    } catch (error) {
+      console.error('[SchedulerPresenter] Error in handleStatusRequest:', error);
+      throw error;
     }
-
-    // Add setup instructions in the presenter layer for the API response
-    return {
-      ...status,
-      setupInstructions: {
-        vps: "Add this single cron entry: * * * * * curl -s http://localhost:3000/api/cron/scheduler >/dev/null 2>&1",
-        vercel: "Vercel Cron is configured in vercel.json",
-      },
-    };
   }
 
   /**
    * Run a specific task manually (For Debug UI)
    */
   async runTask(taskId: string): Promise<TaskResult> {
-    return this.repository.runTask(taskId);
+    try {
+      return await this.repository.runTask(taskId);
+    } catch (error) {
+      console.error('[SchedulerPresenter] Error in runTask:', error);
+      throw error;
+    }
   }
 
   /**
    * Run the full scheduler manually (Legacy support)
    */
   async runFullScheduler(): Promise<TaskResult[]> {
-    return this.repository.runFullScheduler();
+    try {
+      return await this.repository.runFullScheduler();
+    } catch (error) {
+      console.error('[SchedulerPresenter] Error in runFullScheduler:', error);
+      throw error;
+    }
   }
 }

@@ -1,23 +1,25 @@
+import { SettingsPresenter } from './SettingsPresenter';
+import { SupabaseContentRepository } from '@/src/infrastructure/repositories/SupabaseContentRepository';
+import { createAdminClient } from '@/src/infrastructure/supabase/server';
+
 /**
  * SettingsPresenterServerFactory
  * Factory for creating SettingsPresenter instances on the server side
- * ✅ Uses Supabase Repository for production
+ * ✅ Following Clean Architecture - Static Class Pattern
  */
-
-import { SupabaseContentRepository } from '@/src/infrastructure/repositories/SupabaseContentRepository';
-import { createClient } from '@/src/infrastructure/supabase/server';
-import { SettingsPresenter } from './SettingsPresenter';
-
 export class SettingsPresenterServerFactory {
-  static async create(): Promise<SettingsPresenter> {
-    // ✅ Use Supabase Repository for production
-    const supabase = await createClient();
+  static create(): SettingsPresenter {
+    // Service role admin client for backend operations
+    const supabase = createAdminClient();
     const repository = new SupabaseContentRepository(supabase);
-
+    
     return new SettingsPresenter(repository);
   }
 }
 
-export async function createServerSettingsPresenter(): Promise<SettingsPresenter> {
-  return await SettingsPresenterServerFactory.create();
+/**
+ * Standard factory function for easier invocation
+ */
+export function createServerSettingsPresenter(): SettingsPresenter {
+  return SettingsPresenterServerFactory.create();
 }

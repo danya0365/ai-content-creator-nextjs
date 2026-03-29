@@ -1,23 +1,27 @@
+import { SettingsPresenter } from './SettingsPresenter';
+import { ApiContentRepository } from '@/src/infrastructure/repositories/api/ApiContentRepository';
+
+let cachedPresenter: SettingsPresenter | null = null;
+
 /**
  * SettingsPresenterClientFactory
  * Factory for creating SettingsPresenter instances on the client side
- * ✅ Uses ApiContentRepository for production (calls API routes)
+ * ✅ Following Clean Architecture - Static Class Pattern
  */
-
-'use client';
-
-import { ApiContentRepository } from '@/src/infrastructure/repositories/api/ApiContentRepository';
-import { SettingsPresenter } from './SettingsPresenter';
-
 export class SettingsPresenterClientFactory {
   static create(): SettingsPresenter {
-    // ✅ Use API Repository for client-side
-    const repository = new ApiContentRepository();
+    if (cachedPresenter) return cachedPresenter;
 
-    return new SettingsPresenter(repository);
+    const repository = new ApiContentRepository();
+    cachedPresenter = new SettingsPresenter(repository);
+    
+    return cachedPresenter;
   }
 }
 
+/**
+ * Standard factory function for easier invocation
+ */
 export function createClientSettingsPresenter(): SettingsPresenter {
   return SettingsPresenterClientFactory.create();
 }
