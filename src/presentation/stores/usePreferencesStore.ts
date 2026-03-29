@@ -20,7 +20,7 @@ export const usePreferencesStore = create<PreferencesState>()(
       setPreference: (key, value) => set({ [key]: value }),
     }),
     {
-      name: 'kongkadoo-generation-preferences', // Safe localStorage key
+      name: 'ai-creator-preferences', // Safe localStorage key
     }
   )
 );

@@ -51,7 +51,7 @@ export class SchedulerPresenter {
    */
   generateMetadata(): Metadata {
     return {
-      title: "Scheduler Debug | Kongkadoo",
+      title: "Scheduler Debug | AI Content Creator",
       description: "Manage and test automated content generation schedules",
     };
   }
