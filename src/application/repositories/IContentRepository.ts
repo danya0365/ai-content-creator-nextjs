@@ -61,9 +61,12 @@ export interface ContentFilter {
   status?: Content['status'];
   timeSlot?: TimeSlot;
   contentTypeId?: string;
+  contentTypeIds?: string[];
   startDate?: string;
   endDate?: string;
   scheduledBefore?: string;
+  limit?: number;
+  offset?: number;
 }
 
 export interface ContentStats {
@@ -73,6 +76,7 @@ export interface ContentStats {
   draftCount: number;
   totalLikes: number;
   totalShares: number;
+  totalComments: number;
 }
 
 export type ContentEvent = 
@@ -210,4 +214,9 @@ export interface IContentRepository {
    * Get report data for a specific period
    */
   getReportData(startDate: string, endDate: string): Promise<ContentReportData>;
+
+  /**
+   * Get top performing content across all records (by engagement)
+   */
+  getTopPerforming(limit?: number): Promise<Content[]>;
 }

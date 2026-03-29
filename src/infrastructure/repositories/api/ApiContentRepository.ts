@@ -68,6 +68,14 @@ export class ApiContentRepository implements IContentRepository {
     if (filter?.status) params.append('status', filter.status);
     if (filter?.timeSlot) params.append('timeSlot', filter.timeSlot);
     if (filter?.contentTypeId) params.append('contentTypeId', filter.contentTypeId);
+    if (filter?.contentTypeIds && filter.contentTypeIds.length > 0) {
+      params.append('contentTypeIds', filter.contentTypeIds.join(','));
+    }
+    if (filter?.startDate) params.append('startDate', filter.startDate);
+    if (filter?.endDate) params.append('endDate', filter.endDate);
+    if (filter?.scheduledBefore) params.append('scheduledBefore', filter.scheduledBefore);
+    if (filter?.limit) params.append('limit', String(filter.limit));
+    if (filter?.offset) params.append('offset', String(filter.offset));
 
     const queryString = params.toString();
     const url = queryString ? `${this.baseUrl}?${queryString}` : this.baseUrl;
@@ -270,6 +278,18 @@ export class ApiContentRepository implements IContentRepository {
     if (!res.ok) {
       const error = await res.json();
       throw new Error(error.error || 'ไม่สามารถโหลดข้อมูลรายงานได้');
+    }
+    return res.json();
+  }
+
+  /**
+   * Get top performing content across all records (by engagement)
+   */
+  async getTopPerforming(limit = 5): Promise<Content[]> {
+    const res = await fetch(`${this.baseUrl}?action=topPerforming&limit=${limit}`);
+    if (!res.ok) {
+      const error = await res.json();
+      throw new Error(error.error || 'ไม่สามารถโหลดข้อมูลยอดนิยมได้');
     }
     return res.json();
   }

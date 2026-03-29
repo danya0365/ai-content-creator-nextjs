@@ -56,6 +56,9 @@ export class MockContentRepository implements IContentRepository {
     if (filter?.contentTypeId) {
       result = result.filter((c) => c.contentTypeId === filter.contentTypeId);
     }
+    if (filter?.contentTypeIds && filter.contentTypeIds.length > 0) {
+      result = result.filter((c) => filter.contentTypeIds!.includes(c.contentTypeId));
+    }
     if (filter?.startDate) {
       const start = new Date(filter.startDate);
       result = result.filter((c) => new Date(c.createdAt) >= start);
@@ -69,9 +72,19 @@ export class MockContentRepository implements IContentRepository {
       result = result.filter((c) => c.scheduledAt && new Date(c.scheduledAt) <= before);
     }
 
-    return result.sort(
-      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-    );
+    // Sort by created date descending
+    result.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+    // Apply limit and offset
+    const offset = filter?.offset || 0;
+    const limit = filter?.limit;
+    if (limit !== undefined) {
+      result = result.slice(offset, offset + limit);
+    } else if (offset > 0) {
+      result = result.slice(offset);
+    }
+
+    return result;
   }
 
   async getPaginated(page: number, perPage: number, filter?: ContentFilter): Promise<PaginatedResult<Content>> {
@@ -136,6 +149,7 @@ export class MockContentRepository implements IContentRepository {
       draftCount: draft.length,
       totalLikes: published.reduce((sum, c) => sum + c.likes, 0),
       totalShares: published.reduce((sum, c) => sum + c.shares, 0),
+      totalComments: published.reduce((sum, c) => sum + c.comments, 0),
     };
   }
 
@@ -298,6 +312,14 @@ export class MockContentRepository implements IContentRepository {
       contentByTimeSlot,
       contentByType,
     };
+  }
+
+  async getTopPerforming(limit = 5): Promise<Content[]> {
+    await this.delay(100);
+    return [...this.items]
+      .filter((c) => c.status === 'published')
+      .sort((a, b) => ((b.likes || 0) + (b.shares || 0)) - ((a.likes || 0) + (a.shares || 0)))
+      .slice(0, limit);
   }
 
   // Helper method to simulate network delay

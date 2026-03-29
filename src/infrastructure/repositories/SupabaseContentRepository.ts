@@ -108,6 +108,9 @@ export class SupabaseContentRepository implements IContentRepository {
     if (filter?.contentTypeId) {
       query = query.eq('content_type_id', filter.contentTypeId);
     }
+    if (filter?.contentTypeIds && filter.contentTypeIds.length > 0) {
+      query = query.in('content_type_id', filter.contentTypeIds);
+    }
     if (filter?.startDate) {
       query = query.gte('created_at', filter.startDate);
     }
@@ -116,6 +119,12 @@ export class SupabaseContentRepository implements IContentRepository {
     }
     if (filter?.scheduledBefore) {
       query = query.lte('scheduled_at', filter.scheduledBefore);
+    }
+    if (filter?.limit) {
+      query = query.limit(filter.limit);
+    }
+    if (filter?.offset) {
+      query = query.range(filter.offset, (filter.offset + (filter.limit || 10)) - 1);
     }
 
     const { data, error } = await query;
@@ -175,33 +184,33 @@ export class SupabaseContentRepository implements IContentRepository {
   }
 
   async getStats(): Promise<ContentStats> {
-    const { data: allContents, error } = await this.supabase
-      .from('ai_contents')
-      .select('status, likes, shares');
+    // Optimization: Use parallel count queries instead of fetching all rows
+    const [
+      totalRes,
+      publishedRes,
+      scheduledRes,
+      draftRes,
+      engagementRes
+    ] = await Promise.all([
+      this.supabase.from('ai_contents').select('*', { count: 'exact', head: true }),
+      this.supabase.from('ai_contents').select('*', { count: 'exact', head: true }).eq('status', 'published'),
+      this.supabase.from('ai_contents').select('*', { count: 'exact', head: true }).eq('status', 'scheduled'),
+      this.supabase.from('ai_contents').select('*', { count: 'exact', head: true }).eq('status', 'draft'),
+      this.supabase.from('ai_contents').select('likes, shares, comments').eq('status', 'published')
+    ]);
 
-    if (error || !allContents) {
-      console.error('Error fetching stats:', error);
-      return {
-        totalContents: 0,
-        publishedCount: 0,
-        scheduledCount: 0,
-        draftCount: 0,
-        totalLikes: 0,
-        totalShares: 0,
-      };
-    }
-
-    const published = allContents.filter((c) => c.status === 'published');
-    const scheduled = allContents.filter((c) => c.status === 'scheduled');
-    const draft = allContents.filter((c) => c.status === 'draft');
+    const totalLikes = engagementRes.data?.reduce((sum, c) => sum + (c.likes || 0), 0) || 0;
+    const totalShares = engagementRes.data?.reduce((sum, c) => sum + (c.shares || 0), 0) || 0;
+    const totalComments = engagementRes.data?.reduce((sum, c) => sum + (c.comments || 0), 0) || 0;
 
     return {
-      totalContents: allContents.length,
-      publishedCount: published.length,
-      scheduledCount: scheduled.length,
-      draftCount: draft.length,
-      totalLikes: published.reduce((sum, c) => sum + (c.likes || 0), 0),
-      totalShares: published.reduce((sum, c) => sum + (c.shares || 0), 0),
+      totalContents: totalRes.count || 0,
+      publishedCount: publishedRes.count || 0,
+      scheduledCount: scheduledRes.count || 0,
+      draftCount: draftRes.count || 0,
+      totalLikes,
+      totalShares,
+      totalComments,
     };
   }
 
@@ -335,24 +344,30 @@ export class SupabaseContentRepository implements IContentRepository {
   }
 
   async getAnalyticsMetrics(): Promise<AnalyticsMetrics> {
-    const { data: allContents, error } = await this.supabase
-      .from('ai_contents')
-      .select('content_type_id, status, likes, shares, comments, created_at');
+    const now = new Date();
+    const last60Days = new Date();
+    last60Days.setDate(now.getDate() - 60);
+    const last60DaysIso = last60Days.toISOString();
 
-    if (error || !allContents) {
+    // Optimization: Only fetch data needed for current metrics (last 60 days)
+    const { data: recentContents, error } = await this.supabase
+      .from('ai_contents')
+      .select('content_type_id, status, likes, shares, comments, created_at')
+      .gte('created_at', last60DaysIso);
+
+    if (error || !recentContents) {
       console.error('Error fetching analytics:', error);
       return { growth: { currentPeriod: 0, previousPeriod: 0, rate: 0 }, dailyEngagement: [], contentTypes: [], weeklyTrends: [] };
     }
 
-    const now = new Date();
-    // Growth Rate (Current vs Last Month)
+    // Growth Rate (Current Month vs Last Month)
     const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
     const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
     
     let currentPeriod = 0;
     let previousPeriod = 0;
 
-    allContents.forEach(c => {
+    recentContents.forEach(c => {
       const d = new Date(c.created_at || new Date().toISOString());
       if (d >= currentMonthStart) {
         currentPeriod++;
@@ -373,16 +388,17 @@ export class SupabaseContentRepository implements IContentRepository {
       const d = new Date();
       d.setDate(now.getDate() - (6 - i));
       const dateStr = d.toISOString().split('T')[0];
-      const dayContents = allContents.filter(c => (c.created_at || '').startsWith(dateStr));
+      const dayContents = recentContents.filter(c => (c.created_at || '').startsWith(dateStr));
       const total = dayContents.length > 0
         ? dayContents.reduce((sum, c) => sum + (c.likes || 0) + (c.shares || 0) + (c.comments || 0), 0)
-        : Math.floor(Math.random() * 50) + 10;
+        : 0; // Don't use random mock data anymore for real analytics!
       return { date: dateStr, total };
     });
 
-    // Content Types
+    // Content Types (from recent data for trend, or all time?)
+    // Actually, type distribution usually covers recent trends.
     const typeCount: Record<string, number> = {};
-    allContents.forEach(c => {
+    recentContents.forEach(c => {
       typeCount[c.content_type_id] = (typeCount[c.content_type_id] || 0) + 1;
     });
     const contentTypes: AnalyticsTypeStats[] = Object.entries(typeCount).map(([id, count]) => ({ id, count }));
@@ -394,11 +410,11 @@ export class SupabaseContentRepository implements IContentRepository {
       const weekEnd = new Date(weekStart);
       weekEnd.setDate(weekStart.getDate() + 7);
       
-      const weekContents = allContents.filter(c => {
+      const weekContents = recentContents.filter(c => {
         const d = new Date(c.created_at || new Date().toISOString());
         return d >= weekStart && d < weekEnd;
       });
-      const total = weekContents.reduce((sum, c) => sum + (c.likes || 0) + (c.shares || 0) + (c.comments || 0), 0) + Math.floor(Math.random() * 100);
+      const total = weekContents.reduce((sum, c) => sum + (c.likes || 0) + (c.shares || 0) + (c.comments || 0), 0);
       return { weekLabel: `W${i + 1}`, total };
     });
 
@@ -472,6 +488,23 @@ export class SupabaseContentRepository implements IContentRepository {
       failed: results.filter(r => r.status === 'failed').length,
       details: results,
     };
+  }
+
+  async getTopPerforming(limit = 5): Promise<Content[]> {
+    const { data, error } = await this.supabase
+      .from('ai_contents')
+      .select('*')
+      .eq('status', 'published')
+      .order('likes', { ascending: false })
+      .order('shares', { ascending: false })
+      .limit(limit);
+
+    if (error) {
+      console.error('Error fetching top performing:', error);
+      return [];
+    }
+
+    return (data || []).map(mapRowToContent);
   }
 
   async getReportData(startDate: string, endDate: string): Promise<ContentReportData> {

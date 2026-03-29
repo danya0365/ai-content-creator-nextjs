@@ -41,9 +41,6 @@ export class GalleryPresenter {
 
     const contents = await this.repository.getAll(repoFilter);
 
-    // Sort by created date (newest first)
-    contents.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-
     return {
       contents,
       contentTypes: CONTENT_TYPES,

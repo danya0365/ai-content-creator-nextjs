@@ -50,17 +50,18 @@ export class DashboardPresenter {
    * Get view model for the page
    */
   async getViewModel(): Promise<DashboardViewModel> {
-    // Get data in parallel for better performance
-    const [stats, allContents, metrics] = await Promise.all([
+    // Get data in parallel for better performance - No more getAll()!
+    const [stats, recentAndActivities, metrics] = await Promise.all([
       this.repository.getStats(),
-      this.repository.getAll(),
+      this.repository.getAll({ limit: 10 }), // Sufficient for both Recent Contents and Activity Feed
       this.repository.getAnalyticsMetrics()
     ]);
 
-    // Split contents into categories
-    const recentContents = allContents.slice(0, 5);
-    const scheduledContents = allContents.filter((c) => c.status === 'scheduled');
-    const draftContents = allContents.filter((c) => c.status === 'draft');
+    // Fetch specific lists if needed (Using limits!)
+    const scheduledContents = await this.repository.getAll({ status: 'scheduled', limit: 5 });
+    const draftContents = await this.repository.getAll({ status: 'draft', limit: 5 });
+
+    const recentContents = recentAndActivities.slice(0, 5);
 
     // Determine current time period and suggested content types
     const currentHour = new Date().getHours();
@@ -71,8 +72,8 @@ export class DashboardPresenter {
       ? getContentTypesByTimeSlot(currentTimeSlot.id)
       : CONTENT_TYPES.slice(0, 3);
 
-    // Map content to activity feed items
-    const activities: DashboardActivity[] = allContents
+    // Map content to activity feed items (Using the same 10 recent items)
+    const activities: DashboardActivity[] = recentAndActivities
       .map((c) => {
         let type: DashboardActivity['type'] = 'created';
         let timestamp = new Date(c.createdAt);
@@ -93,8 +94,7 @@ export class DashboardPresenter {
           contentType: c.contentTypeId,
         };
       })
-      .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
-      .slice(0, 10);
+      .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
 
     // Map UI engagement charts from Repository Analytics
     const days = ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส'];
@@ -106,7 +106,7 @@ export class DashboardPresenter {
     const engagementByType = [
       { label: 'Likes', value: stats.totalLikes || 0, color: '#EC4899' },
       { label: 'Shares', value: stats.totalShares || 0, color: '#8B5CF6' },
-      { label: 'Comments', value: allContents.reduce((sum, c) => sum + (c.comments || 0), 0), color: '#06B6D4' },
+      { label: 'Comments', value: stats.totalComments || 0, color: '#06B6D4' },
     ];
 
     return {

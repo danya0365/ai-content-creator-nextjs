@@ -62,9 +62,9 @@ export class AnalyticsPresenter {
    * Get view model for the page
    */
   async getViewModel(): Promise<AnalyticsViewModel> {
-    const [stats, allContents, metrics] = await Promise.all([
+    const [stats, topPerformingContents, metrics] = await Promise.all([
       this.repository.getStats(),
-      this.repository.getAll(),
+      this.repository.getTopPerforming(5),
       this.repository.getAnalyticsMetrics()
     ]);
 
@@ -106,9 +106,8 @@ export class AnalyticsPresenter {
       value: w.total
     }));
 
-    // ✅ Top performers from actual content
-    const sortedByLikes = [...allContents].sort((a, b) => (b.likes || 0) - (a.likes || 0));
-    const topPerformers: TopPerformer[] = sortedByLikes.slice(0, 5).map((c) => ({
+    // ✅ Top performers from repository (Calculated at Repository/DB level)
+    const topPerformers: TopPerformer[] = topPerformingContents.map((c) => ({
       title: c.title,
       likes: c.likes || 0,
       shares: c.shares || 0,

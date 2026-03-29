@@ -28,15 +28,10 @@ export class HomePresenter {
    * Get view model for the page
    */
   async getViewModel(): Promise<HomeViewModel> {
-    const [stats, allContents] = await Promise.all([
+    const [stats, recentContents] = await Promise.all([
       this.repository.getStats(),
-      this.repository.getAll(),
+      this.repository.getAll({ status: 'published', limit: 5 }),
     ]);
-
-    // Get recent published contents
-    const recentContents = allContents
-      .filter((c) => c.status === 'published')
-      .slice(0, 5);
 
     return {
       stats,
