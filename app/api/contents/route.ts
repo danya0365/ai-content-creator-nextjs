@@ -1,4 +1,5 @@
 import { createServerContentPresenter } from '@/src/presentation/presenters/content/ContentPresenterServerFactory';
+import { createServerAuthPresenter } from '@/src/presentation/presenters/auth/AuthPresenterServerFactory';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(request: NextRequest) {
@@ -59,9 +60,24 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const data = await request.json();
-    const presenter = createServerContentPresenter();
     
-    const content = await presenter.create(data);
+    // 1. Get current active profile for attribution
+    const authPresenter = await createServerAuthPresenter();
+    const profile = await authPresenter.getProfile();
+    
+    if (!profile) {
+      return NextResponse.json({ error: 'ไม่พบโปรไฟล์ที่ใช้งานอยู่ กรุณาเข้าสู่ระบบใหม่' }, { status: 401 });
+    }
+
+    // 2. Inject profileId into the creation data
+    const createData = {
+      ...data,
+      profileId: profile.id
+    };
+
+    const presenter = createServerContentPresenter();
+    const content = await presenter.create(createData);
+    
     return NextResponse.json(content, { status: 201 });
   } catch (error) {
     console.error('[API Contents] POST Error:', error);
