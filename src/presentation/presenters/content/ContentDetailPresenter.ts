@@ -46,7 +46,12 @@ export class ContentDetailPresenter {
     // Get related contents (same type)
     let relatedContents: Content[] = [];
     if (content) {
-      const allContents = await this.repository.getAll({ contentTypeId: content.contentTypeId });
+      // ✅ Use limit to avoid fetching all contents of this type
+      const allContents = await this.repository.getAll({ 
+        contentTypeId: content.contentTypeId,
+        limit: 4 
+      });
+      
       relatedContents = allContents
         .filter((c) => c.id !== contentId)
         .slice(0, 3);
