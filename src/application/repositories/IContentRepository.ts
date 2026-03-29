@@ -24,6 +24,7 @@ export interface Content {
   comments: number;
   tags: string[];
   emoji?: string;
+  profileId?: string;
 }
 
 export interface CreateContentDTO {
@@ -35,9 +36,9 @@ export interface CreateContentDTO {
   timeSlot: TimeSlot;
   scheduledAt?: string;
   status?: Content['status'];
-  // New fields
   tags?: string[];
   emoji?: string;
+  profileId?: string;
 }
 
 export interface UpdateContentDTO {

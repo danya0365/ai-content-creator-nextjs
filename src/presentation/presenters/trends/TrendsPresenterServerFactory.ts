@@ -5,6 +5,7 @@ import { TrendsPresenter } from './TrendsPresenter';
  * TrendsPresenterServerFactory
  * Factory for creating TrendsPresenter instances on the server side
  * ✅ Following Clean Architecture - Static Class Pattern
+ * ⚠️ Note: Trends are fetched from Google API, RLS is handled at the Repository level if needed
  */
 export class TrendsPresenterServerFactory {
   static create(): TrendsPresenter {

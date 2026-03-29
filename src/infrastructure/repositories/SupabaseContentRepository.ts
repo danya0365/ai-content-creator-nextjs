@@ -48,6 +48,7 @@ function mapRowToContent(row: SupabaseContentRow): Content {
     comments: row.comments || 0,
     tags: row.tags || [],
     emoji: row.emoji || undefined,
+    profileId: row.profile_id || undefined,
   };
 }
 
@@ -64,6 +65,7 @@ function mapCreateToRow(data: CreateContentDTO): SupabaseContentInsert {
     status: data.status,
     tags: data.tags,
     emoji: data.emoji,
+    profile_id: data.profileId,
   };
 }
 

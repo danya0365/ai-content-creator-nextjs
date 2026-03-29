@@ -109,6 +109,11 @@ export class MockProfileRepository implements IProfileRepository {
     return true;
   }
 
+  async getAdminProfile(): Promise<AuthProfile | null> {
+    await this.delay(100);
+    return this.items.find((item) => item.role === 'admin') || null;
+  }
+
   async getStats(): Promise<ProfileStats> {
     await this.delay(100);
 

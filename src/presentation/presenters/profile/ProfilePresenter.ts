@@ -48,4 +48,18 @@ export class ProfilePresenter {
       return false;
     }
   }
+
+  /**
+   * Identifies the primary admin profile (used for system triggers/attribution)
+   */
+  async getAdminProfile(): Promise<{ id: string; name: string } | null> {
+    try {
+      const profile = await this.repository.getAdminProfile();
+      if (!profile) return null;
+      return { id: profile.id, name: profile.fullName || 'System Admin' };
+    } catch (error) {
+      console.error('[ProfilePresenter] Error fetching admin profile:', error);
+      return null;
+    }
+  }
 }

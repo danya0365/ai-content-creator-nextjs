@@ -1,16 +1,17 @@
 import { GalleryPresenter } from './GalleryPresenter';
 import { SupabaseContentRepository } from '@/src/infrastructure/repositories/SupabaseContentRepository';
-import { createAdminClient } from '@/src/infrastructure/supabase/server';
+import { createClient } from '@/src/infrastructure/supabase/server';
 
 /**
  * GalleryPresenterServerFactory
  * Factory for creating GalleryPresenter instances on the server side
  * ✅ Following Clean Architecture - Static Class Pattern
+ * ✅ USES SESSION CLIENT (RLS ENABLED)
  */
 export class GalleryPresenterServerFactory {
-  static create(): GalleryPresenter {
-    // Service role admin client for backend operations
-    const supabase = createAdminClient();
+  static async create(): Promise<GalleryPresenter> {
+    // Standard user client (respects RLS)
+    const supabase = await createClient();
     const repository = new SupabaseContentRepository(supabase);
     
     return new GalleryPresenter(repository);
@@ -20,6 +21,6 @@ export class GalleryPresenterServerFactory {
 /**
  * Standard factory function for easier invocation
  */
-export function createServerGalleryPresenter(): GalleryPresenter {
-  return GalleryPresenterServerFactory.create();
+export async function createServerGalleryPresenter(): Promise<GalleryPresenter> {
+  return await GalleryPresenterServerFactory.create();
 }

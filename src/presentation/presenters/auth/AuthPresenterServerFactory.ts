@@ -1,16 +1,17 @@
 import { AuthPresenter } from './AuthPresenter';
 import { SupabaseAuthRepository } from '@/src/infrastructure/repositories/supabase/SupabaseAuthRepository';
-import { createAdminClient } from '@/src/infrastructure/supabase/server';
+import { createClient } from '@/src/infrastructure/supabase/server';
 
 /**
  * AuthPresenterServerFactory
  * Factory for creating AuthPresenter instances on the server side
  * ✅ Following Clean Architecture - Static Class Pattern
+ * ✅ USES SESSION CLIENT (RLS ENABLED)
  */
 export class AuthPresenterServerFactory {
-  static create(): AuthPresenter {
-    // Service role admin client for backend operations
-    const supabase = createAdminClient();
+  static async create(): Promise<AuthPresenter> {
+    // Standard user client (respects RLS)
+    const supabase = await createClient();
     const repository = new SupabaseAuthRepository(supabase);
     
     return new AuthPresenter(repository);
@@ -20,6 +21,6 @@ export class AuthPresenterServerFactory {
 /**
  * Standard factory function for easier invocation
  */
-export function createServerAuthPresenter(): AuthPresenter {
-  return AuthPresenterServerFactory.create();
+export async function createServerAuthPresenter(): Promise<AuthPresenter> {
+  return await AuthPresenterServerFactory.create();
 }

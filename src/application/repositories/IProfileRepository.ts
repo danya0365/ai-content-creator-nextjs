@@ -42,4 +42,9 @@ export interface IProfileRepository {
    * Get profile statistics
    */
   getStats?(): Promise<ProfileStats>;
+
+  /**
+   * Get the primary admin profile (for system attribution)
+   */
+  getAdminProfile(): Promise<AuthProfile | null>;
 }

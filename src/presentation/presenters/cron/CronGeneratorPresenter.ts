@@ -1,5 +1,6 @@
 import { IContentRepository, CreateContentDTO } from '@/src/application/repositories/IContentRepository';
 import { IStorageRepository } from '@/src/application/repositories/IStorageRepository';
+import { IProfileRepository } from '@/src/application/repositories/IProfileRepository';
 import { IContentService } from '@/src/application/services/IContentService';
 import { IImageService } from '@/src/application/services/IImageService';
 import { 
@@ -35,7 +36,8 @@ export class CronGeneratorPresenter {
     private readonly contentRepository: IContentRepository,
     private readonly storageRepository: IStorageRepository,
     private readonly contentService: IContentService,
-    private readonly imageService: IImageService
+    private readonly imageService: IImageService,
+    private readonly profileRepository: IProfileRepository
   ) {}
 
   /**
@@ -132,7 +134,18 @@ export class CronGeneratorPresenter {
         }
       }
 
-      // 5. Save to Database
+      // 5. Identify Admin Profile for attribution
+      let adminProfileId: string | undefined = undefined;
+      try {
+        const adminProfile = await this.profileRepository.getAdminProfile();
+        if (adminProfile) {
+          adminProfileId = adminProfile.id;
+          console.log(`[Cron Generator] 👤 Attributing content to Admin: ${adminProfileId}`);
+        }
+      } catch (error) {
+        console.warn('[Cron Generator] ⚠️ Could not determine Admin profile identity:', error);
+      }
+
       const now = new Date();
       const scheduledAt = new Date(now);
       scheduledAt.setMinutes(scheduledAt.getMinutes() + 5);
@@ -148,6 +161,7 @@ export class CronGeneratorPresenter {
         status: 'scheduled',
         tags: contentResult.hashtags || [],
         emoji: selectedContentType.icon,
+        profileId: adminProfileId, // Attribution logic
       };
 
       const savedContent = await this.contentRepository.create(createDto);
