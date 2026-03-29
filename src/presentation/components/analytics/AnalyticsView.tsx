@@ -7,6 +7,7 @@ import { JellyButton } from '../ui/JellyButton';
 import { JellyCard } from '../ui/JellyCard';
 import { BarChart, DonutChart, LineChart } from '../ui/SimpleChart';
 import { ProgressBar, TrendIndicator } from '../ui/TrendIndicator';
+import { AnalyticsSkeleton } from './AnalyticsSkeleton';
 
 interface AnalyticsViewProps {
   initialViewModel?: AnalyticsViewModel;
@@ -28,16 +29,7 @@ export function AnalyticsView({ initialViewModel }: AnalyticsViewProps) {
 
   // Loading state
   if (state.loading && !state.viewModel) {
-    return (
-      <>
-        <div className="h-full flex items-center justify-center">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-violet-500 mx-auto mb-4"></div>
-            <p className="text-muted">กำลังโหลด...</p>
-          </div>
-        </div>
-      </>
-    );
+    return <AnalyticsSkeleton />;
   }
 
   // Error state

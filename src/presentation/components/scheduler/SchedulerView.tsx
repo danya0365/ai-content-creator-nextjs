@@ -6,6 +6,7 @@ import { animated, config, useSpring } from '@react-spring/web';
 import Link from 'next/link';
 import { JellyButton } from '../ui/JellyButton';
 import { JellyCard } from '../ui/JellyCard';
+import { AnalyticsSkeleton } from '../analytics/AnalyticsSkeleton';
 
 interface StatCardProps {
   value: number | string;
@@ -156,14 +157,7 @@ export function SchedulerView({ initialViewModel }: SchedulerViewProps) {
   });
 
   if (state.loading && !state.viewModel) {
-    return (
-      <div className="h-full flex items-center justify-center p-20">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-violet-500 mx-auto mb-4"></div>
-          <p className="text-muted text-sm">กำลังโหลดข้อมูล...</p>
-        </div>
-      </div>
-    );
+    return <AnalyticsSkeleton />;
   }
 
   if (state.error) {

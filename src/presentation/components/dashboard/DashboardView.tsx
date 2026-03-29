@@ -16,6 +16,7 @@ import { SmartImage } from '../ui/SmartImage';
 import { TrendIndicator } from '../ui/TrendIndicator';
 import { ActivityFeed } from './ActivityFeed';
 import { EngagementChart } from './EngagementChart';
+import { DashboardSkeleton } from './DashboardSkeleton';
 interface StatCardProps {
   value: number | string;
   label: string;
@@ -203,18 +204,8 @@ export function DashboardView({ initialViewModel }: DashboardViewProps) {
     config: config.gentle,
   });
 
-  // Show loading state
   if (state.loading && !state.viewModel) {
-    return (
-      <>
-        <div className="h-full flex items-center justify-center">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-violet-500 mx-auto mb-4"></div>
-            <p className="text-muted">กำลังโหลดข้อมูล...</p>
-          </div>
-        </div>
-      </>
-    );
+    return <DashboardSkeleton />;
   }
 
   // Show error state
