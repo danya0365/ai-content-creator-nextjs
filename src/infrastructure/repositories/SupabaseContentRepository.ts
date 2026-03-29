@@ -16,6 +16,8 @@ import {
     AnalyticsDailyStats,
     AnalyticsTypeStats,
     AnalyticsWeeklyTrend,
+    PublishResult,
+    ContentReportData,
 } from '@/src/application/repositories/IContentRepository';
 import { Database } from '@/src/domain/types/supabase';
 import { SupabaseClient } from '@supabase/supabase-js';
@@ -105,6 +107,15 @@ export class SupabaseContentRepository implements IContentRepository {
     }
     if (filter?.contentTypeId) {
       query = query.eq('content_type_id', filter.contentTypeId);
+    }
+    if (filter?.startDate) {
+      query = query.gte('created_at', filter.startDate);
+    }
+    if (filter?.endDate) {
+      query = query.lte('created_at', filter.endDate);
+    }
+    if (filter?.scheduledBefore) {
+      query = query.lte('scheduled_at', filter.scheduledBefore);
     }
 
     const { data, error } = await query;
@@ -396,6 +407,115 @@ export class SupabaseContentRepository implements IContentRepository {
       dailyEngagement,
       contentTypes,
       weeklyTrends,
+    };
+  }
+
+  async publishDueContent(now: Date): Promise<PublishResult> {
+    const nowIso = now.toISOString();
+    
+    // 1. Get only due scheduled contents (status=scheduled AND scheduledAt <= now)
+    const contentsToPublish = await this.getAll({ 
+      status: 'scheduled', 
+      scheduledBefore: nowIso 
+    });
+
+    if (contentsToPublish.length === 0) {
+      return { success: 0, failed: 0, details: [] };
+    }
+
+    // 3. Publish each content
+    const publishResults = await Promise.allSettled(
+      contentsToPublish.map(async (content) => {
+        try {
+          // Update status to published
+          await this.update(content.id, {
+            status: 'published',
+            publishedAt: nowIso,
+          });
+
+          return {
+            contentId: content.id,
+            title: content.title,
+            status: 'published' as const,
+          };
+        } catch (error) {
+          console.error(`[Repository] Failed to publish ${content.id}:`, error);
+          
+          // Mark as failed in DB
+          try {
+            await this.update(content.id, { status: 'failed' });
+          } catch (e) {
+            console.error(`[Repository] Critical: Failed to mark as failed ${content.id}:`, e);
+          }
+
+          throw error;
+        }
+      })
+    );
+
+    // 4. Format results
+    const results: PublishResult['details'] = publishResults.map((result, index) => {
+      if (result.status === 'fulfilled') {
+        return result.value;
+      } else {
+        return {
+          contentId: contentsToPublish[index].id,
+          title: contentsToPublish[index].title,
+          status: 'failed' as const,
+          error: (result.reason as Error).message || 'Unknown error',
+        };
+      }
+    });
+
+    return {
+      success: results.filter(r => r.status === 'published').length,
+      failed: results.filter(r => r.status === 'failed').length,
+      details: results,
+    };
+  }
+
+  async getReportData(startDate: string, endDate: string): Promise<ContentReportData> {
+    // 1. Fetch all contents for the period (Still fetch once to avoid 10 separate count queries, 
+    // but now it's filtered by DATE in the DB first!)
+    const weeklyContents = await this.getAll({ startDate, endDate });
+
+    // 2. Calculate statistics in memory (from a MUCH smaller filtered set)
+    const publishedContents = weeklyContents.filter(c => c.status === 'published');
+    const totalLikes = publishedContents.reduce((sum, c) => sum + (c.likes || 0), 0);
+    const totalShares = publishedContents.reduce((sum, c) => sum + (c.shares || 0), 0);
+
+    const topPerformingContent = [...publishedContents]
+      .sort((a, b) => ((b.likes || 0) + (b.shares || 0)) - ((a.likes || 0) + (a.shares || 0)))
+      .slice(0, 5)
+      .map(c => ({
+        id: c.id,
+        title: c.title,
+        likes: c.likes || 0,
+        shares: c.shares || 0,
+      }));
+
+    const contentByTimeSlot: Record<string, number> = {
+      morning: weeklyContents.filter(c => c.timeSlot === 'morning').length,
+      lunch: weeklyContents.filter(c => c.timeSlot === 'lunch').length,
+      afternoon: weeklyContents.filter(c => c.timeSlot === 'afternoon').length,
+      evening: weeklyContents.filter(c => c.timeSlot === 'evening').length,
+    };
+
+    const contentByType: Record<string, number> = {};
+    weeklyContents.forEach(c => {
+      contentByType[c.contentTypeId] = (contentByType[c.contentTypeId] || 0) + 1;
+    });
+
+    return {
+      totalGenerated: weeklyContents.length,
+      totalPublished: publishedContents.length,
+      totalFailed: weeklyContents.filter(c => c.status === 'failed').length,
+      totalDrafts: weeklyContents.filter(c => c.status === 'draft').length,
+      totalLikes,
+      totalShares,
+      topPerformingContent,
+      contentByTimeSlot,
+      contentByType,
     };
   }
 }

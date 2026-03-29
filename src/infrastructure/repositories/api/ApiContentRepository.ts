@@ -19,6 +19,8 @@ import {
   PaginatedResult,
   UpdateContentDTO,
   AnalyticsMetrics,
+  PublishResult,
+  ContentReportData,
 } from '@/src/application/repositories/IContentRepository';
 import { Database } from '@/src/domain/types/supabase';
 import { SupabaseClient } from '@supabase/supabase-js';
@@ -248,6 +250,26 @@ export class ApiContentRepository implements IContentRepository {
     if (!res.ok) {
       const error = await res.json();
       throw new Error(error.error || 'ไม่สามารถโหลดข้อมูล Analytics ได้');
+    }
+    return res.json();
+  }
+
+  /**
+   * Publish content that has reached its scheduled time
+   * (Server-side only cron operation)
+   */
+  async publishDueContent(_now: Date): Promise<PublishResult> {
+    throw new Error('publishDueContent is a server-side only operation and cannot be called from ApiContentRepository');
+  }
+
+  /**
+   * Get report data for a specific period
+   */
+  async getReportData(startDate: string, endDate: string): Promise<ContentReportData> {
+    const res = await fetch(`${this.baseUrl}?action=report&startDate=${startDate}&endDate=${endDate}`);
+    if (!res.ok) {
+      const error = await res.json();
+      throw new Error(error.error || 'ไม่สามารถโหลดข้อมูลรายงานได้');
     }
     return res.json();
   }

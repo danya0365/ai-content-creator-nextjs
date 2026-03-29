@@ -1,5 +1,5 @@
 import { authorizeCronRequest } from '@/src/infrastructure/auth/cron-auth';
-import { createServerSchedulerPresenter } from '@/src/presentation/presenters/scheduler/SchedulerPresenterServerFactory';
+import { createAdminSchedulerPresenter } from '@/src/presentation/presenters/scheduler/SchedulerPresenterAdminFactory';
 import { NextRequest, NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
   }
 
   const cronSecret = request.headers.get('x-cron-secret') || process.env.CRON_SECRET || '';
-  const result = await createServerSchedulerPresenter().handleRunRequest(cronSecret);
+  const result = await createAdminSchedulerPresenter().handleRunRequest(cronSecret);
   
   return NextResponse.json(result);
 }
@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
   const isAuthorized = await authorizeCronRequest(request);
   const cronSecret = request.headers.get('x-cron-secret') || process.env.CRON_SECRET || '';
 
-  const result = await createServerSchedulerPresenter().handleStatusRequest(isAuthorized, cronSecret);
+  const result = await createAdminSchedulerPresenter().handleStatusRequest(isAuthorized, cronSecret);
   
   if (result.error) {
     return NextResponse.json(result, { status: 401 });

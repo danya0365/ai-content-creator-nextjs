@@ -13,6 +13,8 @@ import {
     PaginatedResult,
     UpdateContentDTO,
     AnalyticsMetrics,
+    PublishResult,
+    ContentReportData,
 } from '@/src/application/repositories/IContentRepository';
 import { GeneratedContent, MOCK_CONTENTS } from '@/src/data/mock/mockContents';
 
@@ -53,6 +55,18 @@ export class MockContentRepository implements IContentRepository {
     }
     if (filter?.contentTypeId) {
       result = result.filter((c) => c.contentTypeId === filter.contentTypeId);
+    }
+    if (filter?.startDate) {
+      const start = new Date(filter.startDate);
+      result = result.filter((c) => new Date(c.createdAt) >= start);
+    }
+    if (filter?.endDate) {
+      const end = new Date(filter.endDate);
+      result = result.filter((c) => new Date(c.createdAt) <= end);
+    }
+    if (filter?.scheduledBefore) {
+      const before = new Date(filter.scheduledBefore);
+      result = result.filter((c) => c.scheduledAt && new Date(c.scheduledAt) <= before);
     }
 
     return result.sort(
@@ -201,6 +215,88 @@ export class MockContentRepository implements IContentRepository {
         { weekLabel: 'W1', total: 500 },
         { weekLabel: 'W2', total: 600 },
       ],
+    };
+  }
+
+  async publishDueContent(now: Date): Promise<PublishResult> {
+    await this.delay(200);
+    const nowIso = now.toISOString();
+    
+    const contentsToPublish = this.items.filter(content => {
+      if (content.status !== 'scheduled' || !content.scheduledAt) return false;
+      const scheduledTime = new Date(content.scheduledAt);
+      return scheduledTime <= now;
+    });
+
+    if (contentsToPublish.length === 0) {
+      return { success: 0, failed: 0, details: [] };
+    }
+
+    const details: PublishResult['details'] = contentsToPublish.map(content => {
+      content.status = 'published';
+      content.publishedAt = nowIso;
+      content.updatedAt = nowIso;
+      
+      return {
+        contentId: content.id,
+        title: content.title,
+        status: 'published' as const,
+      };
+    });
+
+    return {
+      success: details.length,
+      failed: 0,
+      details,
+    };
+  }
+
+  async getReportData(startDate: string, endDate: string): Promise<ContentReportData> {
+    await this.delay(100);
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    
+    const weeklyContents = this.items.filter(c => {
+      const createdAt = new Date(c.createdAt);
+      return createdAt >= start && createdAt <= end;
+    });
+
+    const publishedContents = weeklyContents.filter(c => c.status === 'published');
+    const totalLikes = publishedContents.reduce((sum, c) => sum + (c.likes || 0), 0);
+    const totalShares = publishedContents.reduce((sum, c) => sum + (c.shares || 0), 0);
+
+    const topPerformingContent = [...publishedContents]
+      .sort((a, b) => ((b.likes || 0) + (b.shares || 0)) - ((a.likes || 0) + (a.shares || 0)))
+      .slice(0, 5)
+      .map(c => ({
+        id: c.id,
+        title: c.title,
+        likes: c.likes || 0,
+        shares: c.shares || 0,
+      }));
+
+    const contentByTimeSlot: Record<string, number> = {
+      morning: weeklyContents.filter(c => c.timeSlot === 'morning').length,
+      lunch: weeklyContents.filter(c => c.timeSlot === 'lunch').length,
+      afternoon: weeklyContents.filter(c => c.timeSlot === 'afternoon').length,
+      evening: weeklyContents.filter(c => c.timeSlot === 'evening').length,
+    };
+
+    const contentByType: Record<string, number> = {};
+    weeklyContents.forEach(c => {
+      contentByType[c.contentTypeId] = (contentByType[c.contentTypeId] || 0) + 1;
+    });
+
+    return {
+      totalGenerated: weeklyContents.length,
+      totalPublished: publishedContents.length,
+      totalFailed: weeklyContents.filter(c => c.status === 'failed').length,
+      totalDrafts: weeklyContents.filter(c => c.status === 'draft').length,
+      totalLikes,
+      totalShares,
+      topPerformingContent,
+      contentByTimeSlot,
+      contentByType,
     };
   }
 
