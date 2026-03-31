@@ -56,6 +56,9 @@ export interface TimelineViewModel {
     totalShares: number;
     totalComments: number;
   };
+  // Pagination
+  nextCursor: string | null;
+  hasMore: boolean;
 }
 
 /**
@@ -120,6 +123,11 @@ function mapContentToTimelineEntry(content: Content): TimelineEntry {
     'gaming': 'gaming',
     'lifestyle': 'lifestyle',
     'education': 'education',
+    'islamic-quran': 'news',
+    'islamic-seerah': 'news',
+    'islamic-hadith': 'news',
+    'islamic-history': 'news',
+    'islamic-wisdom': 'news',
   };
 
   return {
@@ -139,6 +147,33 @@ function mapContentToTimelineEntry(content: Content): TimelineEntry {
 }
 
 /**
+ * Helper to group entries by date
+ */
+function groupEntriesByDate(entries: TimelineEntry[]): TimelineGroup[] {
+  const groupedMap = new Map<string, TimelineEntry[]>();
+  entries.forEach((entry) => {
+    const date = entry.createdAt.split('T')[0];
+    if (!groupedMap.has(date)) {
+      groupedMap.set(date, []);
+    }
+    groupedMap.get(date)!.push(entry);
+  });
+  
+  const groups: TimelineGroup[] = [];
+  groupedMap.forEach((groupEntries, dateStr) => {
+    groups.push({
+      date: dateStr,
+      dateLabel: formatDateLabel(dateStr),
+      isToday: isToday(dateStr),
+      isYesterday: isYesterday(dateStr),
+      entries: groupEntries,
+    });
+  });
+  
+  return groups.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+}
+
+/**
  * Presenter for Timeline page
  * ✅ Receives repository via constructor injection
  */
@@ -148,7 +183,83 @@ export class TimelinePresenter {
   ) {}
 
   /**
-   * Get view model for the page
+   * Get view model for the page using cursor-based pagination
+   */
+  async getCursorViewModel(
+    filter: TimelineFilter = 'all',
+    statusFilter: TimelineStatusFilter = 'all',
+    cursor?: string,
+    limit = 20
+  ): Promise<TimelineViewModel> {
+    try {
+      // 1. Build filter for cursor query
+      let contentTypeIds: string[] | undefined = undefined;
+      
+      if (filter !== 'all') {
+        const categoryMap: Record<string, TimelineCategory> = {
+          'morning-news': 'news',
+          'food': 'food',
+          'food-review': 'food',
+          'tech-tips': 'tech',
+          'entertainment': 'entertainment',
+          'meme': 'entertainment',
+          'daily-motivation': 'motivation',
+          'gaming': 'gaming',
+          'lifestyle': 'lifestyle',
+          'education': 'education',
+          'islamic-quran': 'news',
+          'islamic-seerah': 'news',
+          'islamic-hadith': 'news',
+          'islamic-history': 'news',
+          'islamic-wisdom': 'news',
+        };
+        
+        contentTypeIds = Object.entries(categoryMap)
+          .filter(([_, cat]) => cat === filter)
+          .map(([id, _]) => id);
+      }
+
+      // 2. Fetch data
+      const [result, stats] = await Promise.all([
+        this.repository.getCursorPaginated({
+          status: statusFilter === 'all' ? undefined : statusFilter as any,
+          contentTypeId: contentTypeIds ? contentTypeIds[0] : undefined, // Simplify for now or update Repository to handle IDs
+          cursor,
+          limit,
+        }),
+        this.repository.getStats(),
+      ]);
+
+      // 3. Map and Group
+      const entries = result.data.map(mapContentToTimelineEntry);
+      const groups = groupEntriesByDate(entries);
+
+      return {
+        groups,
+        categories: Object.values(TIMELINE_CATEGORIES),
+        filter,
+        statusFilter,
+        totalCount: result.data.length,
+        stats: {
+          total: stats.totalContents,
+          published: stats.publishedCount,
+          scheduled: stats.scheduledCount,
+          draft: stats.draftCount,
+          totalLikes: stats.totalLikes,
+          totalShares: stats.totalShares,
+          totalComments: 0,
+        },
+        nextCursor: result.nextCursor,
+        hasMore: result.hasMore,
+      };
+    } catch (error) {
+      console.error('[TimelinePresenter] Error in getCursorViewModel:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get view model for the page (legacy method)
    */
   async getViewModel(
     filter: TimelineFilter = 'all',
@@ -239,6 +350,8 @@ export class TimelinePresenter {
         totalShares: stats.totalShares,
         totalComments: 0,
       },
+      nextCursor: null,
+      hasMore: false,
     };
   }
 

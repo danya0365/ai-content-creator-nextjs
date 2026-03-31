@@ -509,6 +509,54 @@ export class SupabaseContentRepository implements IContentRepository {
     return (data || []).map(mapRowToContent);
   }
 
+  async getCursorPaginated(filter: import('@/src/application/repositories/IContentRepository').ContentCursorFilter): Promise<import('@/src/application/repositories/IContentRepository').CursorPaginatedResult<Content>> {
+    const { cursor, limit = 12, status, contentTypeId, direction = 'next' } = filter;
+    
+    let query = this.supabase
+      .from('ai_contents')
+      .select('*', { count: 'exact' });
+
+    // Apply filters
+    if (status) query = query.eq('status', status);
+    if (contentTypeId) query = query.eq('content_type_id', contentTypeId);
+
+    // Apply cursor
+    if (cursor) {
+      if (direction === 'next') {
+        // Fetch older items
+        query = query.lt('created_at', cursor);
+      } else {
+        // Fetch newer items
+        query = query.gt('created_at', cursor);
+      }
+    }
+
+    // Order: Always newest first for traditional feed direction
+    // If direction is 'previous', we might need to reverse the order to get the "next" set of newer items correctly
+    query = query.order('created_at', { ascending: false });
+
+    // Limit + 1 to check if there's more
+    query = query.limit(limit + 1);
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.error('Error fetching cursor paginated contents:', error);
+      return { data: [], nextCursor: null, hasMore: false };
+    }
+
+    const hasMore = (data?.length || 0) > limit;
+    const items = hasMore ? data.slice(0, limit) : (data || []);
+    const lastItem = items[items.length - 1];
+    const nextCursor = hasMore && lastItem ? lastItem.created_at : null;
+
+    return {
+      data: items.map(mapRowToContent),
+      nextCursor,
+      hasMore,
+    };
+  }
+
   async getReportData(startDate: string, endDate: string): Promise<ContentReportData> {
     // 1. Fetch all contents for the period (Still fetch once to avoid 10 separate count queries, 
     // but now it's filtered by DATE in the DB first!)

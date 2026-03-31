@@ -431,14 +431,30 @@ export function GenerateContentModal({ isOpen, onClose, onGenerate }: GenerateCo
                 <div>ช่วงเวลาโพสต์ (Schedule)</div>
                 <div className="flex gap-1.5">
                   <button 
-                    onClick={(e) => { e.preventDefault(); setFormData(prev => ({ ...prev, scheduledDate: new Date().toISOString().split('T')[0], scheduledTime: new Date().toTimeString().slice(0,5) })) }}
+                    onClick={(e) => { 
+                      e.preventDefault(); 
+                      const now = new Date();
+                      const currentHour = now.getHours();
+                      const slot = currentHour < 11 ? 'morning' : currentHour < 14 ? 'lunch' : currentHour < 18 ? 'afternoon' : 'evening';
+                      setFormData(prev => ({ 
+                        ...prev, 
+                        scheduledDate: now.toISOString().split('T')[0], 
+                        scheduledTime: now.toTimeString().slice(0,5),
+                        timeSlot: slot
+                      }));
+                    }}
                     className="text-[10px] bg-emerald-500/20 text-emerald-400 px-2 py-1 rounded hover:bg-emerald-500/30 transition-colors"
                   >🚀 โพสต์ทันที</button>
                   <button 
                     onClick={(e) => {
                       e.preventDefault();
                       const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
-                      setFormData(prev => ({ ...prev, scheduledDate: tomorrow.toISOString().split('T')[0], scheduledTime: '08:00', timeSlot: 'morning' }))
+                      setFormData(prev => ({ 
+                        ...prev, 
+                        scheduledDate: tomorrow.toISOString().split('T')[0], 
+                        scheduledTime: '08:00', 
+                        timeSlot: 'morning' 
+                      }));
                     }}
                     className="text-[10px] bg-blue-500/20 text-blue-400 px-2 py-1 rounded hover:bg-blue-500/30 transition-colors"
                   >🌅 เช้าพรุ่งนี้</button>

@@ -143,7 +143,7 @@ export function ContentDetailView({ contentId, initialViewModel }: ContentDetail
             <animated.div style={contentSpring} className="lg:col-span-2 space-y-6">
               {/* Image Preview */}
               <JellyCard className="glass-card p-0 overflow-hidden">
-                <div className="aspect-video bg-gradient-to-br from-violet-500/30 via-purple-500/20 to-fuchsia-500/30 flex items-center justify-center">
+                <div className="aspect-square bg-gradient-to-br from-violet-500/30 via-purple-500/20 to-fuchsia-500/30 flex items-center justify-center">
                   {content.imageUrl ? (
                     <img 
                       src={content.imageUrl} 

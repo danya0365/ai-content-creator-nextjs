@@ -30,6 +30,23 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(contents);
     }
 
+    if (action === 'cursorPaginated') {
+      const cursor = searchParams.get('cursor');
+      const limit = searchParams.get('limit');
+      const status = searchParams.get('status');
+      const contentTypeId = searchParams.get('contentTypeId');
+      const direction = searchParams.get('direction');
+
+      const result = await presenter.getCursorPaginated({
+        cursor: cursor || undefined,
+        limit: limit ? parseInt(limit) : undefined,
+        status: (status as any) || undefined,
+        contentTypeId: contentTypeId || undefined,
+        direction: (direction as any) || undefined,
+      });
+      return NextResponse.json(result);
+    }
+
     // 2. Paginated or Filtered List
     const status = searchParams.get('status');
     const timeSlot = searchParams.get('timeSlot');

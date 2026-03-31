@@ -3,12 +3,14 @@
 import { Content } from '@/src/application/repositories/IContentRepository';
 import { ContentFilter, GalleryViewModel } from '@/src/presentation/presenters/gallery/GalleryPresenter';
 import { useGalleryPresenter, ViewMode } from '@/src/presentation/presenters/gallery/useGalleryPresenter';
-import { animated, config, useSpring } from '@react-spring/web';
+import { animated, config, useSpring, useTransition } from '@react-spring/web';
 import { JellyButton } from '../ui/JellyButton';
 import { JellyCard } from '../ui/JellyCard';
 import { SmartImage } from '../ui/SmartImage';
 import { GallerySkeleton } from './GallerySkeleton';
 import { ContentDetailModal } from '../shared/ContentDetailModal';
+import { LoadMoreButton } from '../ui/LoadMoreButton';
+import { PaginationLinks } from '../ui/PaginationLinks';
 
 // Types
 type SortOption = 'newest' | 'oldest' | 'likes' | 'shares';
@@ -188,6 +190,80 @@ function ViewModeToggle({ mode, onChange }: { mode: ViewMode; onChange: (mode: V
       >
         <span>☰</span> List
       </button>
+      <button
+        onClick={() => onChange('table')}
+        className={`px-3 py-1.5 text-xs rounded-md transition-all flex items-center gap-1 ${
+          mode === 'table'
+            ? 'bg-violet-600 text-white'
+            : 'text-muted hover:text-foreground'
+        }`}
+      >
+        <span>☷</span> Table
+      </button>
+    </div>
+  );
+}
+
+/**
+ * GalleryTableView - Professional table view for content management
+ */
+function GalleryTableView({ contents, onSelect }: { contents: Content[]; onSelect: (c: Content) => void }) {
+  return (
+    <div className="overflow-x-auto glass-card rounded-2xl border border-white/10">
+      <table className="w-full text-left border-collapse">
+        <thead>
+          <tr className="border-b border-white/10 bg-white/5">
+            <th className="px-6 py-4 text-xs font-semibold text-muted uppercase tracking-wider">Content</th>
+            <th className="px-6 py-4 text-xs font-semibold text-muted uppercase tracking-wider">Status</th>
+            <th className="px-6 py-4 text-xs font-semibold text-muted uppercase tracking-wider">Time Slot</th>
+            <th className="px-6 py-4 text-xs font-semibold text-muted uppercase tracking-wider">Created At</th>
+            <th className="px-6 py-4 text-xs font-semibold text-muted uppercase tracking-wider text-right">Actions</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-white/5">
+          {contents.map((content) => (
+            <tr 
+              key={content.id} 
+              className="hover:bg-violet-500/5 transition-colors cursor-pointer group"
+              onClick={() => onSelect(content)}
+            >
+              <td className="px-6 py-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg bg-white/5 flex-shrink-0 overflow-hidden relative">
+                    <SmartImage src={content.imageUrl} alt="" fill className="object-cover" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-foreground truncate max-w-[200px] group-hover:text-violet-400 transition-colors">
+                      {content.title}
+                    </p>
+                    <p className="text-xs text-muted truncate max-w-[200px]">{content.description}</p>
+                  </div>
+                </div>
+              </td>
+              <td className="px-6 py-4">
+                <span className={`text-[10px] px-2 py-0.5 rounded-full uppercase font-bold tracking-tighter
+                  ${content.status === 'published' ? 'bg-green-500/20 text-green-400' :
+                    content.status === 'scheduled' ? 'bg-blue-500/20 text-blue-400' :
+                    'bg-gray-500/20 text-gray-400'}
+                `}>
+                  {content.status}
+                </span>
+              </td>
+              <td className="px-6 py-4 text-sm text-muted">
+                {content.timeSlot}
+              </td>
+              <td className="px-6 py-4 text-sm text-muted">
+                {new Date(content.createdAt).toLocaleDateString()}
+              </td>
+              <td className="px-6 py-4 text-right">
+                <button className="text-violet-400 hover:text-violet-300 text-sm font-medium">
+                  Manage
+                </button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }
@@ -244,6 +320,16 @@ export function GalleryView({ initialViewModel }: GalleryViewProps) {
     config: config.gentle,
   });
 
+  // Animated transitions for real-time prepends
+  const transitions = useTransition(state.filteredAndSortedContents, {
+    keys: (item) => item.id,
+    from: { opacity: 0, scale: 0.8, y: -20 },
+    enter: { opacity: 1, scale: 1, y: 0 },
+    leave: { opacity: 0, scale: 0.8, y: 20 },
+    trail: 30,
+    config: { ...config.gentle, duration: 300 },
+  });
+
   // Loading state
   if (state.loading && !state.viewModel) {
     return <GallerySkeleton />;
@@ -296,30 +382,37 @@ export function GalleryView({ initialViewModel }: GalleryViewProps) {
             </div>
           </animated.div>
 
-          {/* Content Grid/List */}
+          {/* Content Grid/List/Table */}
           {state.filteredAndSortedContents.length > 0 ? (
             state.viewMode === 'grid' ? (
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 md:gap-4">
-                {state.filteredAndSortedContents.map((content, index) => (
-                  <GalleryCard
-                    key={content.id}
-                    content={content}
-                    onClick={() => actions.selectContent(content)}
-                    delay={50 + index * 30}
-                  />
+                {transitions((style, content) => (
+                  <animated.div style={style} key={content.id}>
+                    <GalleryCard
+                      content={content}
+                      onClick={() => actions.selectContent(content)}
+                      delay={0} // Managed by transition trail
+                    />
+                  </animated.div>
+                ))}
+              </div>
+            ) : state.viewMode === 'list' ? (
+              <div className="space-y-3">
+                {transitions((style, content) => (
+                  <animated.div style={style} key={content.id}>
+                    <GalleryListCard
+                      content={content}
+                      onClick={() => actions.selectContent(content)}
+                      delay={0} // Managed by transition trail
+                    />
+                  </animated.div>
                 ))}
               </div>
             ) : (
-              <div className="space-y-3">
-                {state.filteredAndSortedContents.map((content, index) => (
-                  <GalleryListCard
-                    key={content.id}
-                    content={content}
-                    onClick={() => actions.selectContent(content)}
-                    delay={50 + index * 30}
-                  />
-                ))}
-              </div>
+              <GalleryTableView 
+                contents={state.filteredAndSortedContents} 
+                onSelect={actions.selectContent} 
+              />
             )
           ) : (
             <JellyCard className="glass-card p-12 text-center">
@@ -330,6 +423,21 @@ export function GalleryView({ initialViewModel }: GalleryViewProps) {
                 ✨ สร้างคอนเทนต์ใหม่
               </JellyButton>
             </JellyCard>
+          )}
+
+          {/* Pagination Controls */}
+          {state.viewMode === 'table' ? (
+            <PaginationLinks 
+              currentPage={state.currentPage}
+              totalPage={Math.ceil(viewModel.totalCount / 12)}
+              onPageChange={actions.setPage}
+            />
+          ) : (
+            <LoadMoreButton 
+              onClick={actions.loadMore}
+              loading={state.loadingMore}
+              hasMore={state.hasMore}
+            />
           )}
         </div>
       </div>

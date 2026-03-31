@@ -293,4 +293,26 @@ export class ApiContentRepository implements IContentRepository {
     }
     return res.json();
   }
+
+  /**
+   * Get cursor paginated contents
+   */
+  async getCursorPaginated(filter: import('@/src/application/repositories/IContentRepository').ContentCursorFilter): Promise<import('@/src/application/repositories/IContentRepository').CursorPaginatedResult<Content>> {
+    const params = new URLSearchParams({
+      action: 'cursorPaginated',
+    });
+    
+    if (filter.cursor) params.append('cursor', filter.cursor);
+    if (filter.limit) params.append('limit', String(filter.limit));
+    if (filter.status) params.append('status', filter.status);
+    if (filter.contentTypeId) params.append('contentTypeId', filter.contentTypeId);
+    if (filter.direction) params.append('direction', filter.direction);
+
+    const res = await fetch(`${this.baseUrl}?${params}`);
+    if (!res.ok) {
+      const error = await res.json();
+      throw new Error(error.error || 'ไม่สามารถโหลดข้อมูลคอนเทนต์แบบ Pagination ได้');
+    }
+    return res.json();
+  }
 }

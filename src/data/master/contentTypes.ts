@@ -26,6 +26,8 @@ export interface ContentType {
   color: string;
   category: 'general' | 'islamic';
   imageStyle?: string; // Preferred image style ID from imageStyles.ts
+  typographyGuidance?: string; // Guidance for LLM to put text on the image using FLUX
+  contentGuidance?: string; // Guidance for LLM to generate the text content (Viral Hooks, Full Text, etc.)
 }
 
 export const TIME_SLOTS: TimeSlotConfig[] = [
@@ -76,6 +78,8 @@ export const CONTENT_TYPES: ContentType[] = [
     color: '#FFB347',
     category: 'general',
     imageStyle: 'realistic',
+    typographyGuidance: 'Include a clean bold news-style overlay with a headline related to {topic} at the bottom-left.',
+    contentGuidance: 'VIRAL STRATEGY: Start with a "BREAKING NEWS" or "DON\'T MISS" hook. Summarize the most impactful part of the news in 1-2 sentences. Use emojis for high engagement.'
   },
   {
     id: 'food',
@@ -89,6 +93,8 @@ export const CONTENT_TYPES: ContentType[] = [
     color: '#FF6B6B',
     category: 'general',
     imageStyle: 'realistic',
+    typographyGuidance: 'Include the dish name in elegant handwritten font styled as a restaurant logo or menu heading.',
+    contentGuidance: 'VIRAL STRATEGY: Start with a "SECRET RECIPE" or "TASTE OF HEAVEN" hook. Focus on the sensory experience (smell, taste, texture). End with a "YUM!" call to action.'
   },
   {
     id: 'entertainment',
@@ -102,6 +108,8 @@ export const CONTENT_TYPES: ContentType[] = [
     color: '#C9B1FF',
     category: 'general',
     imageStyle: '3d-render',
+    typographyGuidance: 'Include a funny or expressive caption in a speech bubble or 3D floating text styled like social media stickers.',
+    contentGuidance: 'VIRAL STRATEGY: Use a "POV" (Point of View) or "WAIT FOR IT" style hook. Keep it short, relatable, and high-energy. Focus on a common funny situation.'
   },
   {
     id: 'tech-tips',
@@ -115,6 +123,8 @@ export const CONTENT_TYPES: ContentType[] = [
     color: '#4ECDC4',
     category: 'general',
     imageStyle: 'minimalist',
+    typographyGuidance: 'Include the primary tech keyword in a modern tech-badge or sleek digital font.',
+    contentGuidance: 'VIRAL STRATEGY: Start with "PRO TIP" or "THE HIDDEN TRICK". Highlight one specific benefit (Save time, Boost speed). Use clear bullet points for the steps.'
   },
   {
     id: 'daily-motivation',
@@ -128,6 +138,8 @@ export const CONTENT_TYPES: ContentType[] = [
     color: '#45B7D1',
     category: 'general',
     imageStyle: 'watercolor',
+    typographyGuidance: 'Include a short inspirational keyword or the main quote text in a beautiful serif font centered with high transparency/artistic integration.',
+    contentGuidance: 'VIRAL STRATEGY: Create a "Message for you today" atmosphere. Start with an emotional hook that resonates with current feelings. Keep the main quote central and powerful.'
   },
   {
     id: 'gaming',
@@ -141,6 +153,8 @@ export const CONTENT_TYPES: ContentType[] = [
     color: '#96CEB4',
     category: 'general',
     imageStyle: '3d-render',
+    typographyGuidance: 'Include a vibrant "Level Up" or gaming-style heading related to {topic} in neon/futuristic font.',
+    contentGuidance: 'VIRAL STRATEGY: Use high-energy "GAMER ALERT" or "LEVEL UP" hooks. Focus on excitement, competition, or a hot new update. Use gaming slang naturally.'
   },
   // ==========================================
   // Islamic Content Category
@@ -157,6 +171,8 @@ export const CONTENT_TYPES: ContentType[] = [
     color: '#059669',
     category: 'islamic',
     imageStyle: 'realistic',
+    typographyGuidance: 'The text is the star of this image. Render the FULL Quranic Verse (Ayah) in large, bold, elegant typography centered on the frame, covering 70-80% of the image. The original Arabic/English text should be at the top and the Thai translation prominent at the bottom. Use a high-contrast color (Gold or White). The background must be a subtle, blurred Islamic pattern or a serene scene that does not distract from the text.',
+    contentGuidance: 'STRICT REQUIREMENT: You MUST provide the FULL and VERBATIM original Quranic Verse (Ayah) in either Arabic or English, AND the full Thai translation. Do not summarize or paraphrase. Focus on its deep spiritual meaning and reflection.'
   },
   {
     id: 'islamic-seerah',
@@ -170,6 +186,8 @@ export const CONTENT_TYPES: ContentType[] = [
     color: '#10B981',
     category: 'islamic',
     imageStyle: 'realistic',
+    typographyGuidance: 'Include the name of the Prophet or the key location related to {topic} in an elegant, respectful font (e.g. "STORY OF PROPHET MUSA (AS)").',
+    contentGuidance: 'VIRAL STRATEGY: Use a "THE LESSON OF A PROPHET" or "DID YOU KNOW?" hook. Focus on the emotional and moral weight of the story. Draw a parallel to modern life challenges.'
   },
   {
     id: 'islamic-hadith',
@@ -183,6 +201,8 @@ export const CONTENT_TYPES: ContentType[] = [
     color: '#34D399',
     category: 'islamic',
     imageStyle: 'realistic',
+    typographyGuidance: 'The text is the star of this image. Render the FULL Hadith text and its Thai translation in large, clear, and powerful modern typography centered on the frame, covering 70-80% of the screen. Use high-contrast colors (Gold/White text on Dark background). The background should be a subtle, high-quality blurred scenery or minimalist pattern to ensure absolute legibility for sharing.',
+    contentGuidance: 'STRICT REQUIREMENT: You MUST provide the FULL and VERBATIM original Hadith text (Prophetic saying) AND the full Thai translation. Include the narrator (Sahabi) and the source (e.g., Al-Bukhari). Do not summarize the core text.'
   },
   {
     id: 'islamic-history',
@@ -196,6 +216,8 @@ export const CONTENT_TYPES: ContentType[] = [
     color: '#6EE7B7',
     category: 'islamic',
     imageStyle: 'realistic',
+    typographyGuidance: 'Include a bold, dramatic title or a catchy "historical hook" phrase in a cinematic serif font centered at the bottom (e.g. "THE GOLDEN AGE").',
+    contentGuidance: 'VIRAL STRATEGY: Use a "THE MOMENT THAT CHANGED EVERYTHING" or "HIDDEN HISTORY" hook. Focus on the awe-inspiring achievements and the glory of the Islamic civilization.'
   },
   {
     id: 'islamic-wisdom',
@@ -209,6 +231,8 @@ export const CONTENT_TYPES: ContentType[] = [
     color: '#A7F3D0',
     category: 'islamic',
     imageStyle: 'watercolor',
+    typographyGuidance: 'Create a minimalist "Spiritual Quote" image. Render the core wisdom or spiritual advice in large, elegant, and artistic serif font centered on the canvas. The background should be soft, artistic watercolor with lots of negative space, allowing the typography to be the primary focal point of the image.',
+    contentGuidance: 'VIRAL STRATEGY: Create a "Heart-Healing" atmosphere. Use a hook that addresses common struggles like anxiety or stress. Provide spiritual "GPS" for the soul based on pious predecessors.'
   },
 ];
 

@@ -21,7 +21,8 @@ export type WavespeedContentModel =
   | 'meta-llama/llama-3.1-70b-instruct'
   | 'meta-llama/llama-3-8b-instruct'
   | 'meta-llama/llama-3-70b-instruct'
-  | 'qwen/qwen-2.5-72b-instruct';
+  | 'qwen/qwen-2.5-72b-instruct'
+  | 'minimax/minimax-m2.7';
 
 /** All valid content models (runtime array for validation) */
 export const WAVESPEED_CONTENT_MODELS: WavespeedContentModel[] = [
@@ -32,6 +33,7 @@ export const WAVESPEED_CONTENT_MODELS: WavespeedContentModel[] = [
   'meta-llama/llama-3-8b-instruct',
   'meta-llama/llama-3-70b-instruct',
   'qwen/qwen-2.5-72b-instruct',
+  'minimax/minimax-m2.7',
 ];
 
 /** Default content model */
