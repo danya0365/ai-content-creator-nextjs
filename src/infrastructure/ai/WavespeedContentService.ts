@@ -48,8 +48,13 @@ function buildPrompt(
   const platform = platformId ? getPlatformById(platformId) : null;
   const tone = toneId ? getToneById(toneId) : null;
 
-  let prompt = `You are a creative content creator specializing in ${contentType.name} content.
+  let prompt = `You are a viral social media growth expert and master copywriter specializing in ${contentType.name} content.
+Your goal is to create high-retention content that captures attention within the first second, provides immense value, and encourages shares/saves.
+
 Create engaging social media content about: "${topic}"
+
+[CONTENT STRATEGY & VIRAL GUIDANCE]
+${contentType.contentGuidance ? contentType.contentGuidance.replace('{topic}', topic) : 'Create a high-impact post with a strong hook and clear value.'}
 
 Context: This content will be posted during ${timeContext}.
 Content Type: ${contentType.name} - ${contentType.description}
@@ -67,11 +72,30 @@ Language: ${language === 'th' ? 'Thai' : 'English'}`;
     prompt += `\n\n[BRAND PERSONA & CUSTOM INSTRUCTIONS]\nYou must strictly adhere to the following brand guidelines and styles:\n${brandContext}`;
   }
 
+  if (contentType.typographyGuidance) {
+    prompt += `\n\n[IMAGE TYPOGRAPHY & VISUAL OVERLAY GUIDANCE]\nYour "imagePrompt" MUST include specific instructions to render text onto the image. The FLUX image generator is capable of perfect typography. Use this rule:\n${contentType.typographyGuidance.replace('{topic}', topic)}`;
+  }
+
+  if (contentType.category === 'islamic') {
+    prompt += `\n\n[CRITICAL RELIGIOUS IMAGE RULE: TEXT-FIRST CANVAS]\nFor this content, the IMAGE IS A CANVAS for the sacred text.
+1. BACKGROUND: Use extremely blurred, subtle, or minimalist backgrounds (Bokeh, soft lighting, or simple patterns).
+2. TEXT FOCUS: The text must be LARGE, BOLD, and CENTERED. It should cover the majority of the image area.
+3. SHAREABILITY: Ensure high contrast (White/Gold on Dark) to make it perfect for sharing on social media.`;
+  }
+
+  prompt += `\n\n[CRITICAL: VIRAL COPYWRITING RULES]\n1. TITLE/HOOK: Start with a "Curiosity Gap" or a powerful statement that makes people stop scrolling.
+2. STRUCTURE: Use the AIDA framework (Attention, Interest, Desire, Action).
+3. CLARITY: Use short sentences, line breaks, and emojis for readability.
+4. SPECIFICITY: Be extremely specific. Avoid generic AI fluff. If it is religious content, provide the verbatim text and deep insights.
+
+[CRITICAL: IMAGE PROMPT GENERATION]\nWhen creating the "imagePrompt", do NOT just describe the scene. You must describe the visual style, lighting, AND the technical instruction for FLUX to render the text specified in the guidance above.
+Example format for text in prompt: 'The text "..." written in [style] font, positioned [location] over a [background description]'.`;
+
   prompt += `\n\nPlease provide your response in this exact JSON format (no markdown, just raw JSON):
 {
-  "title": "A catchy title (max 50 chars)",
-  "description": "An engaging description (100-200 chars)",
-  "imagePrompt": "Create ${style.contentPromptInstruction}...",
+  "title": "A viral, attention-grabbing title (max 50 chars)",
+  "description": "An engaging, high-retention description (100-500 chars)",
+  "imagePrompt": "A detailed high-quality ${style.nameEn} prompt for FLUX including the required typography...",
   "hashtags": ["#tag1", "#tag2", "#tag3", "#tag4", "#tag5"]
 }`;
 
