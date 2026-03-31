@@ -179,7 +179,7 @@ export function ContentDetailView({ contentId, initialViewModel }: ContentDetail
               {/* Description */}
               <JellyCard className="glass-card p-5">
                 <h3 className="text-lg font-semibold text-foreground mb-3">📝 Description</h3>
-                <p className="text-muted leading-relaxed">{content.description}</p>
+                <p className="text-muted whitespace-pre-wrap">{content.description}</p>
               </JellyCard>
 
               {/* AI Prompt */}
