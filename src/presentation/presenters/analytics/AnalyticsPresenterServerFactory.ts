@@ -1,23 +1,26 @@
+import { AnalyticsPresenter } from './AnalyticsPresenter';
+import { SupabaseContentRepository } from '@/src/infrastructure/repositories/SupabaseContentRepository';
+import { createClient } from '@/src/infrastructure/supabase/server';
+
 /**
  * AnalyticsPresenterServerFactory
  * Factory for creating AnalyticsPresenter instances on the server side
- * ✅ Uses Supabase Repository for production
+ * ✅ Following Clean Architecture - Static Class Pattern
+ * ✅ USES SESSION CLIENT (RLS ENABLED)
  */
-
-import { SupabaseContentRepository } from '@/src/infrastructure/repositories/SupabaseContentRepository';
-import { createClient } from '@/src/infrastructure/supabase/server';
-import { AnalyticsPresenter } from './AnalyticsPresenter';
-
 export class AnalyticsPresenterServerFactory {
   static async create(): Promise<AnalyticsPresenter> {
-    // ✅ Use Supabase Repository for production
+    // Standard user client (respects RLS)
     const supabase = await createClient();
     const repository = new SupabaseContentRepository(supabase);
-
+    
     return new AnalyticsPresenter(repository);
   }
 }
 
+/**
+ * Standard factory function for easier invocation
+ */
 export async function createServerAnalyticsPresenter(): Promise<AnalyticsPresenter> {
   return await AnalyticsPresenterServerFactory.create();
 }

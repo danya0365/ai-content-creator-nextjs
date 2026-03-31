@@ -6,6 +6,7 @@ import { animated, config, useSpring } from '@react-spring/web';
 import Link from 'next/link';
 import { JellyButton } from '../ui/JellyButton';
 import { JellyCard } from '../ui/JellyCard';
+import { ContentDetailSkeleton } from './ContentDetailSkeleton';
 
 interface ContentEditViewProps {
   contentId: string;
@@ -40,18 +41,8 @@ export function ContentEditView({ contentId, initialViewModel }: ContentEditView
     config: config.gentle,
   });
 
-  // Loading state
   if (state.loading && !state.viewModel) {
-    return (
-      <>
-        <div className="h-full flex items-center justify-center">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-violet-500 mx-auto mb-4"></div>
-            <p className="text-muted">กำลังโหลด...</p>
-          </div>
-        </div>
-      </>
-    );
+    return <ContentDetailSkeleton />;
   }
 
   // Error state

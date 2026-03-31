@@ -1,5 +1,5 @@
 import { SchedulerView } from "@/src/presentation/components/scheduler/SchedulerView";
-import { createServerSchedulerPresenter } from "@/src/presentation/presenters/scheduler/SchedulerPresenterServerFactory";
+import { createAdminSchedulerPresenter } from "@/src/presentation/presenters/scheduler/SchedulerPresenterAdminFactory";
 import { AuthGuard } from "@/src/presentation/components/auth/AuthGuard";
 import { UnauthorizedAccessView } from "@/src/presentation/components/auth/UnauthorizedAccessView";
 import type { Metadata } from "next";
@@ -13,7 +13,7 @@ export const fetchCache = "force-no-store";
  * Generate metadata for the scheduler page
  */
 export async function generateMetadata(): Promise<Metadata> {
-  const presenter = createServerSchedulerPresenter();
+  const presenter = createAdminSchedulerPresenter();
   return presenter.generateMetadata();
 }
 
@@ -22,7 +22,7 @@ export async function generateMetadata(): Promise<Metadata> {
  * Uses presenter pattern following Clean Architecture
  */
 export default async function SchedulerPage() {
-  const presenter = createServerSchedulerPresenter();
+  const presenter = createAdminSchedulerPresenter();
 
   try {
     // Get view model from presenter for initial render

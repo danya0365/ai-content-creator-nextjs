@@ -79,4 +79,11 @@ export class ApiProfileRepository implements IProfileRepository {
     
     return res.json();
   }
+
+  /**
+   * Get the primary admin profile (Not intended for client-side API usage)
+   */
+  async getAdminProfile(): Promise<AuthProfile | null> {
+    throw new Error('getAdminProfile is only available on server-side');
+  }
 }

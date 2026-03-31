@@ -13,8 +13,6 @@ import { Database } from '@/src/domain/types/supabase';
 import { SupabaseClient } from '@supabase/supabase-js';
 import dayjs from 'dayjs';
 
-type ProfileRow = Database['public']['Tables']['profiles']['Row'];
-
 export class SupabaseProfileRepository implements IProfileRepository {
   constructor(private readonly supabase: SupabaseClient<Database>) {}
 
@@ -159,5 +157,35 @@ export class SupabaseProfileRepository implements IProfileRepository {
       return false;
     }
     return true;
+  }
+
+  /**
+   * Get the primary admin profile (for system attribution)
+   */
+  async getAdminProfile(): Promise<AuthProfile | null> {
+    const { data, error } = await this.supabase
+      .from('profiles')
+      .select('*, profile_roles(role)')
+      .eq('role', 'admin')
+      .limit(1)
+      .single();
+
+    if (error || !data) {
+      // Try fallback if 'role' column is not directly on profiles
+      const { data: fallbackData, error: fallbackError } = await this.supabase
+        .from('profiles')
+        .select('*, profile_roles!inner(role)')
+        .eq('profile_roles.role', 'admin')
+        .limit(1)
+        .single();
+        
+      if (fallbackError || !fallbackData) {
+        console.error('[SupabaseProfileRepository] Error fetching admin profile:', error || fallbackError);
+        return null;
+      }
+      return this.mapProfile(fallbackData);
+    }
+
+    return this.mapProfile(data);
   }
 }

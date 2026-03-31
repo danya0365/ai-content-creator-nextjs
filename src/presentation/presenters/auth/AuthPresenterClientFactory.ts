@@ -1,31 +1,27 @@
+import { AuthPresenter } from './AuthPresenter';
+import { ApiAuthRepository } from '@/src/infrastructure/repositories/api/ApiAuthRepository';
+
+let cachedPresenter: AuthPresenter | null = null;
+
 /**
  * AuthPresenterClientFactory
  * Factory for creating AuthPresenter instances on the client side
- * ✅ Injects the Supabase Auth Repository
+ * ✅ Following Clean Architecture - Static Class Pattern
  */
-
-'use client';
-
-import { ApiAuthRepository } from '@/src/infrastructure/repositories/api/ApiAuthRepository';
-import { createClient } from '@/src/infrastructure/supabase/client';
-import { AuthPresenter } from './AuthPresenter';
-
-// ✅ Cache repository instance to prevent creating multiple auth listeners
-let cachedRepository: ApiAuthRepository | null = null;
-
 export class AuthPresenterClientFactory {
   static create(): AuthPresenter {
-    // ✅ Reuse repository to prevent multiple auth subscriptions
-    if (!cachedRepository) {
-      const supabase = createClient();
-      cachedRepository = new ApiAuthRepository(supabase);
-    }
+    if (cachedPresenter) return cachedPresenter;
 
-    return new AuthPresenter(cachedRepository);
+    const repository = new ApiAuthRepository();
+    cachedPresenter = new AuthPresenter(repository);
+    
+    return cachedPresenter;
   }
 }
 
-
+/**
+ * Standard factory function for easier invocation
+ */
 export function createClientAuthPresenter(): AuthPresenter {
   return AuthPresenterClientFactory.create();
 }

@@ -4,7 +4,7 @@
  * ✅ Uses dependency injection for repository
  */
 
-import { Content, IContentRepository } from '@/src/application/repositories/IContentRepository';
+import { Content, IContentRepository, ContentFilter } from '@/src/application/repositories/IContentRepository';
 import { Metadata } from 'next';
 // ✅ Import from master data (Single Source of Truth)
 import type { TimelineCategory } from '@/src/data/master/timelineCategories';
@@ -154,23 +154,47 @@ export class TimelinePresenter {
     filter: TimelineFilter = 'all',
     statusFilter: TimelineStatusFilter = 'all'
   ): Promise<TimelineViewModel> {
-    // Get all contents from repository
-    const [allContents, stats] = await Promise.all([
-      this.repository.getAll(),
+    // 1. Prepare repository filter for DB-level filtering
+    const repoFilter: ContentFilter = {}; 
+    
+    if (statusFilter !== 'all') {
+      repoFilter.status = statusFilter;
+    }
+    
+    if (filter !== 'all') {
+      // Logic from mapContentToTimelineEntry reversed to find matching types
+      const categoryMap: Record<string, TimelineCategory> = {
+        'morning-news': 'news',
+        'food': 'food',
+        'food-review': 'food',
+        'tech-tips': 'tech',
+        'entertainment': 'entertainment',
+        'meme': 'entertainment',
+        'daily-motivation': 'motivation',
+        'gaming': 'gaming',
+        'lifestyle': 'lifestyle',
+        'education': 'education',
+        // Map Islamic content to 'news' or appropriate categories for now
+        'islamic-quran': 'news',
+        'islamic-seerah': 'news',
+        'islamic-hadith': 'news',
+        'islamic-history': 'news',
+        'islamic-wisdom': 'news',
+      };
+      
+      repoFilter.contentTypeIds = Object.entries(categoryMap)
+        .filter(([_, cat]) => cat === filter)
+        .map(([id, _]) => id);
+    }
+
+    // 2. Get data from repository (Filtered at Repository/DB level)
+    const [filteredContents, stats] = await Promise.all([
+      this.repository.getAll(repoFilter),
       this.repository.getStats(),
     ]);
 
-    // Map contents to timeline entries
-    let entries = allContents.map(mapContentToTimelineEntry);
-    
-    // Apply filters
-    if (filter !== 'all') {
-      entries = entries.filter((e) => e.category === filter);
-    }
-    
-    if (statusFilter !== 'all') {
-      entries = entries.filter((e) => e.status === statusFilter);
-    }
+    // 3. Map filtered contents to timeline entries
+    const entries = filteredContents.map(mapContentToTimelineEntry);
     
     // Group by date
     const groupedMap = new Map<string, TimelineEntry[]>();

@@ -1,146 +1,43 @@
-// TODO: Refactor according to CREATE_PAGE_PATTERN.md - Move business logic and direct DB/Repository access to Server Presenter
-/**
- * AI Content Generation API Route
- * POST /api/ai/generate
- * 
- * Exclusively handles AI content generation (text + image) 
- * via AIServiceFactory and uploads the result to Supabase Storage.
- * DOES NOT save to the database.
- */
-
-import { CONTENT_TYPES, TimeSlot } from '@/src/data/master/contentTypes';
-import { AIServiceFactory } from '@/src/infrastructure/ai/AIServiceFactory';
-import { SupabaseStorageRepository } from '@/src/infrastructure/repositories/SupabaseStorageRepository';
-import { createAdminClient } from '@/src/infrastructure/supabase/server';
+import { createServerAIPresenter } from '@/src/presentation/presenters/ai/AIPresenterServerFactory';
+import { CONTENT_TYPES } from '@/src/data/master/contentTypes';
 import { NextRequest, NextResponse } from 'next/server';
-
-const AI_CONTENTS_BUCKET = 'ai-contents';
-
-interface AIGenerateRequest {
-  contentTypeId: string;
-  topic: string;
-  timeSlot: TimeSlot;
-  imageStyle: string; // Required: style of the generated image
-  generateImage?: boolean; // Optional: whether to generate image
-  platform?: string;
-  tone?: string;
-  brandContext?: string;
-}
 
 export async function POST(request: NextRequest) {
   try {
-    // Initialize Supabase admin client for storage uploads
-    const supabase = createAdminClient();
-    const storageRepo = new SupabaseStorageRepository(supabase);
+    const body = await request.json();
+    const { contentTypeId, topic, timeSlot, imageStyle, generateImage = true, platform, tone, brandContext } = body;
 
-    const body: AIGenerateRequest = await request.json();
-    const { 
-      contentTypeId, 
-      topic, 
-      timeSlot, 
-      imageStyle, 
-      generateImage = true,
-      platform,
-      tone,
-      brandContext
-    } = body;
-
-    // Validate request
-    if (!body.contentTypeId || !body.topic) {
-      return NextResponse.json(
-        { error: 'Missing required fields: contentTypeId and topic' },
-        { status: 400 }
-      );
+    // 1. Validation
+    if (!contentTypeId || !topic) {
+      return NextResponse.json({ error: 'Missing required fields: contentTypeId and topic' }, { status: 400 });
     }
 
-    const contentType = CONTENT_TYPES.find((t) => t.id === body.contentTypeId);
+    const contentType = CONTENT_TYPES.find((t) => t.id === contentTypeId);
     if (!contentType) {
-      return NextResponse.json(
-        { error: 'Invalid content type' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Invalid content type' }, { status: 400 });
     }
 
-    // Use AIServiceFactory for provider switching
-    const contentService = AIServiceFactory.createContentService();
-    const imageService = AIServiceFactory.createImageService();
-
-    // Generate text content
-    const result = await contentService.generateContent({
+    // 2. Delegate to AIPresenter
+    const presenter = createServerAIPresenter();
+    const result = await presenter.generateAndUpload({
       contentType,
       topic,
       timeSlot,
       imageStyle,
+      generateImage,
       platform,
       tone,
       brandContext,
-      language: 'th',
     });
 
-    if (!result.success) {
-      return NextResponse.json(
-        { error: result.error || 'Failed to generate content' },
-        { status: 500 }
-      );
-    }
-
-    // Generate pixel art image if requested (default: true)
-    let imageUrl: string | null = null;
-    if (generateImage !== false && result.imagePrompt) {
-      const imageResult = await imageService.generateImage({
-        imagePrompt: result.imagePrompt,
-        imageStyle: body.imageStyle,
-      });
-      
-      // Upload to storage if generation was successful
-      if (imageResult.success) {
-        if (imageResult.base64Data) {
-          // Upload base64 data to Supabase Storage
-          try {
-            imageUrl = await storageRepo.uploadBase64(
-              imageResult.base64Data,
-              `gen-${Date.now()}`,
-              AI_CONTENTS_BUCKET,
-              'generated',
-              imageResult.contentType,
-              imageResult.extension
-            );
-          } catch (uploadError) {
-            console.error('[AI Generate API] Failed to upload image:', uploadError);
-          }
-        } else if (imageResult.imageUrl) {
-          // Use direct URL (for mock/placeholder services)
-          imageUrl = imageResult.imageUrl;
-        }
-      }
-    }
-
-    // Return pure generated payload back to the client
-    return NextResponse.json({
-      success: true,
-      content: {
-        contentTypeId: body.contentTypeId,
-        title: result.title || `${body.topic} 🎨`,
-        description: result.description || '',
-        imageUrl: imageUrl || '',
-        prompt: result.imagePrompt || result.prompt || '',
-        timeSlot: body.timeSlot,
-        tags: result.hashtags || [],
-        emoji: contentType.icon,
-      }
-    });
+    return NextResponse.json(result);
 
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    const errorStack = error instanceof Error ? error.stack : '';
-    
-    console.error('[AI Generate API] ❌ Error:', errorMessage);
+    console.error('[API AI Generate] ❌ Error:', errorMessage);
     
     return NextResponse.json(
-      { 
-        error: errorMessage,
-        details: process.env.NODE_ENV === 'development' ? errorStack : undefined
-      },
+      { error: errorMessage },
       { status: 500 }
     );
   }

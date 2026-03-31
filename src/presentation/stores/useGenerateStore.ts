@@ -7,6 +7,7 @@ import { Content } from '@/src/application/repositories/IContentRepository';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { GenerateFormData } from '../components/generate/GenerateContentModal';
+import { useSettingsStore } from './useSettingsStore';
 
 interface GenerateState {
   isModalOpen: boolean;
@@ -53,18 +54,8 @@ export const useGenerateStore = create<GenerateStore>()(
     set({ isGenerating: true, error: null });
 
     try {
-      // Step 1: Extract brandContext dynamically
-      let brandContext = '';
-      if (typeof window !== 'undefined') {
-        try {
-          const stored = localStorage.getItem('appSettings');
-          if (stored) {
-            brandContext = JSON.parse(stored).brandContext || '';
-          }
-        } catch (e) {
-          console.error('Failed to parse appSettings from localStorage for brand injection');
-        }
-      }
+      // Step 1: Extract brandContext dynamically from Settings Store
+      const brandContext = useSettingsStore.getState().brandContext || '';
 
       const aiResponse = await fetch('/api/ai/generate-multi', {
         method: 'POST',

@@ -1,31 +1,28 @@
-// TODO: Refactor according to CREATE_PAGE_PATTERN.md - Move business logic and direct DB/Repository access to Server Presenter
+import { createServerAIPresenter } from '@/src/presentation/presenters/ai/AIPresenterServerFactory';
 import { NextRequest, NextResponse } from 'next/server';
-import { AIServiceFactory } from '@/src/infrastructure/ai/AIServiceFactory';
-
-interface AIImageRequest {
-  imagePrompt: string;
-  imageStyle: string;
-}
 
 /**
  * POST /api/ai/image
  * Regenerates an image from a specific explicit prompt and style.
+ * ✅ Refactored to use AIPresenter (Clean Architecture)
  */
 export async function POST(request: NextRequest) {
   try {
-    const body: AIImageRequest = await request.json();
+    const body = await request.json();
+    const { imagePrompt, imageStyle } = body;
 
-    if (!body.imagePrompt || !body.imageStyle) {
+    if (!imagePrompt || !imageStyle) {
       return NextResponse.json(
         { error: 'Missing required fields: imagePrompt and imageStyle' },
         { status: 400 }
       );
     }
 
-    const imageService = AIServiceFactory.createImageService();
-    const imageResult = await imageService.generateImage({
-      imagePrompt: body.imagePrompt,
-      imageStyle: body.imageStyle,
+    // ✅ Delegate to AIPresenter
+    const presenter = createServerAIPresenter();
+    const imageResult = await presenter.generateImage({
+      imagePrompt,
+      imageStyle,
     });
 
     if (!imageResult.success) {
@@ -40,7 +37,7 @@ export async function POST(request: NextRequest) {
       imageUrl: imageResult.imageUrl,
     });
   } catch (error) {
-    console.error('API Error generating image:', error);
+    console.error('[API AI Image] ❌ Error:', error);
     return NextResponse.json(
       { error: 'Internal Server Error' },
       { status: 500 }

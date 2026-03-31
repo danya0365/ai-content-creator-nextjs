@@ -92,7 +92,22 @@ export function GenerateContentModal({ isOpen, onClose, onGenerate }: GenerateCo
   });
 
   const handleContentTypeSelect = (typeId: string) => {
-    setFormData((prev) => ({ ...prev, contentTypeId: typeId }));
+    const selectedType = CONTENT_TYPES.find((t) => t.id === typeId);
+    const suggestedSlot = selectedType?.suggestedTimeSlots?.[0] || 'morning';
+    
+    // Map time slot to a default hour for better UX
+    const defaultHour = 
+      suggestedSlot === 'morning' ? '09:00' : 
+      suggestedSlot === 'lunch' ? '12:00' :
+      suggestedSlot === 'afternoon' ? '15:00' : 
+      '18:00';
+
+    setFormData((prev) => ({ 
+      ...prev, 
+      contentTypeId: typeId,
+      timeSlot: suggestedSlot,
+      scheduledTime: defaultHour
+    }));
     setStep(2);
   };
 

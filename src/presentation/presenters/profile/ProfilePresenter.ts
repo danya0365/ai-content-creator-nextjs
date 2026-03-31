@@ -8,7 +8,7 @@ export class ProfilePresenter {
     try {
       return await this.repository.getProfiles();
     } catch (error) {
-      console.error('Get profiles error:', error);
+      console.error('[ProfilePresenter] Get profiles error:', error);
       return [];
     }
   }
@@ -17,7 +17,7 @@ export class ProfilePresenter {
     try {
       return await this.repository.getProfile(id);
     } catch (error) {
-      console.error('Get profile error:', error);
+      console.error('[ProfilePresenter] Get profile error:', error);
       return null;
     }
   }
@@ -26,21 +26,40 @@ export class ProfilePresenter {
     try {
       return await this.repository.createProfile(data);
     } catch (error) {
-      console.error('Create profile error:', error);
+      console.error('[ProfilePresenter] Create profile error:', error);
       return null;
     }
   }
   
   async updateProfile(id: string, data: UpdateProfileData): Promise<AuthProfile> {
-    return await this.repository.updateProfile(id, data);
+    try {
+      return await this.repository.updateProfile(id, data);
+    } catch (error) {
+      console.error('[ProfilePresenter] Update profile error:', error);
+      throw error;
+    }
   }
 
   async switchProfile(profileId: string): Promise<boolean> {
     try {
       return await this.repository.switchProfile(profileId);
     } catch (error) {
-      console.error('Switch profile error:', error);
+      console.error('[ProfilePresenter] Switch profile error:', error);
       return false;
+    }
+  }
+
+  /**
+   * Identifies the primary admin profile (used for system triggers/attribution)
+   */
+  async getAdminProfile(): Promise<{ id: string; name: string } | null> {
+    try {
+      const profile = await this.repository.getAdminProfile();
+      if (!profile) return null;
+      return { id: profile.id, name: profile.fullName || 'System Admin' };
+    } catch (error) {
+      console.error('[ProfilePresenter] Error fetching admin profile:', error);
+      return null;
     }
   }
 }

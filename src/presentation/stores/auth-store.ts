@@ -1,5 +1,6 @@
 import { AuthProfile, AuthSession, AuthUser } from '@/src/application/repositories/IAuthRepository';
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 
 interface AuthState {
   user: AuthUser | null;
@@ -17,7 +18,9 @@ interface AuthState {
   reset: () => void;
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
+export const useAuthStore = create<AuthState>()(
+  persist(
+    (set) => ({
   user: null,
   profile: null,
   session: null,
@@ -63,4 +66,9 @@ export const useAuthStore = create<AuthState>((set) => ({
     isLoading: false,
     profiles: [],
   }),
-}));
+    }),
+    {
+      name: 'ai-creator-auth', // unique name for localStorage key
+    }
+  )
+);
