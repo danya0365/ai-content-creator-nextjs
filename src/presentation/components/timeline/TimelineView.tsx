@@ -8,14 +8,19 @@ import {
     TimelineStatusFilter,
     TimelineViewModel,
 } from '@/src/presentation/presenters/timeline/TimelinePresenter';
-import { useTimelinePresenter } from '@/src/presentation/presenters/timeline/useTimelinePresenter';
+import { useTimelinePresenter, TimelineViewMode } from '@/src/presentation/presenters/timeline/useTimelinePresenter';
 import { animated, config, useSpring } from '@react-spring/web';
 import { JellyButton } from '../ui/JellyButton';
 import { JellyCard } from '../ui/JellyCard';
 import { SmartImage } from '../ui/SmartImage';
 import { ContentDetailModal } from '../shared/ContentDetailModal';
 import { TimelineSkeleton } from './TimelineSkeleton';
+import { LoadMoreButton } from '../ui/LoadMoreButton';
+import React from 'react';
 
+/**
+ * FilterButton Sub-component
+ */
 interface FilterButtonProps {
   label: string;
   emoji?: string;
@@ -36,6 +41,9 @@ function FilterButton({ label, emoji, isActive, onClick }: FilterButtonProps) {
   );
 }
 
+/**
+ * StatusBadge Sub-component
+ */
 interface StatusBadgeProps {
   status: 'published' | 'scheduled' | 'draft';
 }
@@ -60,6 +68,9 @@ function StatusBadge({ status }: StatusBadgeProps) {
   );
 }
 
+/**
+ * TimelineCard Sub-component
+ */
 interface TimelineCardProps {
   entry: TimelineEntry;
   isLeft: boolean;
@@ -149,13 +160,12 @@ function TimelineCard({ entry, isLeft, onClick }: TimelineCardProps) {
   );
 }
 
-interface TimelineDateHeaderProps {
-  group: TimelineGroup;
-}
-
-function TimelineDateHeader({ group }: TimelineDateHeaderProps) {
+/**
+ * TimelineDateHeader Component
+ */
+function TimelineDateHeader({ group }: { group: TimelineGroup }) {
   return (
-    <div className="flex justify-center my-6 animate-fade-in">
+    <div className="flex justify-center my-6 animate-fade-in relative z-10">
       <JellyCard className={`px-6 py-3 rounded-2xl font-semibold flex items-center gap-3 ${
         group.isToday
           ? 'bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white shadow-lg shadow-purple-500/25'
@@ -165,12 +175,94 @@ function TimelineDateHeader({ group }: TimelineDateHeaderProps) {
       }`}>
         {group.isToday && <span className="w-2 h-2 rounded-full bg-white animate-pulse" />}
         <span>{group.dateLabel}</span>
-        <span className="text-sm opacity-60">({group.entries.length} items)</span>
+        <span className="text-sm opacity-60">({group.entries.length} รายการ)</span>
       </JellyCard>
     </div>
   );
 }
 
+/**
+ * ViewModeToggle Component
+ */
+function ViewModeToggle({ mode, onChange }: { mode: TimelineViewMode; onChange: (mode: TimelineViewMode) => void }) {
+  return (
+    <div className="flex gap-1 p-1 glass-card rounded-lg self-end">
+      <button
+        onClick={() => onChange('vertical')}
+        className={`px-3 py-1.5 text-xs rounded-md transition-all flex items-center gap-1 ${
+          mode === 'vertical'
+            ? 'bg-violet-600 text-white shadow-md'
+            : 'text-muted hover:text-foreground hover:bg-white/5'
+        }`}
+      >
+        <span>⇅</span> Vertical
+      </button>
+      <button
+        onClick={() => onChange('list')}
+        className={`px-3 py-1.5 text-xs rounded-md transition-all flex items-center gap-1 ${
+          mode === 'list'
+            ? 'bg-violet-600 text-white shadow-md'
+            : 'text-muted hover:text-foreground hover:bg-white/5'
+        }`}
+      >
+        <span>☰</span> List
+      </button>
+    </div>
+  );
+}
+
+/**
+ * TimelineListView Sub-component
+ */
+function TimelineListView({ groups, onClick }: { groups: TimelineGroup[]; onClick: (e: TimelineEntry) => void }) {
+  return (
+    <div className="space-y-8 animate-fade-in">
+      {groups.map((group) => (
+        <div key={group.date} className="space-y-4">
+          <div className="flex items-center gap-4 text-xs font-bold text-muted uppercase tracking-widest pl-2">
+            <span>{group.dateLabel}</span>
+            <div className="h-px flex-1 bg-white/5" />
+          </div>
+          <div className="grid gap-3">
+            {group.entries.map((entry) => (
+              <JellyCard 
+                key={entry.id}
+                onClick={() => onClick(entry)}
+                className="glass-card-hover p-4 group flex items-center gap-4 border border-white/5"
+              >
+                <div className="w-12 h-12 rounded-xl bg-white/5 overflow-hidden relative flex-shrink-0">
+                  <SmartImage src={entry.imageUrl} alt="" fill className="object-cover" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h4 className="text-sm font-semibold text-foreground truncate group-hover:text-violet-400 transition-colors">
+                    {entry.title}
+                  </h4>
+                  <p className="text-xs text-muted truncate">{entry.description}</p>
+                </div>
+                <div className="text-right flex-shrink-0">
+                   <div className="text-[10px] uppercase font-bold text-violet-400/60 mb-1">
+                     {new Date(entry.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                   </div>
+                   <span className={`text-[10px] px-2 py-0.5 rounded-full uppercase font-bold tracking-tighter
+                    ${entry.status === 'published' ? 'bg-green-500/20 text-green-400' :
+                      entry.status === 'scheduled' ? 'bg-blue-500/20 text-blue-400' :
+                      'bg-gray-500/20 text-gray-400'}
+                  `}>
+                    {entry.status}
+                  </span>
+                </div>
+              </JellyCard>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/**
+ * StatsCard Sub-component
+ */
 interface StatsCardProps {
   icon: string;
   label: string;
@@ -208,13 +300,10 @@ interface TimelineViewProps {
 
 /**
  * TimelineView component
- * Beautiful vertical timeline with jelly animations
- * ✅ Clean View - All logic moved to useTimelinePresenter hook
  */
 export function TimelineView({ initialViewModel }: TimelineViewProps) {
-  // ✅ All state and logic comes from hook
   const [state, actions] = useTimelinePresenter(initialViewModel);
-
+  
   const viewModel = state.viewModel || {
     groups: [],
     categories: [],
@@ -232,31 +321,26 @@ export function TimelineView({ initialViewModel }: TimelineViewProps) {
     },
   };
 
-  // Animation springs
   const headerSpring = useSpring({
     from: { opacity: 0, y: -20 },
     to: { opacity: 1, y: 0 },
     config: config.gentle,
   });
 
-  // Loading state
   if (state.loading && !state.viewModel) {
     return <TimelineSkeleton />;
   }
 
-  // Error state
   if (state.error) {
     return (
-      <>
-        <div className="h-full flex items-center justify-center">
-          <div className="text-center">
-            <p className="text-red-400 mb-4">{state.error}</p>
-            <JellyButton onClick={actions.refresh} variant="primary">
-              ลองใหม่
-            </JellyButton>
-          </div>
+      <div className="h-full flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-red-400 mb-4">{state.error}</p>
+          <JellyButton onClick={actions.refresh} variant="primary">
+            ลองใหม่
+          </JellyButton>
         </div>
-      </>
+      </div>
     );
   }
 
@@ -274,6 +358,7 @@ export function TimelineView({ initialViewModel }: TimelineViewProps) {
                   ประวัติคอนเทนต์ทั้งหมด {viewModel.stats.total} รายการ
                 </p>
               </div>
+              <ViewModeToggle mode={state.viewMode} onChange={actions.setViewMode} />
             </div>
 
             {/* Stats */}
@@ -311,7 +396,6 @@ export function TimelineView({ initialViewModel }: TimelineViewProps) {
 
           {/* Filters */}
           <div className="space-y-4">
-            {/* Category filters */}
             <div className="flex gap-2 flex-wrap">
               <FilterButton
                 label="ทั้งหมด"
@@ -330,7 +414,6 @@ export function TimelineView({ initialViewModel }: TimelineViewProps) {
               ))}
             </div>
 
-            {/* Status filters */}
             <div className="flex gap-2">
               <FilterButton
                 label="ทุกสถานะ"
@@ -358,34 +441,50 @@ export function TimelineView({ initialViewModel }: TimelineViewProps) {
             </div>
           </div>
 
-          {/* Result count */}
           <div className="text-sm text-muted">
             แสดง {state.filteredCount} รายการ
           </div>
 
-          {/* Timeline */}
+          {/* Timeline View */}
           {state.filteredGroups.length > 0 ? (
-            <div className="relative">
-              {/* Vertical timeline line */}
-              <div className="absolute left-1/2 top-0 bottom-0 w-0.5 bg-gradient-to-b from-violet-500 via-fuchsia-500 to-purple-500 opacity-30 transform -translate-x-1/2" />
-              
-              {/* Timeline items */}
-              <div className="space-y-4 relative">
-                {state.filteredGroups.map((group) => (
-                  <div key={group.date}>
-                    <TimelineDateHeader group={group} />
-                    {group.entries.map((entry, entryIndex) => (
-                      <TimelineCard
-                        key={entry.id}
-                        entry={entry}
-                        isLeft={entryIndex % 2 === 0}
-                        onClick={actions.viewEntry}
-                      />
-                    ))}
-                  </div>
-                ))}
+            state.viewMode === 'vertical' ? (
+              <div className="relative">
+                <div className="absolute left-1/2 top-0 bottom-0 w-0.5 bg-gradient-to-b from-violet-500 via-fuchsia-500 to-purple-500 opacity-30 transform -translate-x-1/2" />
+                <div className="space-y-4 relative">
+                  {state.filteredGroups.map((group) => (
+                    <div key={group.date}>
+                      <TimelineDateHeader group={group} />
+                      {group.entries.map((entry, entryIndex) => (
+                        <TimelineCard
+                          key={entry.id}
+                          entry={entry}
+                          isLeft={entryIndex % 2 === 0}
+                          onClick={actions.viewEntry}
+                        />
+                      ))}
+                    </div>
+                  ))}
+                </div>
+
+                <LoadMoreButton 
+                  onClick={actions.loadMore}
+                  loading={state.loadingMore}
+                  hasMore={state.hasMore}
+                />
               </div>
-            </div>
+            ) : (
+              <div className="space-y-8">
+                <TimelineListView 
+                  groups={state.filteredGroups} 
+                  onClick={actions.viewEntry}
+                />
+                <LoadMoreButton 
+                  onClick={actions.loadMore}
+                  loading={state.loadingMore}
+                  hasMore={state.hasMore}
+                />
+              </div>
+            )
           ) : (
             <JellyCard className="glass-card p-12 text-center">
               <span className="text-5xl mb-4 block">🔍</span>
@@ -402,7 +501,6 @@ export function TimelineView({ initialViewModel }: TimelineViewProps) {
         </div>
       </div>
 
-      {/* Shared Detail Modal */}
       {state.selectedEntry && (
         <ContentDetailModal
           content={state.selectedEntry}

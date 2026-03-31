@@ -18,6 +18,9 @@ export interface GalleryViewModel {
   contentTypes: ContentType[];
   filter: ContentFilter;
   totalCount: number;
+  // Pagination
+  nextCursor: string | null;
+  hasMore: boolean;
 }
 
 /**
@@ -30,7 +33,62 @@ export class GalleryPresenter {
   ) {}
 
   /**
-   * Get view model for the page
+   * Get view model for the page using cursor-based pagination
+   */
+  async getCursorViewModel(filter: ContentFilter = 'all', cursor?: string, limit = 12): Promise<GalleryViewModel> {
+    try {
+      const result = await this.repository.getCursorPaginated({
+        status: filter === 'all' ? undefined : filter,
+        cursor,
+        limit,
+      });
+
+      // Simple stats for the badges (might want to optimize this later if it's too heavy)
+      const stats = await this.repository.getStats();
+
+      return {
+        contents: result.data,
+        contentTypes: CONTENT_TYPES,
+        filter,
+        totalCount: stats.totalContents,
+        nextCursor: result.nextCursor,
+        hasMore: result.hasMore,
+      };
+    } catch (error) {
+      console.error('[GalleryPresenter] Error in getCursorViewModel:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get view model for the page using traditional offset-based pagination
+   */
+  async getOffsetViewModel(
+    filter: ContentFilter = 'all', 
+    page = 1, 
+    perPage = 20
+  ): Promise<GalleryViewModel> {
+    try {
+      const result = await this.repository.getPaginated(page, perPage, {
+        status: filter === 'all' ? undefined : filter,
+      });
+
+      return {
+        contents: result.data,
+        contentTypes: CONTENT_TYPES,
+        filter,
+        totalCount: result.total,
+        nextCursor: null, // Not used in offset mode
+        hasMore: result.total > page * perPage,
+      };
+    } catch (error) {
+      console.error('[GalleryPresenter] Error in getOffsetViewModel:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get view model for the page (legacy method, currently fetching all)
    */
   async getViewModel(filter: ContentFilter = 'all'): Promise<GalleryViewModel> {
     try {
@@ -47,6 +105,8 @@ export class GalleryPresenter {
         contentTypes: CONTENT_TYPES,
         filter,
         totalCount: contents.length,
+        nextCursor: null,
+        hasMore: false,
       };
     } catch (error) {
       console.error('[GalleryPresenter] Error in getViewModel:', error);

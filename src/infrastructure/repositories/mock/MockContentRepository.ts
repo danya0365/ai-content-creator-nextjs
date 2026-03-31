@@ -323,6 +323,46 @@ export class MockContentRepository implements IContentRepository {
       .slice(0, limit);
   }
 
+  async getCursorPaginated(filter: import('@/src/application/repositories/IContentRepository').ContentCursorFilter): Promise<import('@/src/application/repositories/IContentRepository').CursorPaginatedResult<Content>> {
+    await this.delay(100);
+    const { cursor, limit = 12, status, contentTypeId, direction = 'next' } = filter;
+    
+    let result = [...this.items];
+
+    // Apply filters
+    if (status) {
+      result = result.filter((c) => c.status === status);
+    }
+    if (contentTypeId) {
+      result = result.filter((c) => c.contentTypeId === contentTypeId);
+    }
+
+    // Sort by createdAt descending (newest first)
+    result.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+    // Apply cursor
+    if (cursor) {
+      const cursorTime = new Date(cursor).getTime();
+      if (direction === 'next') {
+        result = result.filter((c) => new Date(c.createdAt).getTime() < cursorTime);
+      } else {
+        result = result.filter((c) => new Date(c.createdAt).getTime() > cursorTime);
+        // If going previous, we need the items closest to the cursor, which are at the end of this filtered list
+        // but for simplicity in mock, we'll just keep the descending sort.
+      }
+    }
+
+    const hasMore = result.length > limit;
+    const items = result.slice(0, limit);
+    const nextCursor = hasMore ? items[items.length - 1].createdAt : null;
+
+    return {
+      data: items,
+      nextCursor,
+      hasMore,
+    };
+  }
+
   // Helper method to simulate network delay
   private delay(ms: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms));

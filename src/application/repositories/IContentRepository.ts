@@ -92,6 +92,20 @@ export interface PaginatedResult<T> {
   perPage: number;
 }
 
+export interface ContentCursorFilter {
+  cursor?: string; // Timestamp ISO string (created_at)
+  limit?: number;
+  status?: Content['status'];
+  contentTypeId?: string;
+  direction?: 'next' | 'previous';
+}
+
+export interface CursorPaginatedResult<T> {
+  data: T[];
+  nextCursor: string | null;
+  hasMore: boolean;
+}
+
 export interface AnalyticsDailyStats {
   date: string;
   total: number;
@@ -215,6 +229,11 @@ export interface IContentRepository {
    * Get report data for a specific period
    */
   getReportData(startDate: string, endDate: string): Promise<ContentReportData>;
+
+  /**
+   * Get cursor paginated contents (better for real-time append)
+   */
+  getCursorPaginated(filter: ContentCursorFilter): Promise<CursorPaginatedResult<Content>>;
 
   /**
    * Get top performing content across all records (by engagement)

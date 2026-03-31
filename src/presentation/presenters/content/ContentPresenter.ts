@@ -143,4 +143,16 @@ export class ContentPresenter {
       throw error;
     }
   }
+
+  /**
+   * Get cursor paginated contents
+   */
+  async getCursorPaginated(filter: import('@/src/application/repositories/IContentRepository').ContentCursorFilter): Promise<import('@/src/application/repositories/IContentRepository').CursorPaginatedResult<Content>> {
+    try {
+      return await this.repository.getCursorPaginated(filter);
+    } catch (error) {
+      console.error('[ContentPresenter] Error in getCursorPaginated:', error)
+      throw error;
+    }
+  }
 }
