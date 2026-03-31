@@ -87,6 +87,7 @@ export class WavespeedContentService implements IContentService {
   // Wavespeed Model UUID - Text generation (strict typed)
   private modelUuid: WavespeedContentModel;
   private baseUrl = 'https://api.wavespeed.ai/api/v3';
+  private llmBaseUrl = 'https://llm.wavespeed.ai/v1';
 
   /**
    * @param apiKey - Wavespeed AI API key
@@ -116,44 +117,63 @@ export class WavespeedContentService implements IContentService {
       const { contentType, topic, timeSlot, language = 'th', imageStyle, platform, tone, brandContext } = request;
       const prompt = buildPrompt(contentType, topic, timeSlot, language, imageStyle, platform, tone, brandContext);
 
-      console.log(`[WavespeedContentService] Submitting task for model: ${this.modelUuid}`);
+      console.log(`[WavespeedContentService] Generating content using LLM: ${this.modelUuid}`);
       
-      // 1. Submit the task
-      const submitResponse = await fetch(`${this.baseUrl}/${this.modelUuid}`, {
+      const response = await fetch(`${this.llmBaseUrl}/chat/completions`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${this.apiKey}`,
         },
         body: JSON.stringify({
-          prompt: prompt,
+          model: this.modelUuid,
+          messages: [
+            { role: 'user', content: prompt }
+          ],
+          temperature: 0.7,
+          max_tokens: 2000,
         }),
       });
 
-      if (!submitResponse.ok) {
-        const errorText = await submitResponse.text();
-        console.error('Wavespeed API submit error:', errorText);
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Wavespeed LLM API error:', errorText);
         return {
           success: false,
-          error: `Wavespeed API submit error: ${submitResponse.status}`,
+          error: `Wavespeed LLM API error: ${response.status}`,
         };
       }
 
-      const submitData = await submitResponse.json();
-      const taskId = submitData.data?.id || submitData.id;
-      const pollUrl = submitData.data?.urls?.get || submitData.urls?.get || `${this.baseUrl}/predictions/${taskId}/result`;
+      const data = await response.json();
+      const textContent = data.choices?.[0]?.message?.content;
 
-      if (!taskId) {
+      if (!textContent) {
         return {
           success: false,
-          error: 'Failed to get task ID from Wavespeed AI',
+          error: 'No content received from Wavespeed LLM',
         };
       }
 
-      console.log(`[WavespeedContentService] Task created: ${taskId}. Polling for results...`);
+      // Parse JSON from response
+      const jsonMatch = textContent.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) {
+         return {
+          success: false,
+          error: 'Failed to parse Wavespeed response as JSON',
+          };
+      }
 
-      // 2. Poll for results
-      return await this.pollForResults(pollUrl, taskId, prompt, topic, imageStyle);
+      const parsed = JSON.parse(jsonMatch[0]);
+      const style = getImageStyleById(imageStyle);
+
+      return {
+        success: true,
+        title: parsed.title || `${topic} 🎨`,
+        description: parsed.description || `AI generated content about ${topic}`,
+        prompt: prompt,
+        imagePrompt: parsed.imagePrompt || `Cute ${style.nameEn} illustration of ${topic}`,
+        hashtags: parsed.hashtags || ['#pixelart', '#ai', '#content'],
+      };
 
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -250,49 +270,38 @@ export class WavespeedContentService implements IContentService {
         systemPrompt += `\n\nBRAND PERSONA: Ensure the idea aligns strictly with this brand styling: ${options.brandContext}`;
       }
 
-      // 1. Submit the task
-      const submitResponse = await fetch(`${this.baseUrl}/${this.modelUuid}`, {
+      // 1. Send direct request to LLM endpoint
+      const response = await fetch(`${this.llmBaseUrl}/chat/completions`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${this.apiKey}`,
         },
         body: JSON.stringify({
+          model: this.modelUuid,
           messages: [
             { role: 'system', content: systemPrompt },
             { role: 'user', content: `Generate one topic idea about ${contentType.nameTh} (${contentType.name}).` }
           ],
-          temperature: 0.9, max_tokens: 100,
+          temperature: 0.9,
+          max_tokens: 1000,
         }),
       });
 
-      if (!submitResponse.ok) return { success: false, error: `Wavespeed API error: ${submitResponse.status}` };
-      const submitData = await submitResponse.json();
-      const taskId = submitData.data?.id || submitData.id;
-      const pollUrl = submitData.data?.urls?.get || submitData.urls?.get || `${this.baseUrl}/predictions/${taskId}/result`;
-
-      // 2. Poll for results (fast polling for idea generation)
-      for (let i = 0; i < 20; i++) {
-        const pollResponse = await fetch(pollUrl, {
-          method: 'GET',
-          headers: { 'Authorization': `Bearer ${this.apiKey}` },
-        });
-
-        if (pollResponse.ok) {
-          const data = await pollResponse.json();
-          const status = data.data?.status || data.status;
-
-          if (status === 'completed' || status === 'success') {
-            const outputs = data.data?.outputs || data.outputs;
-            const idea = outputs?.[0]?.replace(/["*/]/g, '').trim();
-            return { success: !!idea, idea, error: idea ? undefined : 'No idea generated' };
-          } else if (status === 'failed') {
-            return { success: false, error: `Task failed` };
-          }
-        }
-        await new Promise(resolve => setTimeout(resolve, 1500));
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Wavespeed LLM API error:', errorText);
+        return { success: false, error: `Wavespeed API error: ${response.status}` };
       }
-      return { success: false, error: 'Polling timed out' };
+
+      const data = await response.json();
+      const idea = (data.choices?.[0]?.message?.content || data.choices?.[0]?.message?.reasoning_content)?.replace(/["*/]/g, '').trim();
+
+      return {
+        success: !!idea,
+        idea,
+        error: idea ? undefined : 'No idea generated'
+      };
     } catch (e) {
       return { success: false, error: e instanceof Error ? e.message : 'Unknown error' };
     }
