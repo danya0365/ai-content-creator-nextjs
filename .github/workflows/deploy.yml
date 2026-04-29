@@ -81,39 +81,43 @@ jobs:
 
       - name: 🔧 Prepare Environment File
         run: |
-          # Use PROD_ENV_BASE secret as starting point
-          echo "${{ secrets.PROD_ENV_BASE }}" > nextjs-vps/.env.production.vps
+          # Write all env vars from individual secrets
+          {
+            echo "NEXT_PUBLIC_SUPABASE_URL=${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}"
+            echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}"
+            echo "SUPABASE_SERVICE_ROLE_KEY=${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}"
+            echo "NEXT_PUBLIC_APP_URL=${{ secrets.NEXT_PUBLIC_APP_URL }}"
+            echo "NEXT_PUBLIC_APP_NAME=${{ secrets.NEXT_PUBLIC_APP_NAME }}"
+            echo "GROQ_API_KEY=${{ secrets.GROQ_API_KEY }}"
+            echo "WAVESPEED_API_KEY=${{ secrets.WAVESPEED_API_KEY }}"
+            echo "CRON_SECRET=${{ secrets.CRON_SECRET }}"
+            echo "NEXT_PUBLIC_AUTH_EMAIL_ENABLED=${{ secrets.NEXT_PUBLIC_AUTH_EMAIL_ENABLED }}"
+            echo "NEXT_PUBLIC_AUTH_REGISTRATION_ENABLED=${{ secrets.NEXT_PUBLIC_AUTH_REGISTRATION_ENABLED }}"
+            echo "APP_PORT=${{ secrets.APP_PORT }}"
+          } > nextjs-vps/.env.production.vps
 
-          # Apply overrides: inputs (manual) take priority, then secrets (auto), then PROD_ENV_BASE
+          # Apply AI provider overrides: inputs (manual) take priority, then secrets (auto)
           if [[ -n "${{ github.event.inputs.AI_PROVIDER }}" ]]; then
-            sed -i "/^AI_PROVIDER=/d" nextjs-vps/.env.production.vps
             echo "AI_PROVIDER=${{ github.event.inputs.AI_PROVIDER }}" >> nextjs-vps/.env.production.vps
           elif [[ -n "${{ secrets.AI_PROVIDER }}" ]]; then
-            sed -i "/^AI_PROVIDER=/d" nextjs-vps/.env.production.vps
             echo "AI_PROVIDER=${{ secrets.AI_PROVIDER }}" >> nextjs-vps/.env.production.vps
           fi
 
           if [[ -n "${{ github.event.inputs.AI_IMAGE_PROVIDER }}" ]]; then
-            sed -i "/^AI_IMAGE_PROVIDER=/d" nextjs-vps/.env.production.vps
             echo "AI_IMAGE_PROVIDER=${{ github.event.inputs.AI_IMAGE_PROVIDER }}" >> nextjs-vps/.env.production.vps
           elif [[ -n "${{ secrets.AI_IMAGE_PROVIDER }}" ]]; then
-            sed -i "/^AI_IMAGE_PROVIDER=/d" nextjs-vps/.env.production.vps
             echo "AI_IMAGE_PROVIDER=${{ secrets.AI_IMAGE_PROVIDER }}" >> nextjs-vps/.env.production.vps
           fi
 
           if [[ -n "${{ github.event.inputs.WAVESPEED_CONTENT_MODEL }}" ]]; then
-            sed -i "/^WAVESPEED_CONTENT_MODEL=/d" nextjs-vps/.env.production.vps
             echo "WAVESPEED_CONTENT_MODEL=${{ github.event.inputs.WAVESPEED_CONTENT_MODEL }}" >> nextjs-vps/.env.production.vps
           elif [[ -n "${{ secrets.WAVESPEED_CONTENT_MODEL }}" ]]; then
-            sed -i "/^WAVESPEED_CONTENT_MODEL=/d" nextjs-vps/.env.production.vps
             echo "WAVESPEED_CONTENT_MODEL=${{ secrets.WAVESPEED_CONTENT_MODEL }}" >> nextjs-vps/.env.production.vps
           fi
 
           if [[ -n "${{ github.event.inputs.WAVESPEED_IMAGE_MODEL }}" ]]; then
-            sed -i "/^WAVESPEED_IMAGE_MODEL=/d" nextjs-vps/.env.production.vps
             echo "WAVESPEED_IMAGE_MODEL=${{ github.event.inputs.WAVESPEED_IMAGE_MODEL }}" >> nextjs-vps/.env.production.vps
           elif [[ -n "${{ secrets.WAVESPEED_IMAGE_MODEL }}" ]]; then
-            sed -i "/^WAVESPEED_IMAGE_MODEL=/d" nextjs-vps/.env.production.vps
             echo "WAVESPEED_IMAGE_MODEL=${{ secrets.WAVESPEED_IMAGE_MODEL }}" >> nextjs-vps/.env.production.vps
           fi
 
