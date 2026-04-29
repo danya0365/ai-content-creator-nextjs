@@ -18,7 +18,19 @@ on:
     branches:
       - release-vps
   workflow_dispatch:
-    # Allows manual trigger from the GitHub Actions tab
+    inputs:
+      AI_PROVIDER:
+        description: 'เลือก AI Provider (เช่น groq, gemini, wavespeed)'
+        required: false
+        default: 'groq'
+      AI_IMAGE_PROVIDER:
+        description: 'เลือก AI Image Provider (เช่น wavespeed, together)'
+        required: false
+        default: 'wavespeed'
+      WAVESPEED_CONTENT_MODEL:
+        description: 'เลือก Model สำหรับ Wavespeed (ถ้ามี)'
+        required: false
+        default: 'meta-llama/llama-3.1-70b-instruct'
 
 env:
   NODE_VERSION: '22'
@@ -62,6 +74,27 @@ jobs:
     steps:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
+
+      - name: 🔧 Prepare Environment File
+        run: |
+          # Use PROD_ENV_BASE secret as starting point
+          echo "${{ secrets.PROD_ENV_BASE }}" > nextjs-vps/.env.production.vps
+          
+          # Apply overrides if provided (AI_PROVIDER, etc.)
+          if [[ -n "${{ github.event.inputs.AI_PROVIDER }}" ]]; then
+            sed -i "/^AI_PROVIDER=/d" nextjs-vps/.env.production.vps
+            echo "AI_PROVIDER=${{ github.event.inputs.AI_PROVIDER }}" >> nextjs-vps/.env.production.vps
+          fi
+          
+          if [[ -n "${{ github.event.inputs.AI_IMAGE_PROVIDER }}" ]]; then
+            sed -i "/^AI_IMAGE_PROVIDER=/d" nextjs-vps/.env.production.vps
+            echo "AI_IMAGE_PROVIDER=${{ github.event.inputs.AI_IMAGE_PROVIDER }}" >> nextjs-vps/.env.production.vps
+          fi
+          
+          if [[ -n "${{ github.event.inputs.WAVESPEED_CONTENT_MODEL }}" ]]; then
+            sed -i "/^WAVESPEED_CONTENT_MODEL=/d" nextjs-vps/.env.production.vps
+            echo "WAVESPEED_CONTENT_MODEL=${{ github.event.inputs.WAVESPEED_CONTENT_MODEL }}" >> nextjs-vps/.env.production.vps
+          fi
 
       - name: 📤 Upload Code to VPS
         uses: appleboy/scp-action@v0.1.7
