@@ -4,14 +4,23 @@
  * ✅ All logic moved from View to Hook following CREATE_PAGE_PATTERN.md
  */
 
-'use client';
+"use client";
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { TimelineEntry, TimelineFilter, TimelineGroup, TimelinePresenter, TimelineStatusFilter, TimelineViewModel } from './TimelinePresenter';
-import { createClientTimelinePresenter } from './TimelinePresenterClientFactory';
-import { usePreferencesStore } from '../../stores/usePreferencesStore';
+import { createClient } from "@/src/infrastructure/supabase/client";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { usePreferencesStore } from "../../stores/usePreferencesStore";
+import {
+  mapContentToTimelineEntry,
+  TimelineEntry,
+  TimelineFilter,
+  TimelineGroup,
+  TimelinePresenter,
+  TimelineStatusFilter,
+  TimelineViewModel,
+} from "./TimelinePresenter";
+import { createClientTimelinePresenter } from "./TimelinePresenterClientFactory";
 
-export type TimelineViewMode = 'vertical' | 'list';
+export type TimelineViewMode = "vertical" | "list";
 
 export interface TimelinePresenterState {
   viewModel: TimelineViewModel | null;
@@ -44,24 +53,29 @@ export interface TimelinePresenterActions {
 
 export function useTimelinePresenter(
   initialViewModel?: TimelineViewModel,
-  presenterOverride?: TimelinePresenter
+  presenterOverride?: TimelinePresenter,
 ): [TimelinePresenterState, TimelinePresenterActions] {
-  // ✅ Create presenter inside hook with useMemo
+  // Create presenter inside hook with useMemo
   // Accept override for easier testing (Dependency Injection)
   const presenter = useMemo(
-    () => presenterOverride ?? createClientTimelinePresenter(),
-    [presenterOverride]
+    () => presenterOverride ?? createClientTimelinePresenter(createClient()),
+    [presenterOverride],
   );
 
   const preferences = usePreferencesStore();
-  const [viewModel, setViewModel] = useState<TimelineViewModel | null>(initialViewModel || null);
+  const [viewModel, setViewModel] = useState<TimelineViewModel | null>(
+    initialViewModel || null,
+  );
   const [loading, setLoading] = useState(!initialViewModel);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [filter, setFilter] = useState<TimelineFilter>('all');
-  const [statusFilter, setStatusFilter] = useState<TimelineStatusFilter>('all');
-  const [selectedEntry, setSelectedEntry] = useState<TimelineEntry | null>(null);
-  
+  const [filter, setFilter] = useState<TimelineFilter>("all");
+  const [statusFilter, setStatusFilter] = useState<TimelineStatusFilter>("all");
+  const [selectedEntry, setSelectedEntry] = useState<TimelineEntry | null>(
+    null,
+  );
+  const isInitialMount = useRef(true);
+
   const viewMode = preferences.timelineViewMode;
 
   // Computed: filtered groups (moved from View)
@@ -71,8 +85,9 @@ export function useTimelinePresenter(
       .map((group) => ({
         ...group,
         entries: group.entries.filter((entry) => {
-          const matchesCategory = filter === 'all' || entry.category === filter;
-          const matchesStatus = statusFilter === 'all' || entry.status === statusFilter;
+          const matchesCategory = filter === "all" || entry.category === filter;
+          const matchesStatus =
+            statusFilter === "all" || entry.status === statusFilter;
           return matchesCategory && matchesStatus;
         }),
       }))
@@ -88,10 +103,13 @@ export function useTimelinePresenter(
     setLoading(true);
     setError(null);
     try {
-      const newViewModel = await presenter.getCursorViewModel(filter, statusFilter);
+      const newViewModel = await presenter.getCursorViewModel(
+        filter,
+        statusFilter,
+      );
       setViewModel(newViewModel);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unknown error');
+      setError(err instanceof Error ? err.message : "Unknown error");
     } finally {
       setLoading(false);
     }
@@ -106,7 +124,7 @@ export function useTimelinePresenter(
       const moreViewModel = await presenter.getCursorViewModel(
         filter,
         statusFilter,
-        viewModel.nextCursor || undefined
+        viewModel.nextCursor || undefined,
       );
 
       setViewModel((prev) => {
@@ -114,14 +132,21 @@ export function useTimelinePresenter(
 
         // Merge groups
         const updatedGroups = [...prev.groups];
-        
-        moreViewModel.groups.forEach(newGroup => {
-          const existingGroupIndex = updatedGroups.findIndex(g => g.date === newGroup.date);
+
+        moreViewModel.groups.forEach((newGroup) => {
+          const existingGroupIndex = updatedGroups.findIndex(
+            (g) => g.date === newGroup.date,
+          );
           if (existingGroupIndex > -1) {
             // Add entries to existing group, check for duplicates
             const existingEntries = updatedGroups[existingGroupIndex].entries;
-            const newEntries = newGroup.entries.filter(ne => !existingEntries.some(ee => ee.id === ne.id));
-            updatedGroups[existingGroupIndex].entries = [...existingEntries, ...newEntries];
+            const newEntries = newGroup.entries.filter(
+              (ne) => !existingEntries.some((ee) => ee.id === ne.id),
+            );
+            updatedGroups[existingGroupIndex].entries = [
+              ...existingEntries,
+              ...newEntries,
+            ];
           } else {
             // Add as a new group
             updatedGroups.push(newGroup);
@@ -129,18 +154,20 @@ export function useTimelinePresenter(
         });
 
         // Re-sort groups just in case
-        updatedGroups.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        updatedGroups.sort(
+          (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
+        );
 
         return {
           ...prev,
           groups: updatedGroups,
           nextCursor: moreViewModel.nextCursor,
           hasMore: moreViewModel.hasMore,
-          totalCount: prev.totalCount + moreViewModel.totalCount
+          totalCount: prev.totalCount + moreViewModel.totalCount,
         };
       });
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load more');
+      setError(err instanceof Error ? err.message : "Failed to load more");
     } finally {
       setLoadingMore(false);
     }
@@ -151,8 +178,8 @@ export function useTimelinePresenter(
   }, [loadData]);
 
   const resetFilters = useCallback(() => {
-    setFilter('all');
-    setStatusFilter('all');
+    setFilter("all");
+    setStatusFilter("all");
   }, []);
 
   const viewEntry = useCallback((entry: TimelineEntry | null) => {
@@ -163,9 +190,12 @@ export function useTimelinePresenter(
     setSelectedEntry(null);
   }, []);
 
-  const setViewMode = useCallback((mode: TimelineViewMode) => {
-    preferences.setPreference('timelineViewMode', mode);
-  }, [preferences]);
+  const setViewMode = useCallback(
+    (mode: TimelineViewMode) => {
+      preferences.setPreference("timelineViewMode", mode);
+    },
+    [preferences],
+  );
 
   useEffect(() => {
     if (!initialViewModel) {
@@ -173,69 +203,72 @@ export function useTimelinePresenter(
     }
   }, [initialViewModel, loadData]);
 
+  // Refetch when filter or statusFilter changes (skip initial mount)
+  useEffect(() => {
+    if (isInitialMount.current) return;
+    loadData();
+  }, [filter, statusFilter, loadData]);
+
   // Real-time updates
   useEffect(() => {
-    const repository = (presenter as any).repository;
-    if (!repository) return;
-
-    const unsubscribe = repository.subscribe((event: any) => {
-      if (event.type === 'INSERT') {
-        const newEntry = (presenter as any).mapContentToTimelineEntry?.(event.new) || 
-                          // Fallback mapping if map function not accessible
-                          {
-                            id: event.new.id,
-                            title: event.new.title,
-                            description: event.new.description,
-                            imageUrl: event.new.image_url || event.new.imageUrl,
-                            status: event.new.status,
-                            createdAt: event.new.created_at || event.new.createdAt,
-                            scheduledAt: event.new.scheduled_at || event.new.scheduledAt,
-                            likes: event.new.likes || 0,
-                            shares: event.new.shares || 0,
-                          };
+    const unsubscribe = presenter.subscribe((event) => {
+      if (event.type === "INSERT") {
+        const newEntry = mapContentToTimelineEntry(event.new);
 
         setViewModel((prev) => {
           if (!prev) return null;
-          
-          const newDate = newEntry.createdAt.split('T')[0];
+
+          const newDate = newEntry.createdAt.split("T")[0];
           const updatedGroups = [...prev.groups];
-          const groupIndex = updatedGroups.findIndex(g => g.date === newDate);
+          const groupIndex = updatedGroups.findIndex((g) => g.date === newDate);
 
           if (groupIndex > -1) {
             // Add to existing group
-            if (updatedGroups[groupIndex].entries.some(e => e.id === newEntry.id)) return prev;
-            updatedGroups[groupIndex].entries = [newEntry, ...updatedGroups[groupIndex].entries];
+            if (
+              updatedGroups[groupIndex].entries.some(
+                (e) => e.id === newEntry.id,
+              )
+            )
+              return prev;
+            updatedGroups[groupIndex].entries = [
+              newEntry,
+              ...updatedGroups[groupIndex].entries,
+            ];
           } else {
             // Create new group (usually Today)
             const newGroup: TimelineGroup = {
               date: newDate,
-              dateLabel: 'วันนี้', // Simple for insert
+              dateLabel: "วันนี้", // Simple for insert
               isToday: true,
               isYesterday: false,
-              entries: [newEntry]
+              entries: [newEntry],
             };
             updatedGroups.unshift(newGroup);
-            updatedGroups.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+            updatedGroups.sort(
+              (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
+            );
           }
 
           return {
             ...prev,
             groups: updatedGroups,
-            totalCount: prev.totalCount + 1
+            totalCount: prev.totalCount + 1,
           };
         });
-      } else if (event.type === 'DELETE') {
+      } else if (event.type === "DELETE") {
         setViewModel((prev) => {
           if (!prev) return null;
-          const updatedGroups = prev.groups.map(g => ({
-            ...g,
-            entries: g.entries.filter(e => e.id !== event.old.id)
-          })).filter(g => g.entries.length > 0);
+          const updatedGroups = prev.groups
+            .map((g) => ({
+              ...g,
+              entries: g.entries.filter((e) => e.id !== event.old.id),
+            }))
+            .filter((g) => g.entries.length > 0);
 
           return {
             ...prev,
             groups: updatedGroups,
-            totalCount: Math.max(0, prev.totalCount - 1)
+            totalCount: Math.max(0, prev.totalCount - 1),
           };
         });
       }

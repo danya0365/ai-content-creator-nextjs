@@ -5,13 +5,17 @@
  */
 
 import {
-    CONTENT_TYPES,
-    ContentType,
-    TIME_SLOTS,
-    TimeSlotConfig,
-} from '@/src/data/master/contentTypes';
-import { Content, IContentRepository } from '@/src/application/repositories/IContentRepository';
-import { Metadata } from 'next';
+  Content,
+  ContentEvent,
+  IContentRepository,
+} from "@/src/application/repositories/IContentRepository";
+import {
+  CONTENT_TYPES,
+  ContentType,
+  TIME_SLOTS,
+  TimeSlotConfig,
+} from "@/src/data/master/contentTypes";
+import { Metadata } from "next";
 
 export interface ScheduleDay {
   date: Date;
@@ -30,34 +34,32 @@ export interface ScheduleViewModel {
   totalScheduled: number;
 }
 
-const DAY_NAMES = ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส'];
+const DAY_NAMES = ["อา", "จ", "อ", "พ", "พฤ", "ศ", "ส"];
 
 /**
  * Presenter for Schedule page
  * ✅ Receives repository via constructor injection
  */
 export class SchedulePresenter {
-  constructor(
-    private readonly repository: IContentRepository
-  ) {}
+  constructor(private readonly repository: IContentRepository) {}
 
   /**
    * Get view model for the page
    */
   async getViewModel(): Promise<ScheduleViewModel> {
     const scheduledContents = await this.repository.getScheduled();
-    
+
     // Generate current week
     const today = new Date();
     const currentWeek: ScheduleDay[] = [];
-    
+
     for (let i = 0; i < 7; i++) {
       const date = new Date(today);
       date.setDate(today.getDate() + i);
-      
-      const dateString = date.toISOString().split('T')[0];
-      const dayContents = scheduledContents.filter((c) => 
-        c.scheduledAt.startsWith(dateString)
+
+      const dateString = date.toISOString().split("T")[0];
+      const dayContents = scheduledContents.filter((c) =>
+        c.scheduledAt.startsWith(dateString),
       );
 
       currentWeek.push({
@@ -80,12 +82,19 @@ export class SchedulePresenter {
   }
 
   /**
+   * Subscribe to real-time content changes
+   */
+  subscribe(callback: (event: ContentEvent) => void): () => void {
+    return this.repository.subscribe(callback);
+  }
+
+  /**
    * Generate metadata for the page
    */
   generateMetadata(): Metadata {
     return {
-      title: 'Schedule | AI Content Creator',
-      description: 'จัดตารางโพสต์คอนเทนต์ Pixel Art อัตโนมัติ',
+      title: "Schedule | AI Content Creator",
+      description: "จัดตารางโพสต์คอนเทนต์ Pixel Art อัตโนมัติ",
     };
   }
 }

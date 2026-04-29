@@ -5,13 +5,15 @@
  */
 
 import {
-  CONTENT_TYPES,
-  ContentType,
-} from '@/src/data/master/contentTypes';
-import { Content, IContentRepository, ContentFilter as RepoContentFilter } from '@/src/application/repositories/IContentRepository';
-import { Metadata } from 'next';
+  Content,
+  ContentEvent,
+  IContentRepository,
+  ContentFilter as RepoContentFilter,
+} from "@/src/application/repositories/IContentRepository";
+import { CONTENT_TYPES, ContentType } from "@/src/data/master/contentTypes";
+import { Metadata } from "next";
 
-export type ContentFilter = 'all' | 'published' | 'scheduled' | 'draft';
+export type ContentFilter = "all" | "published" | "scheduled" | "draft";
 
 export interface GalleryViewModel {
   contents: Content[];
@@ -28,17 +30,19 @@ export interface GalleryViewModel {
  * ✅ Receives repository via constructor injection
  */
 export class GalleryPresenter {
-  constructor(
-    private readonly repository: IContentRepository
-  ) {}
+  constructor(private readonly repository: IContentRepository) {}
 
   /**
    * Get view model for the page using cursor-based pagination
    */
-  async getCursorViewModel(filter: ContentFilter = 'all', cursor?: string, limit = 12): Promise<GalleryViewModel> {
+  async getCursorViewModel(
+    filter: ContentFilter = "all",
+    cursor?: string,
+    limit = 12,
+  ): Promise<GalleryViewModel> {
     try {
       const result = await this.repository.getCursorPaginated({
-        status: filter === 'all' ? undefined : filter,
+        status: filter === "all" ? undefined : filter,
         cursor,
         limit,
       });
@@ -55,7 +59,7 @@ export class GalleryPresenter {
         hasMore: result.hasMore,
       };
     } catch (error) {
-      console.error('[GalleryPresenter] Error in getCursorViewModel:', error);
+      console.error("[GalleryPresenter] Error in getCursorViewModel:", error);
       throw error;
     }
   }
@@ -64,13 +68,13 @@ export class GalleryPresenter {
    * Get view model for the page using traditional offset-based pagination
    */
   async getOffsetViewModel(
-    filter: ContentFilter = 'all', 
-    page = 1, 
-    perPage = 20
+    filter: ContentFilter = "all",
+    page = 1,
+    perPage = 20,
   ): Promise<GalleryViewModel> {
     try {
       const result = await this.repository.getPaginated(page, perPage, {
-        status: filter === 'all' ? undefined : filter,
+        status: filter === "all" ? undefined : filter,
       });
 
       return {
@@ -82,7 +86,7 @@ export class GalleryPresenter {
         hasMore: result.total > page * perPage,
       };
     } catch (error) {
-      console.error('[GalleryPresenter] Error in getOffsetViewModel:', error);
+      console.error("[GalleryPresenter] Error in getOffsetViewModel:", error);
       throw error;
     }
   }
@@ -90,11 +94,11 @@ export class GalleryPresenter {
   /**
    * Get view model for the page (legacy method, currently fetching all)
    */
-  async getViewModel(filter: ContentFilter = 'all'): Promise<GalleryViewModel> {
+  async getViewModel(filter: ContentFilter = "all"): Promise<GalleryViewModel> {
     try {
       // Build filter for repository
       const repoFilter: RepoContentFilter = {};
-      if (filter !== 'all') {
+      if (filter !== "all") {
         repoFilter.status = filter;
       }
 
@@ -109,9 +113,16 @@ export class GalleryPresenter {
         hasMore: false,
       };
     } catch (error) {
-      console.error('[GalleryPresenter] Error in getViewModel:', error);
+      console.error("[GalleryPresenter] Error in getViewModel:", error);
       throw error;
     }
+  }
+
+  /**
+   * Subscribe to real-time content changes
+   */
+  subscribe(callback: (event: ContentEvent) => void): () => void {
+    return this.repository.subscribe(callback);
   }
 
   /**
@@ -119,8 +130,8 @@ export class GalleryPresenter {
    */
   generateMetadata(): Metadata {
     return {
-      title: 'Gallery | AI Content Creator',
-      description: 'แกลเลอรี่รวมคอนเทนต์ Pixel Art ทั้งหมดที่สร้างโดย AI',
+      title: "Gallery | AI Content Creator",
+      description: "แกลเลอรี่รวมคอนเทนต์ Pixel Art ทั้งหมดที่สร้างโดย AI",
     };
   }
 }

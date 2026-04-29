@@ -4,13 +4,18 @@
  * ✅ All logic moved from View to Hook following CREATE_PAGE_PATTERN.md
  */
 
-'use client';
+"use client";
 
-import { Content } from '@/src/application/repositories/IContentRepository';
-import { TimeSlotConfig } from '@/src/data/master/contentTypes';
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ScheduleDay, SchedulePresenter, ScheduleViewModel } from './SchedulePresenter';
-import { createClientSchedulePresenter } from './SchedulePresenterClientFactory';
+import { Content } from "@/src/application/repositories/IContentRepository";
+import { TimeSlotConfig } from "@/src/data/master/contentTypes";
+import { createClient } from "@/src/infrastructure/supabase/client";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  ScheduleDay,
+  SchedulePresenter,
+  ScheduleViewModel,
+} from "./SchedulePresenter";
+import { createClientSchedulePresenter } from "./SchedulePresenterClientFactory";
 
 export interface SchedulePresenterState {
   viewModel: ScheduleViewModel | null;
@@ -34,22 +39,25 @@ export interface SchedulePresenterActions {
 
 export function useSchedulePresenter(
   initialViewModel?: ScheduleViewModel,
-  presenterOverride?: SchedulePresenter
+  presenterOverride?: SchedulePresenter,
 ): [SchedulePresenterState, SchedulePresenterActions] {
   // ✅ Create presenter inside hook with useMemo
   // Accept override for easier testing (Dependency Injection)
   const presenter = useMemo(
-    () => presenterOverride ?? createClientSchedulePresenter(),
-    [presenterOverride]
+    () => presenterOverride ?? createClientSchedulePresenter(createClient()),
+    [presenterOverride],
   );
 
-  const [viewModel, setViewModel] = useState<ScheduleViewModel | null>(initialViewModel || null);
+  const [viewModel, setViewModel] = useState<ScheduleViewModel | null>(
+    initialViewModel || null,
+  );
   const [loading, setLoading] = useState(!initialViewModel);
   const [error, setError] = useState<string | null>(null);
-  
+
   // UI state (moved from View)
   const [selectedDayIndex, setSelectedDayIndex] = useState(0);
   const [selectedContent, setSelectedContent] = useState<Content | null>(null);
+  const isInitialMount = useRef(true);
 
   // Computed: selected day
   const selectedDay = useMemo(() => {
@@ -63,7 +71,7 @@ export function useSchedulePresenter(
       const newViewModel = await presenter.getViewModel();
       setViewModel(newViewModel);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unknown error');
+      setError(err instanceof Error ? err.message : "Unknown error");
     } finally {
       setLoading(false);
     }
@@ -79,10 +87,13 @@ export function useSchedulePresenter(
   }, []);
 
   // Get contents for a specific time slot
-  const getContentsForSlot = useCallback((slot: TimeSlotConfig): Content[] => {
-    if (!selectedDay) return [];
-    return selectedDay.contents.filter((c) => c.timeSlot === slot.id);
-  }, [selectedDay]);
+  const getContentsForSlot = useCallback(
+    (slot: TimeSlotConfig): Content[] => {
+      if (!selectedDay) return [];
+      return selectedDay.contents.filter((c) => c.timeSlot === slot.id);
+    },
+    [selectedDay],
+  );
 
   // Select content for viewing details
   const selectContent = useCallback((content: Content | null) => {
@@ -94,6 +105,31 @@ export function useSchedulePresenter(
       loadData();
     }
   }, [initialViewModel, loadData]);
+
+  // Refetch when presenter changes (skip initial mount)
+  useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
+    loadData();
+  }, [presenter, loadData]);
+
+  // Real-time subscription for schedule updates
+  useEffect(() => {
+    const unsubscribe = presenter.subscribe((event) => {
+      if (
+        event.type === "INSERT" ||
+        event.type === "UPDATE" ||
+        event.type === "DELETE"
+      ) {
+        loadData();
+      }
+    });
+    return () => {
+      unsubscribe();
+    };
+  }, [presenter, loadData]);
 
   return [
     {
