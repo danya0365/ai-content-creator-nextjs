@@ -4,19 +4,24 @@
  * ✅ Uses dependency injection for repository
  */
 
-import { Content, IContentRepository, ContentFilter } from '@/src/application/repositories/IContentRepository';
-import { Metadata } from 'next';
+import {
+  Content,
+  ContentEvent,
+  ContentFilter,
+  IContentRepository,
+} from "@/src/application/repositories/IContentRepository";
+import { Metadata } from "next";
 // ✅ Import from master data (Single Source of Truth)
-import type { TimelineCategory } from '@/src/data/master/timelineCategories';
-import { TIMELINE_CATEGORIES } from '@/src/data/master/timelineCategories';
+import type { TimelineCategory } from "@/src/data/master/timelineCategories";
+import { TIMELINE_CATEGORIES } from "@/src/data/master/timelineCategories";
 
 // Re-export for backward compatibility
 export { TIMELINE_CATEGORIES };
 export type { TimelineCategory };
 
-export type TimelineStatus = 'published' | 'scheduled' | 'draft';
-export type TimelineFilter = 'all' | TimelineCategory;
-export type TimelineStatusFilter = 'all' | TimelineStatus;
+export type TimelineStatus = "published" | "scheduled" | "draft";
+export type TimelineFilter = "all" | TimelineCategory;
+export type TimelineStatusFilter = "all" | TimelineStatus;
 
 export interface TimelineEntry {
   id: string;
@@ -43,7 +48,13 @@ export interface TimelineGroup {
 
 export interface TimelineViewModel {
   groups: TimelineGroup[];
-  categories: { id: TimelineCategory; label: string; labelTh: string; emoji: string; color: string }[];
+  categories: {
+    id: TimelineCategory;
+    label: string;
+    labelTh: string;
+    emoji: string;
+    color: string;
+  }[];
   filter: TimelineFilter;
   statusFilter: TimelineStatusFilter;
   totalCount: number;
@@ -69,32 +80,32 @@ function formatDateLabel(dateString: string): string {
   const today = new Date();
   const yesterday = new Date(today);
   yesterday.setDate(yesterday.getDate() - 1);
-  
-  const todayStr = today.toISOString().split('T')[0];
-  const yesterdayStr = yesterday.toISOString().split('T')[0];
-  
+
+  const todayStr = today.toISOString().split("T")[0];
+  const yesterdayStr = yesterday.toISOString().split("T")[0];
+
   if (dateString === todayStr) {
-    return 'วันนี้';
+    return "วันนี้";
   }
   if (dateString === yesterdayStr) {
-    return 'เมื่อวาน';
+    return "เมื่อวาน";
   }
-  
+
   const options: Intl.DateTimeFormatOptions = {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
   };
-  
-  return date.toLocaleDateString('th-TH', options);
+
+  return date.toLocaleDateString("th-TH", options);
 }
 
 /**
  * Check if date is today
  */
 function isToday(dateString: string): boolean {
-  const today = new Date().toISOString().split('T')[0];
+  const today = new Date().toISOString().split("T")[0];
   return dateString === today;
 }
 
@@ -104,30 +115,30 @@ function isToday(dateString: string): boolean {
 function isYesterday(dateString: string): boolean {
   const yesterday = new Date();
   yesterday.setDate(yesterday.getDate() - 1);
-  return dateString === yesterday.toISOString().split('T')[0];
+  return dateString === yesterday.toISOString().split("T")[0];
 }
 
 /**
  * Map content to timeline entry
  */
-function mapContentToTimelineEntry(content: Content): TimelineEntry {
+export function mapContentToTimelineEntry(content: Content): TimelineEntry {
   // Category mapping based on contentTypeId (maps to TimelineCategory)
   const categoryMap: Record<string, TimelineCategory> = {
-    'morning-news': 'news',
-    'food': 'food',
-    'food-review': 'food',
-    'tech-tips': 'tech',
-    'entertainment': 'entertainment',
-    'meme': 'entertainment',
-    'daily-motivation': 'motivation',
-    'gaming': 'gaming',
-    'lifestyle': 'lifestyle',
-    'education': 'education',
-    'islamic-quran': 'news',
-    'islamic-seerah': 'news',
-    'islamic-hadith': 'news',
-    'islamic-history': 'news',
-    'islamic-wisdom': 'news',
+    "morning-news": "news",
+    food: "food",
+    "food-review": "food",
+    "tech-tips": "tech",
+    entertainment: "entertainment",
+    meme: "entertainment",
+    "daily-motivation": "motivation",
+    gaming: "gaming",
+    lifestyle: "lifestyle",
+    education: "education",
+    "islamic-quran": "news",
+    "islamic-seerah": "news",
+    "islamic-hadith": "news",
+    "islamic-history": "news",
+    "islamic-wisdom": "news",
   };
 
   return {
@@ -137,7 +148,7 @@ function mapContentToTimelineEntry(content: Content): TimelineEntry {
     contentTypeId: content.contentTypeId,
     imageUrl: content.imageUrl,
     status: content.status as TimelineStatus,
-    category: categoryMap[content.contentTypeId] || 'news',
+    category: categoryMap[content.contentTypeId] || "news",
     createdAt: content.createdAt,
     scheduledAt: content.scheduledAt,
     publishedAt: content.publishedAt ?? undefined,
@@ -152,13 +163,13 @@ function mapContentToTimelineEntry(content: Content): TimelineEntry {
 function groupEntriesByDate(entries: TimelineEntry[]): TimelineGroup[] {
   const groupedMap = new Map<string, TimelineEntry[]>();
   entries.forEach((entry) => {
-    const date = entry.createdAt.split('T')[0];
+    const date = entry.createdAt.split("T")[0];
     if (!groupedMap.has(date)) {
       groupedMap.set(date, []);
     }
     groupedMap.get(date)!.push(entry);
   });
-  
+
   const groups: TimelineGroup[] = [];
   groupedMap.forEach((groupEntries, dateStr) => {
     groups.push({
@@ -169,8 +180,10 @@ function groupEntriesByDate(entries: TimelineEntry[]): TimelineGroup[] {
       entries: groupEntries,
     });
   });
-  
-  return groups.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+  return groups.sort(
+    (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
+  );
 }
 
 /**
@@ -178,42 +191,40 @@ function groupEntriesByDate(entries: TimelineEntry[]): TimelineGroup[] {
  * ✅ Receives repository via constructor injection
  */
 export class TimelinePresenter {
-  constructor(
-    private readonly repository: IContentRepository
-  ) {}
+  constructor(private readonly repository: IContentRepository) {}
 
   /**
    * Get view model for the page using cursor-based pagination
    */
   async getCursorViewModel(
-    filter: TimelineFilter = 'all',
-    statusFilter: TimelineStatusFilter = 'all',
+    filter: TimelineFilter = "all",
+    statusFilter: TimelineStatusFilter = "all",
     cursor?: string,
-    limit = 20
+    limit = 20,
   ): Promise<TimelineViewModel> {
     try {
       // 1. Build filter for cursor query
       let contentTypeIds: string[] | undefined = undefined;
-      
-      if (filter !== 'all') {
+
+      if (filter !== "all") {
         const categoryMap: Record<string, TimelineCategory> = {
-          'morning-news': 'news',
-          'food': 'food',
-          'food-review': 'food',
-          'tech-tips': 'tech',
-          'entertainment': 'entertainment',
-          'meme': 'entertainment',
-          'daily-motivation': 'motivation',
-          'gaming': 'gaming',
-          'lifestyle': 'lifestyle',
-          'education': 'education',
-          'islamic-quran': 'news',
-          'islamic-seerah': 'news',
-          'islamic-hadith': 'news',
-          'islamic-history': 'news',
-          'islamic-wisdom': 'news',
+          "morning-news": "news",
+          food: "food",
+          "food-review": "food",
+          "tech-tips": "tech",
+          entertainment: "entertainment",
+          meme: "entertainment",
+          "daily-motivation": "motivation",
+          gaming: "gaming",
+          lifestyle: "lifestyle",
+          education: "education",
+          "islamic-quran": "news",
+          "islamic-seerah": "news",
+          "islamic-hadith": "news",
+          "islamic-history": "news",
+          "islamic-wisdom": "news",
         };
-        
+
         contentTypeIds = Object.entries(categoryMap)
           .filter(([_, cat]) => cat === filter)
           .map(([id, _]) => id);
@@ -222,7 +233,7 @@ export class TimelinePresenter {
       // 2. Fetch data
       const [result, stats] = await Promise.all([
         this.repository.getCursorPaginated({
-          status: statusFilter === 'all' ? undefined : statusFilter as any,
+          status: statusFilter === "all" ? undefined : (statusFilter as any),
           contentTypeId: contentTypeIds ? contentTypeIds[0] : undefined, // Simplify for now or update Repository to handle IDs
           cursor,
           limit,
@@ -253,7 +264,7 @@ export class TimelinePresenter {
         hasMore: result.hasMore,
       };
     } catch (error) {
-      console.error('[TimelinePresenter] Error in getCursorViewModel:', error);
+      console.error("[TimelinePresenter] Error in getCursorViewModel:", error);
       throw error;
     }
   }
@@ -262,37 +273,37 @@ export class TimelinePresenter {
    * Get view model for the page (legacy method)
    */
   async getViewModel(
-    filter: TimelineFilter = 'all',
-    statusFilter: TimelineStatusFilter = 'all'
+    filter: TimelineFilter = "all",
+    statusFilter: TimelineStatusFilter = "all",
   ): Promise<TimelineViewModel> {
     // 1. Prepare repository filter for DB-level filtering
-    const repoFilter: ContentFilter = {}; 
-    
-    if (statusFilter !== 'all') {
+    const repoFilter: ContentFilter = {};
+
+    if (statusFilter !== "all") {
       repoFilter.status = statusFilter;
     }
-    
-    if (filter !== 'all') {
+
+    if (filter !== "all") {
       // Logic from mapContentToTimelineEntry reversed to find matching types
       const categoryMap: Record<string, TimelineCategory> = {
-        'morning-news': 'news',
-        'food': 'food',
-        'food-review': 'food',
-        'tech-tips': 'tech',
-        'entertainment': 'entertainment',
-        'meme': 'entertainment',
-        'daily-motivation': 'motivation',
-        'gaming': 'gaming',
-        'lifestyle': 'lifestyle',
-        'education': 'education',
+        "morning-news": "news",
+        food: "food",
+        "food-review": "food",
+        "tech-tips": "tech",
+        entertainment: "entertainment",
+        meme: "entertainment",
+        "daily-motivation": "motivation",
+        gaming: "gaming",
+        lifestyle: "lifestyle",
+        education: "education",
         // Map Islamic content to 'news' or appropriate categories for now
-        'islamic-quran': 'news',
-        'islamic-seerah': 'news',
-        'islamic-hadith': 'news',
-        'islamic-history': 'news',
-        'islamic-wisdom': 'news',
+        "islamic-quran": "news",
+        "islamic-seerah": "news",
+        "islamic-hadith": "news",
+        "islamic-history": "news",
+        "islamic-wisdom": "news",
       };
-      
+
       repoFilter.contentTypeIds = Object.entries(categoryMap)
         .filter(([_, cat]) => cat === filter)
         .map(([id, _]) => id);
@@ -306,17 +317,17 @@ export class TimelinePresenter {
 
     // 3. Map filtered contents to timeline entries
     const entries = filteredContents.map(mapContentToTimelineEntry);
-    
+
     // Group by date
     const groupedMap = new Map<string, TimelineEntry[]>();
     entries.forEach((entry) => {
-      const date = entry.createdAt.split('T')[0];
+      const date = entry.createdAt.split("T")[0];
       if (!groupedMap.has(date)) {
         groupedMap.set(date, []);
       }
       groupedMap.get(date)!.push(entry);
     });
-    
+
     // Convert to array of groups
     const groups: TimelineGroup[] = [];
     groupedMap.forEach((groupEntries, dateStr) => {
@@ -328,13 +339,15 @@ export class TimelinePresenter {
         entries: groupEntries,
       });
     });
-    
+
     // Sort groups by date descending
-    groups.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-    
+    groups.sort(
+      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
+    );
+
     // Get categories for filter UI (config already includes id field)
     const categories = Object.values(TIMELINE_CATEGORIES);
-    
+
     return {
       groups,
       categories,
@@ -356,12 +369,19 @@ export class TimelinePresenter {
   }
 
   /**
+   * Subscribe to real-time content changes
+   */
+  subscribe(callback: (event: ContentEvent) => void): () => void {
+    return this.repository.subscribe(callback);
+  }
+
+  /**
    * Generate metadata for the page
    */
   generateMetadata(): Metadata {
     return {
-      title: 'Timeline | AI Content Creator',
-      description: 'ดูประวัติและ timeline ของคอนเทนต์ทั้งหมด',
+      title: "Timeline | AI Content Creator",
+      description: "ดูประวัติและ timeline ของคอนเทนต์ทั้งหมด",
     };
   }
 }
