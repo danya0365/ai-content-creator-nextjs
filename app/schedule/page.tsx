@@ -1,6 +1,6 @@
+import { AuthGuard } from "@/src/presentation/components/auth/AuthGuard";
 import { ScheduleView } from "@/src/presentation/components/schedule/ScheduleView";
 import { createServerSchedulePresenter } from "@/src/presentation/presenters/schedule/SchedulePresenterServerFactory";
-import { AuthGuard } from "@/src/presentation/components/auth/AuthGuard";
 import type { Metadata } from "next";
 import Link from "next/link";
 
@@ -23,16 +23,17 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function SchedulePage() {
   const presenter = await createServerSchedulePresenter();
 
+  let viewModel = null;
+  let fetchError = false;
+
   try {
-    const viewModel = await presenter.getViewModel();
-    return (
-      <AuthGuard>
-        <ScheduleView initialViewModel={viewModel} />
-      </AuthGuard>
-    );
+    viewModel = await presenter.getViewModel();
   } catch (error) {
     console.error("Error fetching schedule data:", error);
+    fetchError = true;
+  }
 
+  if (fetchError || !viewModel) {
     return (
       <AuthGuard>
         <div className="min-h-screen bg-background flex items-center justify-center">
@@ -52,4 +53,10 @@ export default async function SchedulePage() {
       </AuthGuard>
     );
   }
+
+  return (
+    <AuthGuard>
+      <ScheduleView initialViewModel={viewModel} />
+    </AuthGuard>
+  );
 }
