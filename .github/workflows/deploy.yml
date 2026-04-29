@@ -6,7 +6,7 @@
 # 1. Run Lint & Type Check for quality assurance
 # 2. SSH into the VPS (95.216.221.18)
 # 3. Pull the latest code from 'release-vps'
-# 4. Run the automated setup-nextjs-vps-existing.sh 
+# 4. Run the automated setup-nextjs-vps-existing.sh
 #    to handle dynamic ports, Docker build, and Nginx.
 #
 # ============================================
@@ -20,21 +20,25 @@ on:
   workflow_dispatch:
     inputs:
       AI_PROVIDER:
-        description: 'เลือก AI Provider (เช่น groq, gemini, wavespeed)'
+        description: "เลือก AI Provider (เช่น groq, gemini, wavespeed)"
         required: false
-        default: 'groq'
+        default: "wavespeed"
       AI_IMAGE_PROVIDER:
-        description: 'เลือก AI Image Provider (เช่น wavespeed, together)'
+        description: "เลือก AI Image Provider (เช่น wavespeed, together)"
         required: false
-        default: 'wavespeed'
+        default: "wavespeed"
       WAVESPEED_CONTENT_MODEL:
-        description: 'เลือก Model สำหรับ Wavespeed (ถ้ามี)'
+        description: "เลือก Model สำหรับ Wavespeed (ถ้ามี)"
         required: false
-        default: 'meta-llama/llama-3.1-70b-instruct'
+        default: "minimax/minimax-m2.7"
+      WAVESPEED_IMAGE_MODEL:
+        description: "เลือก Image Model สำหรับ Wavespeed (ถ้ามี)"
+        required: false
+        default: "wavespeed-ai/flux-schnell"
 
 env:
-  NODE_VERSION: '22'
-  APP_PATH: '/opt/nextjs-ai-creator'
+  NODE_VERSION: "22"
+  APP_PATH: "/opt/nextjs-ai-creator"
 
 jobs:
   # ==========================================
@@ -43,7 +47,7 @@ jobs:
   quality-check:
     name: 🔍 Lint & Type Check
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
@@ -52,7 +56,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'yarn'
+          cache: "yarn"
 
       - name: 📚 Install dependencies
         run: yarn install --frozen-lockfile --ignore-engines
@@ -70,7 +74,7 @@ jobs:
     name: 🚀 Deploy to VPS
     runs-on: ubuntu-latest
     needs: quality-check
-    
+
     steps:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
@@ -79,21 +83,38 @@ jobs:
         run: |
           # Use PROD_ENV_BASE secret as starting point
           echo "${{ secrets.PROD_ENV_BASE }}" > nextjs-vps/.env.production.vps
-          
-          # Apply overrides if provided (AI_PROVIDER, etc.)
+
+          # Apply overrides: inputs (manual) take priority, then secrets (auto), then PROD_ENV_BASE
           if [[ -n "${{ github.event.inputs.AI_PROVIDER }}" ]]; then
             sed -i "/^AI_PROVIDER=/d" nextjs-vps/.env.production.vps
             echo "AI_PROVIDER=${{ github.event.inputs.AI_PROVIDER }}" >> nextjs-vps/.env.production.vps
+          elif [[ -n "${{ secrets.AI_PROVIDER }}" ]]; then
+            sed -i "/^AI_PROVIDER=/d" nextjs-vps/.env.production.vps
+            echo "AI_PROVIDER=${{ secrets.AI_PROVIDER }}" >> nextjs-vps/.env.production.vps
           fi
-          
+
           if [[ -n "${{ github.event.inputs.AI_IMAGE_PROVIDER }}" ]]; then
             sed -i "/^AI_IMAGE_PROVIDER=/d" nextjs-vps/.env.production.vps
             echo "AI_IMAGE_PROVIDER=${{ github.event.inputs.AI_IMAGE_PROVIDER }}" >> nextjs-vps/.env.production.vps
+          elif [[ -n "${{ secrets.AI_IMAGE_PROVIDER }}" ]]; then
+            sed -i "/^AI_IMAGE_PROVIDER=/d" nextjs-vps/.env.production.vps
+            echo "AI_IMAGE_PROVIDER=${{ secrets.AI_IMAGE_PROVIDER }}" >> nextjs-vps/.env.production.vps
           fi
-          
+
           if [[ -n "${{ github.event.inputs.WAVESPEED_CONTENT_MODEL }}" ]]; then
             sed -i "/^WAVESPEED_CONTENT_MODEL=/d" nextjs-vps/.env.production.vps
             echo "WAVESPEED_CONTENT_MODEL=${{ github.event.inputs.WAVESPEED_CONTENT_MODEL }}" >> nextjs-vps/.env.production.vps
+          elif [[ -n "${{ secrets.WAVESPEED_CONTENT_MODEL }}" ]]; then
+            sed -i "/^WAVESPEED_CONTENT_MODEL=/d" nextjs-vps/.env.production.vps
+            echo "WAVESPEED_CONTENT_MODEL=${{ secrets.WAVESPEED_CONTENT_MODEL }}" >> nextjs-vps/.env.production.vps
+          fi
+
+          if [[ -n "${{ github.event.inputs.WAVESPEED_IMAGE_MODEL }}" ]]; then
+            sed -i "/^WAVESPEED_IMAGE_MODEL=/d" nextjs-vps/.env.production.vps
+            echo "WAVESPEED_IMAGE_MODEL=${{ github.event.inputs.WAVESPEED_IMAGE_MODEL }}" >> nextjs-vps/.env.production.vps
+          elif [[ -n "${{ secrets.WAVESPEED_IMAGE_MODEL }}" ]]; then
+            sed -i "/^WAVESPEED_IMAGE_MODEL=/d" nextjs-vps/.env.production.vps
+            echo "WAVESPEED_IMAGE_MODEL=${{ secrets.WAVESPEED_IMAGE_MODEL }}" >> nextjs-vps/.env.production.vps
           fi
 
       - name: 📤 Upload Code to VPS
@@ -121,19 +142,19 @@ jobs:
             echo "============================================"
             echo "🚀 Starting isolated deployment on VPS..."
             echo "============================================"
-            
+
             # Navigate to the app directory
             cd ${{ env.APP_PATH }}
-            
+
             # Fix permissions for the uploaded scripts
             chmod +x nextjs-vps/*.sh
-            
+
             # Execute the isolated deployment script
             # This handles environment sync, commit SHA, and docker restart
             echo "🔄 Running lightweight deploy script..."
             chmod +x nextjs-vps/deploy.sh
             echo "${{ secrets.VPS_PASSWORD }}" | sudo -S BUILD_COMMIT_SHA=${{ github.sha }} ./nextjs-vps/deploy.sh
-            
+
             echo "============================================"
             echo "✅ Deployment Successful!"
             echo "============================================"
@@ -146,7 +167,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: deploy
     if: always() # Runs even if previous jobs failed
-    
+
     steps:
       - name: 🟢 Success Notification
         if: needs.deploy.result == 'success'
