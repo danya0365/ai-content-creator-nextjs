@@ -42,6 +42,22 @@ export class WavespeedImageService implements IImageService {
   async generateImage(
     request: GenerateImageRequest,
   ): Promise<GenerateImageResponse> {
+    const enhancedPrompt = this.enhancePromptForStyle(
+      request.imagePrompt,
+      request.imageStyle,
+    );
+    return this.executeGeneration(enhancedPrompt);
+  }
+
+  async generateRawImage(request: {
+    imagePrompt: string;
+  }): Promise<GenerateImageResponse> {
+    return this.executeGeneration(request.imagePrompt);
+  }
+
+  private async executeGeneration(
+    prompt: string,
+  ): Promise<GenerateImageResponse> {
     if (!this.apiKey) {
       return {
         success: false,
@@ -61,11 +77,6 @@ export class WavespeedImageService implements IImageService {
         `[WavespeedImageService] Submitting task for model: ${this.modelUuid}`,
       );
 
-      const enhancedPrompt = this.enhancePromptForStyle(
-        request.imagePrompt,
-        request.imageStyle,
-      );
-
       // 1. Submit the task
       const submitResponse = await fetch(`${this.baseUrl}/${this.modelUuid}`, {
         method: "POST",
@@ -74,7 +85,7 @@ export class WavespeedImageService implements IImageService {
           Authorization: `Bearer ${this.apiKey}`,
         },
         body: JSON.stringify({
-          prompt: enhancedPrompt,
+          prompt: prompt,
           // Add default parameters if needed, or allow them in request
           aspect_ratio: "1:1",
         }),

@@ -1,20 +1,24 @@
 /**
  * TogetherAIImageService
  * Service for generating images using Together AI API (FLUX models)
- * 
+ *
  * ✅ FREE credits on signup
  * ✅ High quality FLUX models
  * ✅ Fast generation
- * 
+ *
  * Get API key: https://api.together.ai/
  */
 
 import {
-    GenerateImageRequest,
-    GenerateImageResponse,
-    IImageService,
-} from '@/src/application/services/IImageService';
-import { getImageStyleById } from '@/src/data/master/imageStyles';
+  GenerateImageRequest,
+  GenerateImageResponse,
+  IImageService,
+} from "@/src/application/services/IImageService";
+import { getImageStyleById } from "@/src/data/master/imageStyles";
+
+interface RawImageRequest {
+  imagePrompt: string;
+}
 
 /**
  * TogetherAIImageService class
@@ -22,50 +26,65 @@ import { getImageStyleById } from '@/src/data/master/imageStyles';
  */
 export class TogetherAIImageService implements IImageService {
   private apiKey: string;
-  private baseUrl = 'https://api.together.xyz/v1';
+  private baseUrl = "https://api.together.xyz/v1";
   private model: string;
 
   /**
    * @param apiKey - Together AI API key
    * @param model - Model to use (default: black-forest-labs/FLUX.1-schnell-Free)
    */
-  constructor(apiKey: string, model = 'black-forest-labs/FLUX.1-schnell-Free') {
+  constructor(apiKey: string, model = "black-forest-labs/FLUX.1-schnell-Free") {
     this.apiKey = apiKey;
     this.model = model;
   }
 
-  async generateImage(request: GenerateImageRequest): Promise<GenerateImageResponse> {
+  async generateImage(
+    request: GenerateImageRequest,
+  ): Promise<GenerateImageResponse> {
+    const enhancedPrompt = this.enhancePromptForStyle(
+      request.imagePrompt,
+      request.imageStyle,
+    );
+    return this.executeGeneration(enhancedPrompt);
+  }
+
+  async generateRawImage(
+    request: RawImageRequest,
+  ): Promise<GenerateImageResponse> {
+    return this.executeGeneration(request.imagePrompt);
+  }
+
+  private async executeGeneration(
+    prompt: string,
+  ): Promise<GenerateImageResponse> {
     if (!this.apiKey) {
       return {
         success: false,
-        error: 'No Together AI API key provided',
+        error: "No Together AI API key provided",
       };
     }
 
     try {
-      // Enhance prompt for selected style
-      const enhancedPrompt = this.enhancePromptForStyle(request.imagePrompt, request.imageStyle);
-
       const response = await fetch(`${this.baseUrl}/images/generations`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.apiKey}`,
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${this.apiKey}`,
         },
         body: JSON.stringify({
           model: this.model,
-          prompt: enhancedPrompt,
+          prompt: prompt,
           width: 512,
           height: 512,
           steps: 4, // FLUX.1-schnell uses fewer steps
           n: 1,
-          response_format: 'b64_json',
+          response_format: "b64_json",
         }),
       });
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('Together AI API error:', errorText);
+        console.error("Together AI API error:", errorText);
         return {
           success: false,
           error: `Together AI API error: ${response.status}`,
@@ -73,12 +92,12 @@ export class TogetherAIImageService implements IImageService {
       }
 
       const data = await response.json();
-      
+
       if (!data.data?.[0]?.b64_json) {
-        console.error('No image data in response');
+        console.error("No image data in response");
         return {
           success: false,
-          error: 'No image data in API response',
+          error: "No image data in API response",
         };
       }
 
@@ -87,8 +106,9 @@ export class TogetherAIImageService implements IImageService {
         base64Data: data.data[0].b64_json,
       };
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      console.error('Together AI image generation error:', errorMessage);
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error";
+      console.error("Together AI image generation error:", errorMessage);
       return {
         success: false,
         error: errorMessage,
