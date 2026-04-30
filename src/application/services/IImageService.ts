@@ -1,7 +1,7 @@
 /**
  * Image Service Interface
  * Defines contract for AI image generation services
- * 
+ *
  * ✅ Allows switching between providers (Gemini, Mock, Placeholder, etc.)
  */
 
@@ -19,9 +19,16 @@ export interface GenerateImageResponse {
   extension?: string; // e.g. 'svg'
 }
 
+export interface GenerateRawImageRequest {
+  imagePrompt: string;
+}
+
 /**
  * Interface for image generation services
  */
 export interface IImageService {
   generateImage(request: GenerateImageRequest): Promise<GenerateImageResponse>;
+  generateRawImage(
+    request: GenerateRawImageRequest,
+  ): Promise<GenerateImageResponse>;
 }

@@ -1,7 +1,7 @@
 /**
  * GeminiImageService
  * Service for generating Pixel Art images using Google Gemini Imagen API
- * 
+ *
  * ✅ Implements IImageService for provider switching
  * ✅ Single Responsibility: Only generates images, does NOT upload
  */
@@ -10,10 +10,14 @@ import {
   GenerateImageRequest,
   GenerateImageResponse,
   IImageService,
-} from '@/src/application/services/IImageService';
-import { getImageStyleById } from '@/src/data/master/imageStyles';
+} from "@/src/application/services/IImageService";
+import { getImageStyleById } from "@/src/data/master/imageStyles";
 
-const AI_CONTENTS_BUCKET = 'ai-contents';
+interface RawImageRequest {
+  imagePrompt: string;
+}
+
+const AI_CONTENTS_BUCKET = "ai-contents";
 
 /**
  * GeminiImageService class
@@ -21,7 +25,7 @@ const AI_CONTENTS_BUCKET = 'ai-contents';
  */
 export class GeminiImageService implements IImageService {
   private apiKey: string;
-  private baseUrl = 'https://generativelanguage.googleapis.com/v1beta';
+  private baseUrl = "https://generativelanguage.googleapis.com/v1beta";
 
   constructor(apiKey: string) {
     this.apiKey = apiKey;
@@ -31,46 +35,61 @@ export class GeminiImageService implements IImageService {
    * Generate a pixel art image using Gemini Imagen API
    * Returns base64 data - caller is responsible for uploading
    */
-  async generateImage(request: GenerateImageRequest): Promise<GenerateImageResponse> {
+  async generateImage(
+    request: GenerateImageRequest,
+  ): Promise<GenerateImageResponse> {
+    const enhancedPrompt = this.enhancePromptForStyle(
+      request.imagePrompt,
+      request.imageStyle,
+    );
+    return this.executeGeneration(enhancedPrompt);
+  }
+
+  async generateRawImage(
+    request: RawImageRequest,
+  ): Promise<GenerateImageResponse> {
+    return this.executeGeneration(request.imagePrompt);
+  }
+
+  private async executeGeneration(
+    prompt: string,
+  ): Promise<GenerateImageResponse> {
     if (!this.apiKey) {
-      console.warn('No Gemini API key provided');
+      console.warn("No Gemini API key provided");
       return {
         success: false,
-        error: 'No Gemini API key provided',
+        error: "No Gemini API key provided",
       };
     }
 
     try {
-      // Enhance prompt for selected style
-      const enhancedPrompt = this.enhancePromptForStyle(request.imagePrompt, request.imageStyle);
-
       // Call Gemini Imagen API
       const response = await fetch(
         `${this.baseUrl}/models/imagen-3.0-generate-002:predict?key=${this.apiKey}`,
         {
-          method: 'POST',
+          method: "POST",
           headers: {
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
           },
           body: JSON.stringify({
             instances: [
               {
-                prompt: enhancedPrompt,
+                prompt: prompt,
               },
             ],
             parameters: {
               sampleCount: 1,
-              aspectRatio: '1:1',
-              personGeneration: 'DONT_ALLOW',
-              safetyFilterLevel: 'BLOCK_MEDIUM_AND_ABOVE',
+              aspectRatio: "1:1",
+              personGeneration: "DONT_ALLOW",
+              safetyFilterLevel: "BLOCK_MEDIUM_AND_ABOVE",
             },
           }),
-        }
+        },
       );
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('Gemini Imagen API error:', errorText);
+        console.error("Gemini Imagen API error:", errorText);
         return {
           success: false,
           error: `Imagen API error: ${response.status}`,
@@ -78,12 +97,12 @@ export class GeminiImageService implements IImageService {
       }
 
       const data = await response.json();
-      
+
       if (!data.predictions?.[0]?.bytesBase64Encoded) {
-        console.error('No image data in response');
+        console.error("No image data in response");
         return {
           success: false,
-          error: 'No image data in API response',
+          error: "No image data in API response",
         };
       }
 
@@ -92,8 +111,9 @@ export class GeminiImageService implements IImageService {
         base64Data: data.predictions[0].bytesBase64Encoded,
       };
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      console.error('Image generation error:', errorMessage);
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error";
+      console.error("Image generation error:", errorMessage);
       return {
         success: false,
         error: errorMessage,

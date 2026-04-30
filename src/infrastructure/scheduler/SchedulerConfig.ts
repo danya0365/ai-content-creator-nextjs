@@ -1,29 +1,29 @@
 /**
  * Scheduler Configuration
  * ========================
- * 
+ *
  * แนวคิดเดียวกับ Laravel Scheduler
  * กำหนด scheduled tasks ทั้งหมดในไฟล์เดียว
- * 
+ *
  * VPS ต้องตั้ง cron เพียง 1 entry:
- * * * * * * curl -s http://localhost:3000/api/cron/scheduler >/dev/null 2>&1
- * 
+ * * * * * * curl -s http://localhost:3000/api/cron/run >/dev/null 2>&1
+ *
  * หรือ:
  * * * * * * /opt/app/ai-content-creator-nextjs/scripts/scheduler-run.sh
  */
 
-export type ScheduleFrequency = 
-  | 'everyMinute'
-  | 'everyFiveMinutes'
-  | 'everyFifteenMinutes'
-  | 'everyThirtyMinutes'
-  | 'hourly'
-  | 'hourlyAt'
-  | 'daily'
-  | 'dailyAt'
-  | 'weekly'
-  | 'monthly'
-  | 'cron';
+export type ScheduleFrequency =
+  | "everyMinute"
+  | "everyFiveMinutes"
+  | "everyFifteenMinutes"
+  | "everyThirtyMinutes"
+  | "hourly"
+  | "hourlyAt"
+  | "daily"
+  | "dailyAt"
+  | "weekly"
+  | "monthly"
+  | "cron";
 
 export interface ScheduledTask {
   name: string;
@@ -49,10 +49,10 @@ export const SCHEDULED_TASKS: ScheduledTask[] = [
   // Heartbeat (Every Minute for Debugging)
   // ==========================================
   {
-    name: 'heartbeat',
-    description: 'Internal heartbeat to verify scheduler is alive',
-    handler: '/api/debug/heartbeat', // A simple route that just returns success
-    frequency: 'everyMinute',
+    name: "heartbeat",
+    description: "Internal heartbeat to verify scheduler is alive",
+    handler: "/api/debug/heartbeat", // A simple route that just returns success
+    frequency: "everyMinute",
     enabled: true,
   },
 
@@ -60,62 +60,62 @@ export const SCHEDULED_TASKS: ScheduledTask[] = [
   // Morning Content (6:00)
   // ==========================================
   {
-    name: 'generate-morning-content',
-    description: 'Generate morning news and motivation content',
-    handler: '/api/cron/generate',
-    frequency: 'dailyAt',
-    at: '06:00',
+    name: "generate-morning-content",
+    description: "Generate morning news and motivation content",
+    handler: "/api/cron/generate",
+    frequency: "dailyAt",
+    at: "06:00",
     enabled: true,
-    timezone: 'Asia/Bangkok',
+    timezone: "Asia/Bangkok",
   },
 
   // ==========================================
   // Lunch Content (11:00)
   // ==========================================
   {
-    name: 'generate-lunch-content',
-    description: 'Generate food and recipe content',
-    handler: '/api/cron/generate',
-    frequency: 'dailyAt',
-    at: '11:00',
+    name: "generate-lunch-content",
+    description: "Generate food and recipe content",
+    handler: "/api/cron/generate",
+    frequency: "dailyAt",
+    at: "11:00",
     enabled: true,
-    timezone: 'Asia/Bangkok',
+    timezone: "Asia/Bangkok",
   },
 
   // ==========================================
   // Afternoon Content (14:00)
   // ==========================================
   {
-    name: 'generate-afternoon-content',
-    description: 'Generate tech tips and entertainment content',
-    handler: '/api/cron/generate',
-    frequency: 'dailyAt',
-    at: '14:00',
+    name: "generate-afternoon-content",
+    description: "Generate tech tips and entertainment content",
+    handler: "/api/cron/generate",
+    frequency: "dailyAt",
+    at: "14:00",
     enabled: true,
-    timezone: 'Asia/Bangkok',
+    timezone: "Asia/Bangkok",
   },
 
   // ==========================================
   // Evening Content (18:00)
   // ==========================================
   {
-    name: 'generate-evening-content',
-    description: 'Generate gaming and evening content',
-    handler: '/api/cron/generate',
-    frequency: 'dailyAt',
-    at: '18:00',
+    name: "generate-evening-content",
+    description: "Generate gaming and evening content",
+    handler: "/api/cron/generate",
+    frequency: "dailyAt",
+    at: "18:00",
     enabled: true,
-    timezone: 'Asia/Bangkok',
+    timezone: "Asia/Bangkok",
   },
 
   // ==========================================
   // Publish scheduled content (every 5 minutes)
   // ==========================================
   {
-    name: 'publish-scheduled-content',
-    description: 'Publish content that is scheduled for now',
-    handler: '/api/cron/publish',
-    frequency: 'everyFiveMinutes',
+    name: "publish-scheduled-content",
+    description: "Publish content that is scheduled for now",
+    handler: "/api/cron/publish",
+    frequency: "everyFiveMinutes",
     enabled: true,
   },
 
@@ -123,78 +123,78 @@ export const SCHEDULED_TASKS: ScheduledTask[] = [
   // Weekly Report (Monday 9:00 AM)
   // ==========================================
   {
-    name: 'weekly-report',
-    description: 'Generate weekly analytics report',
-    handler: '/api/cron/weekly-report',
-    frequency: 'cron',
-    cronExpression: '0 9 * * 1', // Monday 9:00 AM
+    name: "weekly-report",
+    description: "Generate weekly analytics report",
+    handler: "/api/cron/weekly-report",
+    frequency: "cron",
+    cronExpression: "0 9 * * 1", // Monday 9:00 AM
     enabled: true,
-    timezone: 'Asia/Bangkok',
+    timezone: "Asia/Bangkok",
   },
 
   // ==========================================
   // Islamic Content - Quran (04:30)
   // ==========================================
   {
-    name: 'islamic-quran-fajr',
-    description: 'Generate Quranic reflection for Fajr',
-    handler: '/api/cron/generate?type=islamic-quran',
-    frequency: 'dailyAt',
-    at: '04:30',
+    name: "islamic-quran-fajr",
+    description: "Generate Quranic reflection for Fajr",
+    handler: "/api/cron/generate?type=islamic-quran",
+    frequency: "dailyAt",
+    at: "04:30",
     enabled: true,
-    timezone: 'Asia/Bangkok',
+    timezone: "Asia/Bangkok",
   },
 
   // ==========================================
   // Islamic Content - Seerah (08:30)
   // ==========================================
   {
-    name: 'islamic-seerah-morning',
-    description: 'Generate Prophetic stories for morning inspiration',
-    handler: '/api/cron/generate?type=islamic-seerah',
-    frequency: 'dailyAt',
-    at: '08:30',
+    name: "islamic-seerah-morning",
+    description: "Generate Prophetic stories for morning inspiration",
+    handler: "/api/cron/generate?type=islamic-seerah",
+    frequency: "dailyAt",
+    at: "08:30",
     enabled: true,
-    timezone: 'Asia/Bangkok',
+    timezone: "Asia/Bangkok",
   },
 
   // ==========================================
   // Islamic Content - Hadith (12:15)
   // ==========================================
   {
-    name: 'islamic-hadith-noon',
-    description: 'Generate Daily Hadith for Dhuhr',
-    handler: '/api/cron/generate?type=islamic-hadith',
-    frequency: 'dailyAt',
-    at: '12:15',
+    name: "islamic-hadith-noon",
+    description: "Generate Daily Hadith for Dhuhr",
+    handler: "/api/cron/generate?type=islamic-hadith",
+    frequency: "dailyAt",
+    at: "12:15",
     enabled: true,
-    timezone: 'Asia/Bangkok',
+    timezone: "Asia/Bangkok",
   },
 
   // ==========================================
   // Islamic Content - History (18:30)
   // ==========================================
   {
-    name: 'islamic-history-evening',
-    description: 'Generate Islamic history for evening knowledge',
-    handler: '/api/cron/generate?type=islamic-history',
-    frequency: 'dailyAt',
-    at: '18:30',
+    name: "islamic-history-evening",
+    description: "Generate Islamic history for evening knowledge",
+    handler: "/api/cron/generate?type=islamic-history",
+    frequency: "dailyAt",
+    at: "18:30",
     enabled: true,
-    timezone: 'Asia/Bangkok',
+    timezone: "Asia/Bangkok",
   },
 
   // ==========================================
   // Islamic Content - Wisdom (21:00)
   // ==========================================
   {
-    name: 'islamic-wisdom-night',
-    description: 'Generate Islamic wisdom for night reflection',
-    handler: '/api/cron/generate?type=islamic-wisdom',
-    frequency: 'dailyAt',
-    at: '21:00',
+    name: "islamic-wisdom-night",
+    description: "Generate Islamic wisdom for night reflection",
+    handler: "/api/cron/generate?type=islamic-wisdom",
+    frequency: "dailyAt",
+    at: "21:00",
     enabled: true,
-    timezone: 'Asia/Bangkok',
+    timezone: "Asia/Bangkok",
   },
 ];
 
@@ -205,64 +205,64 @@ export function shouldRunNow(task: ScheduledTask, now: Date): boolean {
   if (!task.enabled) return false;
 
   // Get time in task's timezone
-  const timezone = task.timezone || 'Asia/Bangkok';
+  const timezone = task.timezone || "Asia/Bangkok";
   const options: Intl.DateTimeFormatOptions = {
     timeZone: timezone,
-    hour: '2-digit',
-    minute: '2-digit',
+    hour: "2-digit",
+    minute: "2-digit",
     hour12: false,
   };
-  
-  const formatter = new Intl.DateTimeFormat('en-US', {
+
+  const formatter = new Intl.DateTimeFormat("en-US", {
     timeZone: timezone,
-    hour: 'numeric',
-    minute: 'numeric',
-    weekday: 'short',
-    day: 'numeric',
+    hour: "numeric",
+    minute: "numeric",
+    weekday: "short",
+    day: "numeric",
     hour12: false,
   });
-  
+
   const parts = formatter.formatToParts(now);
-  const hour = parseInt(parts.find(p => p.type === 'hour')?.value || '0');
-  const minute = parseInt(parts.find(p => p.type === 'minute')?.value || '0');
-  const weekday = parts.find(p => p.type === 'weekday')?.value || '';
-  const day = parseInt(parts.find(p => p.type === 'day')?.value || '1');
+  const hour = parseInt(parts.find((p) => p.type === "hour")?.value || "0");
+  const minute = parseInt(parts.find((p) => p.type === "minute")?.value || "0");
+  const weekday = parts.find((p) => p.type === "weekday")?.value || "";
+  const day = parseInt(parts.find((p) => p.type === "day")?.value || "1");
 
   switch (task.frequency) {
-    case 'everyMinute':
+    case "everyMinute":
       return true;
 
-    case 'everyFiveMinutes':
+    case "everyFiveMinutes":
       return minute % 5 === 0;
 
-    case 'everyFifteenMinutes':
+    case "everyFifteenMinutes":
       return minute % 15 === 0;
 
-    case 'everyThirtyMinutes':
+    case "everyThirtyMinutes":
       return minute % 30 === 0;
 
-    case 'hourly':
+    case "hourly":
       return minute === 0;
 
-    case 'hourlyAt':
+    case "hourlyAt":
       return minute === (task.hourAt || 0);
 
-    case 'daily':
+    case "daily":
       return hour === 0 && minute === 0;
 
-    case 'dailyAt':
+    case "dailyAt":
       if (!task.at) return false;
-      const [targetHour, targetMinute] = task.at.split(':').map(Number);
+      const [targetHour, targetMinute] = task.at.split(":").map(Number);
       return hour === targetHour && minute === targetMinute;
 
-    case 'weekly':
-      return weekday === 'Sun' && hour === 0 && minute === 0;
+    case "weekly":
+      return weekday === "Sun" && hour === 0 && minute === 0;
 
-    case 'monthly':
+    case "monthly":
       return day === 1 && hour === 0 && minute === 0;
 
-    case 'cron':
-      return matchesCronExpression(task.cronExpression || '', now, timezone);
+    case "cron":
+      return matchesCronExpression(task.cronExpression || "", now, timezone);
 
     default:
       return false;
@@ -273,29 +273,37 @@ export function shouldRunNow(task: ScheduledTask, now: Date): boolean {
  * Simple cron expression matcher
  * Supports: minute hour day month weekday
  */
-function matchesCronExpression(expression: string, now: Date, timezone: string): boolean {
+function matchesCronExpression(
+  expression: string,
+  now: Date,
+  timezone: string,
+): boolean {
   if (!expression) return false;
 
-  const parts = expression.split(' ');
+  const parts = expression.split(" ");
   if (parts.length !== 5) return false;
 
-  const formatter = new Intl.DateTimeFormat('en-US', {
+  const formatter = new Intl.DateTimeFormat("en-US", {
     timeZone: timezone,
-    minute: 'numeric',
-    hour: 'numeric',
-    day: 'numeric',
-    month: 'numeric',
-    weekday: 'short',
+    minute: "numeric",
+    hour: "numeric",
+    day: "numeric",
+    month: "numeric",
+    weekday: "short",
     hour12: false,
   });
 
   const dateParts = formatter.formatToParts(now);
-  const minute = parseInt(dateParts.find(p => p.type === 'minute')?.value || '0');
-  const hour = parseInt(dateParts.find(p => p.type === 'hour')?.value || '0');
-  const day = parseInt(dateParts.find(p => p.type === 'day')?.value || '1');
-  const month = parseInt(dateParts.find(p => p.type === 'month')?.value || '1');
-  const weekday = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].indexOf(
-    dateParts.find(p => p.type === 'weekday')?.value || 'Sun'
+  const minute = parseInt(
+    dateParts.find((p) => p.type === "minute")?.value || "0",
+  );
+  const hour = parseInt(dateParts.find((p) => p.type === "hour")?.value || "0");
+  const day = parseInt(dateParts.find((p) => p.type === "day")?.value || "1");
+  const month = parseInt(
+    dateParts.find((p) => p.type === "month")?.value || "1",
+  );
+  const weekday = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].indexOf(
+    dateParts.find((p) => p.type === "weekday")?.value || "Sun",
   );
 
   const [cronMin, cronHour, cronDay, cronMonth, cronWeekday] = parts;
@@ -310,25 +318,25 @@ function matchesCronExpression(expression: string, now: Date, timezone: string):
 }
 
 function matchesCronField(field: string, value: number): boolean {
-  if (field === '*') return true;
-  
+  if (field === "*") return true;
+
   // Handle comma-separated values
-  if (field.includes(',')) {
-    return field.split(',').some(v => parseInt(v) === value);
+  if (field.includes(",")) {
+    return field.split(",").some((v) => parseInt(v) === value);
   }
-  
+
   // Handle ranges (e.g., 1-5)
-  if (field.includes('-')) {
-    const [start, end] = field.split('-').map(Number);
+  if (field.includes("-")) {
+    const [start, end] = field.split("-").map(Number);
     return value >= start && value <= end;
   }
-  
+
   // Handle step values (e.g., */5)
-  if (field.includes('/')) {
-    const [, step] = field.split('/');
+  if (field.includes("/")) {
+    const [, step] = field.split("/");
     return value % parseInt(step) === 0;
   }
-  
+
   return parseInt(field) === value;
 }
 
@@ -336,7 +344,7 @@ function matchesCronField(field: string, value: number): boolean {
  * Get all tasks that should run now
  */
 export function getTasksToRun(now: Date = new Date()): ScheduledTask[] {
-  return SCHEDULED_TASKS.filter(task => shouldRunNow(task, now));
+  return SCHEDULED_TASKS.filter((task) => shouldRunNow(task, now));
 }
 
 /**
@@ -344,29 +352,29 @@ export function getTasksToRun(now: Date = new Date()): ScheduledTask[] {
  */
 export function getNextRunDescription(task: ScheduledTask): string {
   switch (task.frequency) {
-    case 'everyMinute':
-      return 'Every minute';
-    case 'everyFiveMinutes':
-      return 'Every 5 minutes';
-    case 'everyFifteenMinutes':
-      return 'Every 15 minutes';
-    case 'everyThirtyMinutes':
-      return 'Every 30 minutes';
-    case 'hourly':
-      return 'Every hour at :00';
-    case 'hourlyAt':
-      return `Every hour at :${String(task.hourAt || 0).padStart(2, '0')}`;
-    case 'daily':
-      return 'Daily at 00:00';
-    case 'dailyAt':
+    case "everyMinute":
+      return "Every minute";
+    case "everyFiveMinutes":
+      return "Every 5 minutes";
+    case "everyFifteenMinutes":
+      return "Every 15 minutes";
+    case "everyThirtyMinutes":
+      return "Every 30 minutes";
+    case "hourly":
+      return "Every hour at :00";
+    case "hourlyAt":
+      return `Every hour at :${String(task.hourAt || 0).padStart(2, "0")}`;
+    case "daily":
+      return "Daily at 00:00";
+    case "dailyAt":
       return `Daily at ${task.at}`;
-    case 'weekly':
-      return 'Weekly on Sunday at 00:00';
-    case 'monthly':
-      return 'Monthly on the 1st at 00:00';
-    case 'cron':
+    case "weekly":
+      return "Weekly on Sunday at 00:00";
+    case "monthly":
+      return "Monthly on the 1st at 00:00";
+    case "cron":
       return `Cron: ${task.cronExpression}`;
     default:
-      return 'Unknown';
+      return "Unknown";
   }
 }

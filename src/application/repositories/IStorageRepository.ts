@@ -27,8 +27,17 @@ export interface IStorageRepository {
     fileName: string,
     bucket: string,
     folder?: string,
-    contentType?: string,
-    extension?: string
+  ): Promise<string>;
+
+  /**
+   * Fetch an image from a URL and upload it to storage
+   * @returns Public URL of the uploaded file
+   */
+  uploadFromUrl(
+    imageUrl: string,
+    fileName: string,
+    bucket: string,
+    folder?: string,
   ): Promise<string>;
 
   /**

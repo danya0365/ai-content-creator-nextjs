@@ -27,12 +27,10 @@ export async function POST(request: NextRequest) {
 
     const presenter = createServerAIPresenter();
 
-    // Build a style hint from dimensions for the image service
-    const imageStyle = "photo-realistic";
-
-    const imageResult = await presenter.generateImage({
+    // Use generateRawImage since the prompt is already fully composed
+    // by GeneratePhotoPromptModal - no style enhancement needed
+    const imageResult = await presenter.generateRawImage({
       imagePrompt: prompt,
-      imageStyle,
     });
 
     if (!imageResult.success) {
