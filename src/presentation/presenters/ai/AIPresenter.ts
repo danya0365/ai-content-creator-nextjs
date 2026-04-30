@@ -238,6 +238,46 @@ export class AIPresenter {
   }
 
   /**
+   * Generate an image from a raw prompt and upload to Supabase storage
+   */
+  async generateRawImageAndUpload(params: {
+    imagePrompt: string;
+  }): Promise<{ success: boolean; imageUrl?: string; error?: string }> {
+    try {
+      const imageResult = await this.imageService.generateRawImage(params);
+
+      if (!imageResult.success) {
+        return {
+          success: false,
+          error: imageResult.error || "Failed to generate image",
+        };
+      }
+
+      let imageUrl = "";
+      if (imageResult.base64Data) {
+        imageUrl = await this.storageRepository.uploadBase64(
+          imageResult.base64Data,
+          `photo-${Date.now()}`,
+          AI_CONTENTS_BUCKET,
+          "generated",
+          imageResult.contentType,
+          imageResult.extension,
+        );
+      } else if (imageResult.imageUrl) {
+        imageUrl = imageResult.imageUrl;
+      }
+
+      return {
+        success: true,
+        imageUrl,
+      };
+    } catch (error) {
+      console.error("[AIPresenter] Error in generateRawImageAndUpload:", error);
+      throw error;
+    }
+  }
+
+  /**
    * Generate topic ideas for a content type
    */
   async generateTopicIdea(
