@@ -162,35 +162,6 @@ export class WavespeedImageService implements IImageService {
           const imageUrl = outputs?.[0]?.url || outputs?.[0];
 
           if (imageUrl) {
-            try {
-              // Fetch the image to get base64 data for Supabase upload
-              const imageResponse = await fetch(imageUrl);
-              if (imageResponse.ok) {
-                const arrayBuffer = await imageResponse.arrayBuffer();
-                const buffer = Buffer.from(arrayBuffer);
-                const base64Data = buffer.toString("base64");
-                const contentType =
-                  imageResponse.headers.get("content-type") || "image/jpeg";
-                // Clean the extension (e.g. 'jpeg' instead of 'jpeg; charset=utf-8')
-                const rawExtension = contentType.split("/")[1] || "jpeg";
-                const extension = rawExtension.split(";")[0].trim();
-
-                return {
-                  success: true,
-                  imageUrl: imageUrl,
-                  base64Data,
-                  contentType,
-                  extension,
-                };
-              }
-            } catch (fetchErr) {
-              console.error(
-                "[WavespeedImageService] Failed to fetch image for base64 conversion:",
-                fetchErr,
-              );
-            }
-
-            // Fallback to just URL if fetching fails
             return {
               success: true,
               imageUrl: imageUrl,

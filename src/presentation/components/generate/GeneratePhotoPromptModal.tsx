@@ -335,7 +335,19 @@ export function GeneratePhotoPromptModal({
       }
       setGeneratedPrompt(generatedPrompt);
       if (data.imageUrl) {
-        setGeneratedImage(data.imageUrl);
+        // Upload external image URL to Supabase Storage for persistence
+        const uploadResponse = await fetch("/api/ai/upload-image", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ imageUrl: data.imageUrl }),
+        });
+        const uploadData = await uploadResponse.json();
+        if (uploadResponse.ok && uploadData.success && uploadData.imageUrl) {
+          setGeneratedImage(uploadData.imageUrl);
+        } else {
+          // Fallback to the original external URL
+          setGeneratedImage(data.imageUrl);
+        }
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to generate image");

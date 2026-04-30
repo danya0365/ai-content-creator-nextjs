@@ -12,7 +12,10 @@ import {
   GenerateTopicIdeaResponse,
   IContentService,
 } from "@/src/application/services/IContentService";
-import { IImageService } from "@/src/application/services/IImageService";
+import {
+  GenerateImageResponse,
+  IImageService,
+} from "@/src/application/services/IImageService";
 import { ContentType } from "@/src/data/master/contentTypes";
 
 const AI_CONTENTS_BUCKET = "ai-contents";
@@ -81,20 +84,7 @@ export class AIPresenter {
         });
 
         if (imageResult.success) {
-          if (imageResult.base64Data) {
-            // Upload base64 data to Supabase Storage
-            imageUrl = await this.storageRepository.uploadBase64(
-              imageResult.base64Data,
-              `gen-${Date.now()}`,
-              AI_CONTENTS_BUCKET,
-              "generated",
-              imageResult.contentType,
-              imageResult.extension,
-            );
-          } else if (imageResult.imageUrl) {
-            // Use direct URL (for mock/placeholder services)
-            imageUrl = imageResult.imageUrl;
-          }
+          imageUrl = await this.uploadImageResult(imageResult, "gen");
         }
       }
 
@@ -168,18 +158,7 @@ export class AIPresenter {
         });
 
         if (imageResult.success) {
-          if (imageResult.base64Data) {
-            imageUrl = await this.storageRepository.uploadBase64(
-              imageResult.base64Data,
-              `multi-gen-${Date.now()}`,
-              AI_CONTENTS_BUCKET,
-              "generated",
-              imageResult.contentType,
-              imageResult.extension,
-            );
-          } else if (imageResult.imageUrl) {
-            imageUrl = imageResult.imageUrl;
-          }
+          imageUrl = await this.uploadImageResult(imageResult, "multi-gen");
         }
       }
 
@@ -253,19 +232,7 @@ export class AIPresenter {
         };
       }
 
-      let imageUrl = "";
-      if (imageResult.base64Data) {
-        imageUrl = await this.storageRepository.uploadBase64(
-          imageResult.base64Data,
-          `photo-${Date.now()}`,
-          AI_CONTENTS_BUCKET,
-          "generated",
-          imageResult.contentType,
-          imageResult.extension,
-        );
-      } else if (imageResult.imageUrl) {
-        imageUrl = imageResult.imageUrl;
-      }
+      const imageUrl = await this.uploadImageResult(imageResult, "photo");
 
       return {
         success: true,
@@ -275,6 +242,33 @@ export class AIPresenter {
       console.error("[AIPresenter] Error in generateRawImageAndUpload:", error);
       throw error;
     }
+  }
+
+  /**
+   * Upload an image generation result to Supabase Storage.
+   * Handles both base64Data (Gemini) and imageUrl (Wavespeed, Pollinations, DiceBear)
+   */
+  private async uploadImageResult(
+    imageResult: GenerateImageResponse,
+    prefix: string,
+  ): Promise<string> {
+    if (imageResult.base64Data) {
+      return await this.storageRepository.uploadBase64(
+        imageResult.base64Data,
+        `${prefix}-${Date.now()}`,
+        AI_CONTENTS_BUCKET,
+        "generated",
+      );
+    } else if (imageResult.imageUrl) {
+      return await this.storageRepository.uploadFromUrl(
+        imageResult.imageUrl,
+        `${prefix}-${Date.now()}`,
+        AI_CONTENTS_BUCKET,
+        "generated",
+      );
+    }
+
+    return "";
   }
 
   /**
