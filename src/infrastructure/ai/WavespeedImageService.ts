@@ -46,7 +46,7 @@ export class WavespeedImageService implements IImageService {
       request.imagePrompt,
       request.imageStyle,
     );
-    return this.executeGeneration(enhancedPrompt);
+    return this.executeGeneration(enhancedPrompt, "1:1");
   }
 
   async generateRawImage(request: {
@@ -57,6 +57,7 @@ export class WavespeedImageService implements IImageService {
 
   private async executeGeneration(
     prompt: string,
+    aspectRatio?: string,
   ): Promise<GenerateImageResponse> {
     if (!this.apiKey) {
       return {
@@ -86,8 +87,7 @@ export class WavespeedImageService implements IImageService {
         },
         body: JSON.stringify({
           prompt: prompt,
-          // Add default parameters if needed, or allow them in request
-          aspect_ratio: "1:1",
+          ...(aspectRatio ? { aspect_ratio: aspectRatio } : {}),
         }),
       });
 
