@@ -14,6 +14,7 @@ export interface AppSettings {
   defaultTimeSlot: string;
   contentQuality: 'standard' | 'high' | 'ultra';
   language: 'th' | 'en';
+  brandContext?: string;
   notifications: {
     onGenerate: boolean;
     onPublish: boolean;
@@ -48,6 +49,7 @@ const defaultSettings: AppSettings = {
   defaultTimeSlot: 'morning',
   contentQuality: 'high',
   language: 'th',
+  brandContext: '',
   notifications: {
     onGenerate: true,
     onPublish: true,
@@ -68,33 +70,38 @@ export class SettingsPresenter {
    * Get view model for the page
    */
   async getViewModel(): Promise<SettingsViewModel> {
-    // Get stats from repository for user profile
-    const stats = await this.repository.getStats();
+    try {
+      // Get stats from repository for user profile
+      const stats = await this.repository.getStats();
 
-    // ✅ User profile - in production, this would come from auth/user service
-    const userProfile: UserProfile = {
-      name: 'ผู้สร้างคอนเทนต์',
-      email: 'creator@example.com',
-      bio: 'สร้างคอนเทนต์ Pixel Art ที่น่ารักด้วย AI',
-      avatar: '👤',
-      stats: {
-        totalContents: stats.totalContents,
-        published: stats.publishedCount,
-        likes: stats.totalLikes,
-        shares: stats.totalShares,
-      },
-    };
+      // ✅ User profile - in production, this would come from auth/user service
+      const userProfile: UserProfile = {
+        name: 'ผู้สร้างคอนเทนต์',
+        email: 'creator@example.com',
+        bio: 'สร้างคอนเทนต์ Pixel Art ที่น่ารักด้วย AI',
+        avatar: '👤',
+        stats: {
+          totalContents: stats.totalContents,
+          published: stats.publishedCount,
+          likes: stats.totalLikes,
+          shares: stats.totalShares,
+        },
+      };
 
-    return {
-      settings: defaultSettings,
-      availableTimeSlots: [
-        { id: 'morning', name: '🌅 เช้า (6:00-9:00)' },
-        { id: 'lunch', name: '🍱 เที่ยง (11:00-14:00)' },
-        { id: 'afternoon', name: '☀️ บ่าย (14:00-18:00)' },
-        { id: 'evening', name: '🌙 เย็น (18:00-22:00)' },
-      ],
-      userProfile,
-    };
+      return {
+        settings: defaultSettings,
+        availableTimeSlots: [
+          { id: 'morning', name: '🌅 เช้า (6:00-9:00)' },
+          { id: 'lunch', name: '🍱 เที่ยง (11:00-14:00)' },
+          { id: 'afternoon', name: '☀️ บ่าย (14:00-18:00)' },
+          { id: 'evening', name: '🌙 เย็น (18:00-22:00)' },
+        ],
+        userProfile,
+      };
+    } catch (error) {
+      console.error('[SettingsPresenter] Error in getViewModel:', error);
+      throw error;
+    }
   }
 
   /**

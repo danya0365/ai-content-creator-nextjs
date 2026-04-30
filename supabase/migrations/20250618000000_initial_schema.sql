@@ -24,7 +24,7 @@ CREATE TYPE public.profile_role AS ENUM ('user', 'moderator', 'admin');
 
 -- Create profiles table (extends auth.users)
 CREATE TABLE IF NOT EXISTS public.profiles (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT extensions.uuid_generate_v4(),
   auth_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
   username TEXT UNIQUE,
   full_name TEXT,
@@ -69,7 +69,7 @@ CREATE TABLE IF NOT EXISTS public.profiles (
 
 -- Create profile_roles table (managed by admins only)
 CREATE TABLE IF NOT EXISTS public.profile_roles (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT extensions.uuid_generate_v4(),
   profile_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
   role public.profile_role NOT NULL DEFAULT 'user',
   granted_by UUID REFERENCES auth.users(id),

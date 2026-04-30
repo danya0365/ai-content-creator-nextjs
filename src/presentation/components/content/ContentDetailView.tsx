@@ -4,11 +4,11 @@ import { ContentDetailViewModel } from '@/src/presentation/presenters/content/Co
 import { useContentDetailPresenter } from '@/src/presentation/presenters/content/useContentDetailPresenter';
 import { animated, config, useSpring } from '@react-spring/web';
 import Link from 'next/link';
-import { MainLayout } from '../layout/MainLayout';
 import { JellyButton } from '../ui/JellyButton';
 import { JellyCard } from '../ui/JellyCard';
 import { DonutChart } from '../ui/SimpleChart';
 import { TrendIndicator } from '../ui/TrendIndicator';
+import { ContentDetailSkeleton } from './ContentDetailSkeleton';
 
 interface ContentDetailViewProps {
   contentId: string;
@@ -45,22 +45,13 @@ export function ContentDetailView({ contentId, initialViewModel }: ContentDetail
 
   // Loading state
   if (state.loading && !state.viewModel) {
-    return (
-      <MainLayout showBubbles={false}>
-        <div className="h-full flex items-center justify-center">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-violet-500 mx-auto mb-4"></div>
-            <p className="text-muted">กำลังโหลด...</p>
-          </div>
-        </div>
-      </MainLayout>
-    );
+    return <ContentDetailSkeleton />;
   }
 
   // Error state
   if (state.error) {
     return (
-      <MainLayout showBubbles={false}>
+      <>
         <div className="h-full flex items-center justify-center">
           <div className="text-center">
             <p className="text-red-400 mb-4">{state.error}</p>
@@ -69,14 +60,14 @@ export function ContentDetailView({ contentId, initialViewModel }: ContentDetail
             </JellyButton>
           </div>
         </div>
-      </MainLayout>
+      </>
     );
   }
 
   // Not found state
   if (!state.viewModel?.content) {
     return (
-      <MainLayout showBubbles={false}>
+      <>
         <div className="h-full flex items-center justify-center">
           <div className="text-center">
             <span className="text-5xl mb-4 block">🔍</span>
@@ -87,7 +78,7 @@ export function ContentDetailView({ contentId, initialViewModel }: ContentDetail
             </Link>
           </div>
         </div>
-      </MainLayout>
+      </>
     );
   }
 
@@ -109,7 +100,7 @@ export function ContentDetailView({ contentId, initialViewModel }: ContentDetail
   };
 
   return (
-    <MainLayout showBubbles={false}>
+    <>
       <div className="h-full overflow-auto scrollbar-thin">
         <div className="max-w-6xl mx-auto px-6 py-6">
           
@@ -152,7 +143,7 @@ export function ContentDetailView({ contentId, initialViewModel }: ContentDetail
             <animated.div style={contentSpring} className="lg:col-span-2 space-y-6">
               {/* Image Preview */}
               <JellyCard className="glass-card p-0 overflow-hidden">
-                <div className="aspect-video bg-gradient-to-br from-violet-500/30 via-purple-500/20 to-fuchsia-500/30 flex items-center justify-center">
+                <div className="aspect-square bg-gradient-to-br from-violet-500/30 via-purple-500/20 to-fuchsia-500/30 flex items-center justify-center">
                   {content.imageUrl ? (
                     <img 
                       src={content.imageUrl} 
@@ -188,7 +179,7 @@ export function ContentDetailView({ contentId, initialViewModel }: ContentDetail
               {/* Description */}
               <JellyCard className="glass-card p-5">
                 <h3 className="text-lg font-semibold text-foreground mb-3">📝 Description</h3>
-                <p className="text-muted leading-relaxed">{content.description}</p>
+                <p className="text-muted whitespace-pre-wrap">{content.description}</p>
               </JellyCard>
 
               {/* AI Prompt */}
@@ -274,6 +265,6 @@ export function ContentDetailView({ contentId, initialViewModel }: ContentDetail
           </div>
         </div>
       </div>
-    </MainLayout>
+    </>
   );
 }

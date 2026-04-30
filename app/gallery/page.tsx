@@ -22,12 +22,17 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function GalleryPage() {
   const presenter = await createServerGalleryPresenter();
 
+  let viewModel = null;
+  let fetchError = false;
+
   try {
-    const viewModel = await presenter.getViewModel('all');
-    return <GalleryView initialViewModel={viewModel} />;
+    viewModel = await presenter.getCursorViewModel("all");
   } catch (error) {
     console.error("Error fetching gallery data:", error);
+    fetchError = true;
+  }
 
+  if (fetchError || !viewModel) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
@@ -45,4 +50,6 @@ export default async function GalleryPage() {
       </div>
     );
   }
+
+  return <GalleryView initialViewModel={viewModel} />;
 }

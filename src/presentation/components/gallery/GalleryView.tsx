@@ -3,10 +3,14 @@
 import { Content } from '@/src/application/repositories/IContentRepository';
 import { ContentFilter, GalleryViewModel } from '@/src/presentation/presenters/gallery/GalleryPresenter';
 import { useGalleryPresenter, ViewMode } from '@/src/presentation/presenters/gallery/useGalleryPresenter';
-import { animated, config, useSpring } from '@react-spring/web';
-import { MainLayout } from '../layout/MainLayout';
+import { animated, config, useSpring, useTransition } from '@react-spring/web';
 import { JellyButton } from '../ui/JellyButton';
 import { JellyCard } from '../ui/JellyCard';
+import { SmartImage } from '../ui/SmartImage';
+import { GallerySkeleton } from './GallerySkeleton';
+import { ContentDetailModal } from '../shared/ContentDetailModal';
+import { LoadMoreButton } from '../ui/LoadMoreButton';
+import { PaginationLinks } from '../ui/PaginationLinks';
 
 // Types
 type SortOption = 'newest' | 'oldest' | 'likes' | 'shares';
@@ -31,97 +35,6 @@ function FilterButton({ label, count, isActive, onClick }: FilterButtonProps) {
   );
 }
 
-interface ContentDetailModalProps {
-  content: Content;
-  onClose: () => void;
-}
-
-function ContentDetailModal({ content, onClose }: ContentDetailModalProps) {
-  const backdropSpring = useSpring({
-    from: { opacity: 0 },
-    to: { opacity: 1 },
-    config: config.gentle,
-  });
-
-  const modalSpring = useSpring({
-    from: { opacity: 0, scale: 0.9, y: 20 },
-    to: { opacity: 1, scale: 1, y: 0 },
-    config: config.gentle,
-  });
-
-  const statusColors = {
-    draft: 'bg-gray-500/20 text-gray-400',
-    scheduled: 'bg-blue-500/20 text-blue-400',
-    published: 'bg-green-500/20 text-green-400',
-    failed: 'bg-red-500/20 text-red-400',
-  };
-
-  return (
-    <animated.div
-      style={backdropSpring}
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
-      onClick={onClose}
-    >
-      <animated.div
-        style={modalSpring}
-        className="glass-card p-6 max-w-lg w-full max-h-[90vh] overflow-auto"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <JellyButton
-          onClick={onClose}
-          variant="ghost"
-          size="sm"
-          className="absolute top-4 right-4 w-8 h-8 rounded-full"
-        >
-          ✕
-        </JellyButton>
-
-        <div className="w-full aspect-square rounded-xl bg-gradient-to-br from-violet-500/30 via-purple-500/20 to-fuchsia-500/30 mb-4 flex items-center justify-center">
-          <span className="text-6xl">🎨</span>
-        </div>
-
-        <div className="space-y-4">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className={`text-xs px-3 py-1 rounded-full ${statusColors[content.status]}`}>
-              {content.status.toUpperCase()}
-            </span>
-            <span className="text-xs text-muted">{content.timeSlot}</span>
-          </div>
-
-          <h2 className="text-xl font-bold text-foreground">{content.title}</h2>
-          <p className="text-sm text-muted">{content.description}</p>
-
-          {content.status === 'published' && (
-            <div className="flex items-center gap-6 py-3 border-t border-b border-border/30">
-              <div className="text-center">
-                <div className="text-xl font-bold text-foreground">{content.likes}</div>
-                <div className="text-xs text-muted">Likes</div>
-              </div>
-              <div className="text-center">
-                <div className="text-xl font-bold text-foreground">{content.shares}</div>
-                <div className="text-xs text-muted">Shares</div>
-              </div>
-            </div>
-          )}
-
-          <JellyCard className="glass-card p-3">
-            <div className="text-xs text-muted mb-1">AI Prompt:</div>
-            <div className="text-sm text-foreground">{content.prompt}</div>
-          </JellyCard>
-
-          <div className="flex gap-2">
-            <JellyButton variant="primary" className="flex-1">
-              ✨ Regenerate
-            </JellyButton>
-            <JellyButton variant="secondary">
-              📤 Share
-            </JellyButton>
-          </div>
-        </div>
-      </animated.div>
-    </animated.div>
-  );
-}
 
 interface GalleryCardProps {
   content: Content;
@@ -148,8 +61,15 @@ function GalleryCard({ content, onClick, delay }: GalleryCardProps) {
     <animated.div style={spring}>
       <JellyCard onClick={onClick} className="glass-card-hover p-4 group">
         <div className="w-full aspect-square rounded-xl bg-gradient-to-br from-violet-500/20 via-purple-500/10 to-fuchsia-500/20 mb-3 flex items-center justify-center overflow-hidden relative">
-          <span className="text-4xl group-hover:scale-125 transition-transform duration-500">🎨</span>
-          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+          <SmartImage
+            src={content.imageUrl}
+            alt={content.title}
+            fill
+            className="object-cover group-hover:scale-110 transition-transform duration-500"
+            sizes="(max-width: 768px) 50vw, 33vw"
+            containerClassName="w-full h-full flex items-center justify-center absolute inset-0"
+          />
+          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center pointer-events-none z-10">
             <span className="text-white text-sm font-medium">View Details</span>
           </div>
         </div>
@@ -205,8 +125,16 @@ function GalleryListCard({ content, onClick, delay }: GalleryListCardProps) {
       <JellyCard onClick={onClick} className="glass-card-hover p-4 group">
         <div className="flex gap-4">
           {/* Thumbnail */}
-          <div className="w-20 h-20 flex-shrink-0 rounded-xl bg-gradient-to-br from-violet-500/20 via-purple-500/10 to-fuchsia-500/20 flex items-center justify-center">
-            <span className="text-2xl group-hover:scale-110 transition-transform">🎨</span>
+          <div className="w-20 h-20 flex-shrink-0 rounded-xl bg-gradient-to-br from-violet-500/20 via-purple-500/10 to-fuchsia-500/20 flex items-center justify-center overflow-hidden relative">
+            <SmartImage
+              src={content.imageUrl}
+              alt={content.title}
+              fill
+              className="object-cover group-hover:scale-110 transition-transform duration-500"
+              sizes="80px"
+              emojiClassName="text-2xl group-hover:scale-110 transition-transform"
+              containerClassName="w-full h-full flex items-center justify-center absolute inset-0"
+            />
           </div>
 
           {/* Content */}
@@ -262,6 +190,80 @@ function ViewModeToggle({ mode, onChange }: { mode: ViewMode; onChange: (mode: V
       >
         <span>☰</span> List
       </button>
+      <button
+        onClick={() => onChange('table')}
+        className={`px-3 py-1.5 text-xs rounded-md transition-all flex items-center gap-1 ${
+          mode === 'table'
+            ? 'bg-violet-600 text-white'
+            : 'text-muted hover:text-foreground'
+        }`}
+      >
+        <span>☷</span> Table
+      </button>
+    </div>
+  );
+}
+
+/**
+ * GalleryTableView - Professional table view for content management
+ */
+function GalleryTableView({ contents, onSelect }: { contents: Content[]; onSelect: (c: Content) => void }) {
+  return (
+    <div className="overflow-x-auto glass-card rounded-2xl border border-white/10">
+      <table className="w-full text-left border-collapse">
+        <thead>
+          <tr className="border-b border-white/10 bg-white/5">
+            <th className="px-6 py-4 text-xs font-semibold text-muted uppercase tracking-wider">Content</th>
+            <th className="px-6 py-4 text-xs font-semibold text-muted uppercase tracking-wider">Status</th>
+            <th className="px-6 py-4 text-xs font-semibold text-muted uppercase tracking-wider">Time Slot</th>
+            <th className="px-6 py-4 text-xs font-semibold text-muted uppercase tracking-wider">Created At</th>
+            <th className="px-6 py-4 text-xs font-semibold text-muted uppercase tracking-wider text-right">Actions</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-white/5">
+          {contents.map((content) => (
+            <tr 
+              key={content.id} 
+              className="hover:bg-violet-500/5 transition-colors cursor-pointer group"
+              onClick={() => onSelect(content)}
+            >
+              <td className="px-6 py-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg bg-white/5 flex-shrink-0 overflow-hidden relative">
+                    <SmartImage src={content.imageUrl} alt="" fill className="object-cover" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-foreground truncate max-w-[200px] group-hover:text-violet-400 transition-colors">
+                      {content.title}
+                    </p>
+                    <p className="text-xs text-muted truncate max-w-[200px]">{content.description}</p>
+                  </div>
+                </div>
+              </td>
+              <td className="px-6 py-4">
+                <span className={`text-[10px] px-2 py-0.5 rounded-full uppercase font-bold tracking-tighter
+                  ${content.status === 'published' ? 'bg-green-500/20 text-green-400' :
+                    content.status === 'scheduled' ? 'bg-blue-500/20 text-blue-400' :
+                    'bg-gray-500/20 text-gray-400'}
+                `}>
+                  {content.status}
+                </span>
+              </td>
+              <td className="px-6 py-4 text-sm text-muted">
+                {content.timeSlot}
+              </td>
+              <td className="px-6 py-4 text-sm text-muted">
+                {new Date(content.createdAt).toLocaleDateString()}
+              </td>
+              <td className="px-6 py-4 text-right">
+                <button className="text-violet-400 hover:text-violet-300 text-sm font-medium">
+                  Manage
+                </button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }
@@ -318,24 +320,25 @@ export function GalleryView({ initialViewModel }: GalleryViewProps) {
     config: config.gentle,
   });
 
+  // Animated transitions for real-time prepends
+  const transitions = useTransition(state.filteredAndSortedContents, {
+    keys: (item) => item.id,
+    from: { opacity: 0, scale: 0.8, y: -20 },
+    enter: { opacity: 1, scale: 1, y: 0 },
+    leave: { opacity: 0, scale: 0.8, y: 20 },
+    trail: 30,
+    config: { ...config.gentle, duration: 300 },
+  });
+
   // Loading state
   if (state.loading && !state.viewModel) {
-    return (
-      <MainLayout showBubbles={false}>
-        <div className="h-full flex items-center justify-center">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-violet-500 mx-auto mb-4"></div>
-            <p className="text-muted">กำลังโหลด...</p>
-          </div>
-        </div>
-      </MainLayout>
-    );
+    return <GallerySkeleton />;
   }
 
   // Error state
   if (state.error) {
     return (
-      <MainLayout showBubbles={false}>
+      <>
         <div className="h-full flex items-center justify-center">
           <div className="text-center">
             <p className="text-red-400 mb-4">{state.error}</p>
@@ -344,12 +347,12 @@ export function GalleryView({ initialViewModel }: GalleryViewProps) {
             </JellyButton>
           </div>
         </div>
-      </MainLayout>
+      </>
     );
   }
 
   return (
-    <MainLayout showBubbles={false}>
+    <>
       <div className="h-full overflow-auto scrollbar-thin">
         <div className="max-w-7xl mx-auto px-3 py-4 md:px-6 md:py-6 space-y-4 md:space-y-6">
           
@@ -379,30 +382,37 @@ export function GalleryView({ initialViewModel }: GalleryViewProps) {
             </div>
           </animated.div>
 
-          {/* Content Grid/List */}
+          {/* Content Grid/List/Table */}
           {state.filteredAndSortedContents.length > 0 ? (
             state.viewMode === 'grid' ? (
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 md:gap-4">
-                {state.filteredAndSortedContents.map((content, index) => (
-                  <GalleryCard
-                    key={content.id}
-                    content={content}
-                    onClick={() => actions.selectContent(content)}
-                    delay={50 + index * 30}
-                  />
+                {transitions((style, content) => (
+                  <animated.div style={style} key={content.id}>
+                    <GalleryCard
+                      content={content}
+                      onClick={() => actions.selectContent(content)}
+                      delay={0} // Managed by transition trail
+                    />
+                  </animated.div>
+                ))}
+              </div>
+            ) : state.viewMode === 'list' ? (
+              <div className="space-y-3">
+                {transitions((style, content) => (
+                  <animated.div style={style} key={content.id}>
+                    <GalleryListCard
+                      content={content}
+                      onClick={() => actions.selectContent(content)}
+                      delay={0} // Managed by transition trail
+                    />
+                  </animated.div>
                 ))}
               </div>
             ) : (
-              <div className="space-y-3">
-                {state.filteredAndSortedContents.map((content, index) => (
-                  <GalleryListCard
-                    key={content.id}
-                    content={content}
-                    onClick={() => actions.selectContent(content)}
-                    delay={50 + index * 30}
-                  />
-                ))}
-              </div>
+              <GalleryTableView 
+                contents={state.filteredAndSortedContents} 
+                onSelect={actions.selectContent} 
+              />
             )
           ) : (
             <JellyCard className="glass-card p-12 text-center">
@@ -414,6 +424,21 @@ export function GalleryView({ initialViewModel }: GalleryViewProps) {
               </JellyButton>
             </JellyCard>
           )}
+
+          {/* Pagination Controls */}
+          {state.viewMode === 'table' ? (
+            <PaginationLinks 
+              currentPage={state.currentPage}
+              totalPage={Math.ceil(viewModel.totalCount / 12)}
+              onPageChange={actions.setPage}
+            />
+          ) : (
+            <LoadMoreButton 
+              onClick={actions.loadMore}
+              loading={state.loadingMore}
+              hasMore={state.hasMore}
+            />
+          )}
         </div>
       </div>
 
@@ -424,6 +449,6 @@ export function GalleryView({ initialViewModel }: GalleryViewProps) {
           onClose={() => actions.selectContent(null)}
         />
       )}
-    </MainLayout>
+    </>
   );
 }

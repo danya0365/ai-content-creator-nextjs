@@ -1,90 +1,71 @@
 # ============================================
-# GitHub Actions - Automatic Deployment
+# GitHub Actions - Automatic Deployment to VPS
 # ============================================
 #
-# Workflow นี้จะทำงานเมื่อ push ไปยัง release branch
-# และจะ:
-# 1. Build และ Test แอปพลิเคชัน
-# 2. SSH ไปยัง VPS
-# 3. Pull code ใหม่และ restart services
+# This workflow will:
+# 1. Run Lint & Type Check for quality assurance
+# 2. SSH into the VPS (95.216.221.18)
+# 3. Pull the latest code from 'release-vps'
+# 4. Run the automated setup-nextjs-vps-existing.sh
+#    to handle dynamic ports, Docker build, and Nginx.
 #
 # ============================================
 
-name: 🚀 Deploy to Production
+name: 🚀 Deploy to VPS
 
-# ==========================================
-# Trigger
-# ==========================================
-# Workflow จะทำงานเมื่อ:
-# - Push ไปยัง release branch
-# - หรือ Manual trigger (workflow_dispatch)
 on:
   push:
     branches:
-      - release
+      - release-vps
   workflow_dispatch:
-    # อนุญาตให้รัน manual จาก GitHub UI
+    inputs:
+      AI_PROVIDER:
+        description: "เลือก AI Provider (เช่น groq, gemini, wavespeed)"
+        required: false
+        default: "wavespeed"
+      AI_IMAGE_PROVIDER:
+        description: "เลือก AI Image Provider (เช่น wavespeed, together)"
+        required: false
+        default: "wavespeed"
+      WAVESPEED_CONTENT_MODEL:
+        description: "เลือก Model สำหรับ Wavespeed (ถ้ามี)"
+        required: false
+        default: "minimax/minimax-m2.7"
+      WAVESPEED_IMAGE_MODEL:
+        description: "เลือก Image Model สำหรับ Wavespeed (ถ้ามี)"
+        required: false
+        default: "wavespeed-ai/flux-schnell"
 
-# ==========================================
-# Environment Variables
-# ==========================================
 env:
-  NODE_VERSION: '20'
+  NODE_VERSION: "22"
+  APP_PATH: "/opt/nextjs-ai-creator"
 
-# ==========================================
-# Jobs
-# ==========================================
 jobs:
   # ==========================================
-  # Job 1: Build & Test
+  # Job 1: Quality Check
   # ==========================================
-  build:
-    name: 🔨 Build & Test
+  quality-check:
+    name: 🔍 Lint & Type Check
     runs-on: ubuntu-latest
-    
+
     steps:
-      # ==========================================
-      # Step 1: Checkout code
-      # ==========================================
       - name: 📥 Checkout code
         uses: actions/checkout@v4
 
-      # ==========================================
-      # Step 2: Setup Node.js
-      # ==========================================
       - name: 📦 Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
+          cache: "yarn"
 
-      # ==========================================
-      # Step 3: Install dependencies
-      # ==========================================
       - name: 📚 Install dependencies
-        run: npm ci
+        run: yarn install --frozen-lockfile --ignore-engines
 
-      # ==========================================
-      # Step 4: Type check
-      # ==========================================
       - name: 🔍 Type check
-        run: npm run type-check
+        run: yarn type-check
 
-      # ==========================================
-      # Step 5: Lint
-      # ==========================================
       - name: 🧹 Lint
-        run: npm run lint || echo "Lint warnings found, continuing..."
-
-      # ==========================================
-      # Step 6: Build
-      # ==========================================
-      - name: 🏗️ Build
-        run: npm run build
-        env:
-          # ตั้งค่า env vars สำหรับ build
-          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+        run: yarn lint || echo "Lint warnings found, continuing..."
 
   # ==========================================
   # Job 2: Deploy to VPS
@@ -92,71 +73,112 @@ jobs:
   deploy:
     name: 🚀 Deploy to VPS
     runs-on: ubuntu-latest
-    needs: build  # รอให้ build job เสร็จก่อน
-    
+    needs: quality-check
+
     steps:
-      # ==========================================
-      # Step 1: Deploy via SSH
-      # ==========================================
-      - name: 🔐 Deploy to VPS via SSH
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🔧 Prepare Environment File
+        run: |
+          # Write all env vars from individual secrets
+          {
+            echo "NEXT_PUBLIC_SUPABASE_URL=${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}"
+            echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}"
+            echo "SUPABASE_SERVICE_ROLE_KEY=${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}"
+            echo "NEXT_PUBLIC_APP_URL=${{ secrets.NEXT_PUBLIC_APP_URL }}"
+            echo "NEXT_PUBLIC_APP_NAME=${{ secrets.NEXT_PUBLIC_APP_NAME }}"
+            echo "GROQ_API_KEY=${{ secrets.GROQ_API_KEY }}"
+            echo "WAVESPEED_API_KEY=${{ secrets.WAVESPEED_API_KEY }}"
+            echo "CRON_SECRET=${{ secrets.CRON_SECRET }}"
+            echo "NEXT_PUBLIC_AUTH_EMAIL_ENABLED=${{ secrets.NEXT_PUBLIC_AUTH_EMAIL_ENABLED }}"
+            echo "NEXT_PUBLIC_AUTH_REGISTRATION_ENABLED=${{ secrets.NEXT_PUBLIC_AUTH_REGISTRATION_ENABLED }}"
+            echo "APP_PORT=${{ secrets.APP_PORT }}"
+          } > nextjs-vps/.env.production.vps
+
+          # Apply AI provider overrides: inputs (manual) take priority, then secrets (auto)
+          if [[ -n "${{ github.event.inputs.AI_PROVIDER }}" ]]; then
+            echo "AI_PROVIDER=${{ github.event.inputs.AI_PROVIDER }}" >> nextjs-vps/.env.production.vps
+          elif [[ -n "${{ secrets.AI_PROVIDER }}" ]]; then
+            echo "AI_PROVIDER=${{ secrets.AI_PROVIDER }}" >> nextjs-vps/.env.production.vps
+          fi
+
+          if [[ -n "${{ github.event.inputs.AI_IMAGE_PROVIDER }}" ]]; then
+            echo "AI_IMAGE_PROVIDER=${{ github.event.inputs.AI_IMAGE_PROVIDER }}" >> nextjs-vps/.env.production.vps
+          elif [[ -n "${{ secrets.AI_IMAGE_PROVIDER }}" ]]; then
+            echo "AI_IMAGE_PROVIDER=${{ secrets.AI_IMAGE_PROVIDER }}" >> nextjs-vps/.env.production.vps
+          fi
+
+          if [[ -n "${{ github.event.inputs.WAVESPEED_CONTENT_MODEL }}" ]]; then
+            echo "WAVESPEED_CONTENT_MODEL=${{ github.event.inputs.WAVESPEED_CONTENT_MODEL }}" >> nextjs-vps/.env.production.vps
+          elif [[ -n "${{ secrets.WAVESPEED_CONTENT_MODEL }}" ]]; then
+            echo "WAVESPEED_CONTENT_MODEL=${{ secrets.WAVESPEED_CONTENT_MODEL }}" >> nextjs-vps/.env.production.vps
+          fi
+
+          if [[ -n "${{ github.event.inputs.WAVESPEED_IMAGE_MODEL }}" ]]; then
+            echo "WAVESPEED_IMAGE_MODEL=${{ github.event.inputs.WAVESPEED_IMAGE_MODEL }}" >> nextjs-vps/.env.production.vps
+          elif [[ -n "${{ secrets.WAVESPEED_IMAGE_MODEL }}" ]]; then
+            echo "WAVESPEED_IMAGE_MODEL=${{ secrets.WAVESPEED_IMAGE_MODEL }}" >> nextjs-vps/.env.production.vps
+          fi
+
+      - name: 📤 Upload Code to VPS
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          port: ${{ secrets.VPS_PORT || 22 }}
+          username: ${{ secrets.VPS_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          password: ${{ secrets.VPS_PASSWORD }}
+          source: "./*"
+          target: ${{ env.APP_PATH }}
+          rm: false # Keep existing files (like .env.production.vps)
+
+      - name: 🔐 SSH Execute Deployment
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.VPS_HOST }}
-          port: ${{ secrets.VPS_PORT }}
+          port: ${{ secrets.VPS_PORT || 22 }}
           username: ${{ secrets.VPS_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
           password: ${{ secrets.VPS_PASSWORD }}
           script_stop: true
           script: |
             echo "============================================"
-            echo "🚀 Starting deployment..."
-            echo "============================================"
-            
-            # Change to app directory
-            cd /opt/app/ai-content-creator-nextjs
-            
-            # Pull latest code
-            echo "📥 Pulling latest code..."
-            git fetch origin release
-            git reset --hard origin/release
-            
-            # Make scripts executable
-            chmod +x scripts/*.sh
-            
-            # Run deployment script
-            echo "🔄 Running deployment..."
-            ./scripts/deploy.sh
-            
-            echo "============================================"
-            echo "✅ Deployment complete!"
+            echo "🚀 Starting isolated deployment on VPS..."
             echo "============================================"
 
-      # ==========================================
-      # Step 2: Verify deployment
-      # ==========================================
-      - name: ✅ Verify deployment
-        run: |
-          echo "Waiting for services to be ready..."
-          sleep 30
-          
-          # Health check (optional - ถ้ามี domain)
-          # curl -f https://your-domain.com/api/health || exit 1
-          
-          echo "Deployment verified!"
+            # Navigate to the app directory
+            cd ${{ env.APP_PATH }}
+
+            # Fix permissions for the uploaded scripts
+            chmod +x nextjs-vps/*.sh
+
+            # Execute the isolated deployment script
+            # This handles environment sync, commit SHA, and docker restart
+            echo "🔄 Running lightweight deploy script..."
+            chmod +x nextjs-vps/deploy.sh
+            echo "${{ secrets.VPS_PASSWORD }}" | sudo -S BUILD_COMMIT_SHA=${{ github.sha }} ./nextjs-vps/deploy.sh
+
+            echo "============================================"
+            echo "✅ Deployment Successful!"
+            echo "============================================"
 
   # ==========================================
-  # Job 3: Notify (Optional)
+  # Job 3: Status Notification
   # ==========================================
   notify:
-    name: 📢 Notify
+    name: 📢 Status Notification
     runs-on: ubuntu-latest
     needs: deploy
-    if: always()  # รันเสมอ ไม่ว่าจะสำเร็จหรือล้มเหลว
-    
+    if: always() # Runs even if previous jobs failed
+
     steps:
-      - name: 📢 Deployment Status
+      - name: 🟢 Success Notification
+        if: needs.deploy.result == 'success'
+        run: echo "SUCCESS - Application deployed successfully!"
+
+      - name: 🔴 Failure Notification
+        if: needs.deploy.result == 'failure'
         run: |
-          if [ "${{ needs.deploy.result }}" == "success" ]; then
-            echo "✅ Deployment successful!"
-          else
-            echo "❌ Deployment failed!"
-          fi
+          echo "FAILURE - Deployment failed!"
+          exit 1 # This will make THIS job also show as failed (red)

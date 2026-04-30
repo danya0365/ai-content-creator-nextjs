@@ -1,7 +1,7 @@
--- Shop Queue Seed Data - Users
+-- AI Content Creator Seed Data - Users
 -- Created: 2025-06-19
 -- Author: Marosdee Uma
--- Description: Sample user data for testing Shop Queue application
+-- Description: Sample user data for testing AI Content Creator application
 
 -- Set app password for testing
 set session my.app_password = '12345678';
@@ -34,7 +34,7 @@ INSERT INTO
         '00000000-0000-0000-0000-000000000001',
         'authenticated',
         'authenticated',
-        'admin@shopqueue.com',
+        'admin@aicontentcreator.com',
         crypt (current_setting('my.app_password'), gen_salt ('bf')),
         NOW() - INTERVAL '30 days',
         NULL,
@@ -59,7 +59,7 @@ INSERT INTO
         '00000000-0000-0000-0000-000000000003',
         'authenticated',
         'authenticated',
-        'user1@shopqueue.com',
+        'user1@aicontentcreator.com',
         crypt (current_setting('my.app_password'), gen_salt ('bf')),
         NOW() - INTERVAL '20 days',
         NULL,
@@ -84,7 +84,7 @@ INSERT INTO
         '00000000-0000-0000-0000-000000000004',
         'authenticated',
         'authenticated',
-        'user2@shopqueue.com',
+        'user2@aicontentcreator.com',
         crypt (current_setting('my.app_password'), gen_salt ('bf')),
         NOW() - INTERVAL '15 days',
         NULL,
@@ -117,7 +117,7 @@ INSERT INTO
         updated_at
     )
 SELECT
-    uuid_generate_v4(),
+    extensions.uuid_generate_v4(),
     id,
     id,
     format('{"sub":"%s","email":"%s"}', id::text, email)::jsonb,
@@ -129,10 +129,10 @@ FROM
     auth.users
 ON CONFLICT (provider_id, provider) DO NOTHING;
 
---  ShopQueue Seed Data - Profiles
+--  AI Content Creator Seed Data - Profiles
 -- Created: 2025-06-19
 -- Author: Marosdee Uma
--- Description: Sample profile data for testing ShopQueue application with multiple profiles per user
+-- Description: Sample profile data for testing AI Content Creator application with multiple profiles per user
 
 -- Insert profiles for admin user (2 profiles)
 INSERT INTO public.profiles (
@@ -194,7 +194,7 @@ ON CONFLICT (id) DO NOTHING;
 
 -- Created at: 2025-06-21T10:15:00+07:00
 -- Author: Marosdee Uma
--- Description: Seed initial profile_roles data for ShopQueue application
+-- Description: Seed initial profile_roles data for AI Content Creator application
 
 -- Insert initial admin role for the first user's active profile
 -- This assumes the first user in auth.users is the system admin
@@ -220,12 +220,35 @@ SELECT public.migrate_profile_roles();
 -- AI CONTENT CREATOR: Seed Content Types
 -- Created: 2026-01-04
 -- ============================================================================
-INSERT INTO public.ai_content_types (id, name, name_th, description, description_th, icon, color, prompt_template, suggested_time_slots)
+-- Add category column if not exists
+DO $$ 
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='ai_content_types' AND column_name='category') THEN
+    ALTER TABLE public.ai_content_types ADD COLUMN category TEXT DEFAULT 'general';
+  END IF;
+END $$;
+
+INSERT INTO public.ai_content_types (id, name, name_th, description, description_th, icon, color, prompt_template, suggested_time_slots, category)
 VALUES
-  ('morning-news', 'Morning News Summary', 'สรุปข่าวเช้า', 'Daily news summary in pixel art style', 'สรุปข่าวประจำวันแบบ Pixel Art', '📰', '#FFB347', 'Create a pixel art illustration about: {topic}', ARRAY['morning']),
-  ('food', 'Food & Recipe', 'อาหารและสูตร', 'Delicious food in pixel art', 'อาหารอร่อยแบบ Pixel Art', '🍜', '#FF6B6B', 'Create a pixel art of delicious {topic}', ARRAY['lunch', 'evening']),
-  ('entertainment', 'Entertainment & Meme', 'ความบันเทิงและมีม', 'Fun entertainment content', 'คอนเทนต์สนุกๆ และมีม', '😂', '#C9B1FF', 'Create a funny pixel art meme about: {topic}', ARRAY['afternoon', 'evening']),
-  ('tech-tips', 'Tech Tips', 'เคล็ดลับเทคโนโลยี', 'Technology tips and tricks', 'เคล็ดลับเทคโนโลยี', '💻', '#4ECDC4', 'Create a pixel art illustration about tech tip: {topic}', ARRAY['afternoon']),
-  ('daily-motivation', 'Daily Motivation', 'คำคมประจำวัน', 'Inspirational quotes', 'คำคมสร้างแรงบันดาลใจ', '✨', '#FFD93D', 'Create an inspiring pixel art about: {topic}', ARRAY['morning']),
-  ('gaming', 'Gaming Content', 'คอนเทนต์เกม', 'Gaming news and reviews', 'ข่าวเกมและรีวิว', '🎮', '#6C5CE7', 'Create a pixel art about gaming: {topic}', ARRAY['evening'])
-ON CONFLICT (id) DO NOTHING;
+  ('morning-news', 'Morning News Summary', 'สรุปข่าวเช้า', 'Daily news summary in pixel art style', 'สรุปข่าวประจำวันแบบ Pixel Art', '📰', '#FFB347', 'Create a pixel art illustration about: {topic}', ARRAY['morning'], 'general'),
+  ('food', 'Food & Recipe', 'อาหารและสูตร', 'Delicious food in pixel art', 'อาหารอร่อยแบบ Pixel Art', '🍜', '#FF6B6B', 'Create a pixel art of delicious {topic}', ARRAY['lunch', 'evening'], 'general'),
+  ('entertainment', 'Entertainment & Meme', 'ความบันเทิงและมีม', 'Fun entertainment content', 'คอนเทนต์สนุกๆ และมีม', '😂', '#C9B1FF', 'Create a funny pixel art meme about: {topic}', ARRAY['afternoon', 'evening'], 'general'),
+  ('tech-tips', 'Tech Tips', 'เคล็ดลับเทคโนโลยี', 'Technology tips and tricks', 'เคล็ดลับเทคโนโลยี', '💻', '#4ECDC4', 'Create a pixel art illustration about tech tip: {topic}', ARRAY['afternoon'], 'general'),
+  ('daily-motivation', 'Daily Motivation', 'คำคมประจำวัน', 'Inspirational quotes', 'คำคมสร้างแรงบันดาลใจ', '✨', '#FFD93D', 'Create an inspiring pixel art about: {topic}', ARRAY['morning'], 'general'),
+  ('gaming', 'Gaming Content', 'คอนเทนต์เกม', 'Gaming news and reviews', 'ข่าวเกมและรีวิว', '🎮', '#6C5CE7', 'Create a pixel art about gaming: {topic}', ARRAY['evening'], 'general'),
+  -- Islamic Content
+  ('islamic-quran', 'Quranic Reflection', 'อัลกุรอานและการเตือนสติ', 'Daily Quranic verse with reflection', 'ข้อคิดจากอัลกุรอานและคำแปล', '📖', '#059669', 'Create a serene Islamic pixel art with Quranic verse: {topic}', ARRAY['morning'], 'islamic'),
+  ('islamic-seerah', 'Prophetic Stories', 'ประวัตินบี', 'Life lessons from Prophetic biographies', 'บทเรียนชีวิตจากจริยวัตรของท่านนบี', '🌟', '#10B981', 'Create an inspiring Islamic pixel art about Prophet story: {topic}', ARRAY['morning'], 'islamic'),
+  ('islamic-hadith', 'Daily Hadith', 'ฮะดีซประจำวัน', 'Prophetic teachings and examples', 'คำสอนและแบบอย่างจากท่านนบี', '📿', '#34D399', 'Create an educational Islamic pixel art about Hadith: {topic}', ARRAY['lunch'], 'islamic'),
+  ('islamic-history', 'Islamic History', 'ประวัติศาสตร์อิสลาม', 'Key events and knowledge from history', 'ความรู้และเหตุการณ์สำคัญทางประวัติศาสตร์', '🕌', '#6EE7B7', 'Create a historical Islamic pixel art about: {topic}', ARRAY['evening'], 'islamic'),
+  ('islamic-wisdom', 'Islamic Wisdom', 'ข้อคิด/คำคมอิสลาม', 'Spiritual advice for daily life', 'คติเตือนใจจากศาสนาอิสลาม', '✨', '#A7F3D0', 'Create a peaceful Islamic pixel art for wisdom: {topic}', ARRAY['evening'], 'islamic')
+ON CONFLICT (id) DO UPDATE SET
+  name = EXCLUDED.name,
+  name_th = EXCLUDED.name_th,
+  description = EXCLUDED.description,
+  description_th = EXCLUDED.description_th,
+  icon = EXCLUDED.icon,
+  color = EXCLUDED.color,
+  prompt_template = EXCLUDED.prompt_template,
+  suggested_time_slots = EXCLUDED.suggested_time_slots,
+  category = EXCLUDED.category;

@@ -9,6 +9,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { AppSettings, SettingsPresenter, SettingsViewModel, UserProfile } from './SettingsPresenter';
 import { createClientSettingsPresenter } from './SettingsPresenterClientFactory';
+import { useSettingsStore } from '../../stores/useSettingsStore';
 
 // ✅ Re-export UserProfile type from Presenter for Single Source of Truth
 export type { UserProfile } from './SettingsPresenter';
@@ -37,12 +38,13 @@ export interface SettingsPresenterActions {
   clearAllData: () => Promise<void>;
 }
 
-const defaultSettings: AppSettings = {
+const DEFAULT_SETTINGS: AppSettings = {
   geminiApiKey: '',
   autoSchedule: true,
   defaultTimeSlot: 'morning',
   contentQuality: 'high',
   language: 'th',
+  brandContext: '',
   notifications: {
     onGenerate: true,
     onPublish: true,
@@ -65,10 +67,8 @@ export function useSettingsPresenter(
   const [loading, setLoading] = useState(!initialViewModel);
   const [error, setError] = useState<string | null>(null);
   
-  // Settings form state (moved from View)
-  const [settings, setSettings] = useState<AppSettings>(
-    initialViewModel?.settings || defaultSettings
-  );
+  // ✅ Settings state from Zustand Store
+  const storeSettings = useSettingsStore();
   const [isSaving, setIsSaving] = useState(false);
   const [showApiKey, setShowApiKey] = useState(false);
 
@@ -78,7 +78,6 @@ export function useSettingsPresenter(
     try {
       const newViewModel = await presenter.getViewModel();
       setViewModel(newViewModel);
-      setSettings(newViewModel.settings);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error');
     } finally {
@@ -92,33 +91,31 @@ export function useSettingsPresenter(
 
   // Update settings partially
   const updateSettings = useCallback((updates: Partial<AppSettings>) => {
-    setSettings((prev) => ({ ...prev, ...updates }));
-  }, []);
+    storeSettings.updateSettings(updates);
+  }, [storeSettings]);
 
   // Update notification settings
   const updateNotification = useCallback(
     (key: keyof AppSettings['notifications'], value: boolean) => {
-      setSettings((prev) => ({
-        ...prev,
-        notifications: { ...prev.notifications, [key]: value },
-      }));
+      storeSettings.updateSettings({
+        notifications: { ...storeSettings.notifications, [key]: value },
+      });
     },
-    []
+    [storeSettings]
   );
 
-  // Save settings
+  // Save settings (Simulate network delay for UX feedback)
   const saveSettings = useCallback(async () => {
     setIsSaving(true);
     try {
-      // In production, save to database/localStorage
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      console.log('Settings saved:', settings);
+      await new Promise((resolve) => setTimeout(resolve, 800));
+      console.log('Settings synced successfully');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save settings');
     } finally {
       setIsSaving(false);
     }
-  }, [settings]);
+  }, []);
 
   // Toggle API key visibility
   const toggleApiKeyVisibility = useCallback(() => {
@@ -142,7 +139,7 @@ export function useSettingsPresenter(
       viewModel,
       loading,
       error,
-      settings,
+      settings: storeSettings,
       isSaving,
       showApiKey,
       userProfile: viewModel?.userProfile || null, // ✅ Single Source of Truth

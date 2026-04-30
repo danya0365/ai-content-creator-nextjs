@@ -1,23 +1,27 @@
-'use client';
-
-import { mockContentRepository } from '@/src/infrastructure/repositories/mock/MockContentRepository';
 import { SettingsPresenter } from './SettingsPresenter';
-// import { SupabaseContentRepository } from '@/src/infrastructure/repositories/SupabaseContentRepository';
-// import { getSupabaseClient } from '@/src/infrastructure/supabase/client';
+import { ApiContentRepository } from '@/src/infrastructure/repositories/api/ApiContentRepository';
 
+let cachedPresenter: SettingsPresenter | null = null;
+
+/**
+ * SettingsPresenterClientFactory
+ * Factory for creating SettingsPresenter instances on the client side
+ * ✅ Following Clean Architecture - Static Class Pattern
+ */
 export class SettingsPresenterClientFactory {
   static create(): SettingsPresenter {
-    // ✅ Use Mock Repository for development
-    const repository = mockContentRepository;
-    
-    // ⏳ TODO: Switch to Supabase Repository when backend is ready
-    // const supabase = getSupabaseClient();
-    // const repository = new SupabaseContentRepository(supabase);
+    if (cachedPresenter) return cachedPresenter;
 
-    return new SettingsPresenter(repository);
+    const repository = new ApiContentRepository();
+    cachedPresenter = new SettingsPresenter(repository);
+    
+    return cachedPresenter;
   }
 }
 
+/**
+ * Standard factory function for easier invocation
+ */
 export function createClientSettingsPresenter(): SettingsPresenter {
   return SettingsPresenterClientFactory.create();
 }

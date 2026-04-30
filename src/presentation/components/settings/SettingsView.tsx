@@ -3,9 +3,10 @@
 import { AppSettings } from '@/src/presentation/presenters/settings/SettingsPresenter';
 import { UserProfile, useSettingsPresenter } from '@/src/presentation/presenters/settings/useSettingsPresenter';
 import { animated, config, useSpring } from '@react-spring/web';
-import { MainLayout } from '../layout/MainLayout';
+import Link from 'next/link';
 import { JellyButton } from '../ui/JellyButton';
 import { JellyCard, JellyWrapper } from '../ui/JellyCard';
+import { SettingsSkeleton } from './SettingsSkeleton';
 
 interface ToggleSwitchProps {
   enabled: boolean;
@@ -179,22 +180,13 @@ export function SettingsView({ initialViewModel }: SettingsViewProps) {
 
   // Loading state
   if (state.loading && !state.viewModel) {
-    return (
-      <MainLayout showBubbles={false}>
-        <div className="h-full flex items-center justify-center">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-violet-500 mx-auto mb-4"></div>
-            <p className="text-muted">กำลังโหลด...</p>
-          </div>
-        </div>
-      </MainLayout>
-    );
+    return <SettingsSkeleton />;
   }
 
   // Error state
   if (state.error) {
     return (
-      <MainLayout showBubbles={false}>
+      <>
         <div className="h-full flex items-center justify-center">
           <div className="text-center">
             <p className="text-red-400 mb-4">{state.error}</p>
@@ -203,14 +195,16 @@ export function SettingsView({ initialViewModel }: SettingsViewProps) {
             </JellyButton>
           </div>
         </div>
-      </MainLayout>
+      </>
     );
   }
 
   return (
-    <MainLayout showBubbles={false}>
+    <>
       <div className="h-full overflow-auto scrollbar-thin">
-        <div className="max-w-3xl mx-auto px-6 py-6 space-y-6">
+        {/* 'Coming Soon' Wrapper */}
+        <div className="relative h-full">
+          <div className="max-w-3xl mx-auto px-6 py-6 space-y-6">
           
           {/* Header */}
           <animated.div style={headerSpring} className="flex items-center justify-between">
@@ -261,6 +255,20 @@ export function SettingsView({ initialViewModel }: SettingsViewProps) {
                 </JellyButton>
               </div>
             </SettingRow>
+          </SettingsSection>
+
+          {/* Brand Persona Settings */}
+          <SettingsSection title="Brand Persona" icon="🧠" delay={125}>
+            <div className="flex flex-col gap-2">
+              <div className="text-sm font-medium text-foreground">กฎส่วนตัวและสไตล์แบรนด์ (Custom Instructions)</div>
+              <div className="text-xs text-muted">บอก AI ว่าคุณเป็นใคร และอยากให้ออกแบบเนื้อหาแบบไหน (เช่น 'แบรนด์เราชื่อ Acme, พูดเป็นกันเอง, ห้ามใช้คำวิชาการ')</div>
+              <textarea
+                value={state.settings.brandContext || ''}
+                onChange={(e) => actions.updateSettings({ brandContext: e.target.value })}
+                placeholder="พิมพ์คำสั่งหรือข้อมูลแบรนด์ของคุณที่นี่..."
+                className="w-full mt-2 px-4 py-3 min-h-[120px] rounded-xl glass-card text-sm text-foreground placeholder-muted focus:outline-none focus:ring-2 focus:ring-violet-500/50 resize-y scrollbar-thin"
+              />
+            </div>
           </SettingsSection>
 
           {/* Content Settings */}
@@ -338,6 +346,17 @@ export function SettingsView({ initialViewModel }: SettingsViewProps) {
             </SettingRow>
           </SettingsSection>
 
+          {/* System & Debug */}
+          <SettingsSection title="System & Debug" icon="🛠️" delay={325}>
+            <SettingRow label="Scheduler Debug" description="ตรวจสอบและทดสอบการทำงานของ Cron Jobs ด้วยตัวเอง">
+              <Link href="/settings/scheduler">
+                <JellyButton variant="secondary" size="sm">
+                  🔍 ตรวจสอบ
+                </JellyButton>
+              </Link>
+            </SettingRow>
+          </SettingsSection>
+
           {/* Danger Zone */}
           <SettingsSection title="Danger Zone" icon="⚠️" delay={350}>
             <SettingRow label="ล้างข้อมูลทั้งหมด" description="ลบคอนเทนต์และ Schedule ทั้งหมด">
@@ -353,6 +372,7 @@ export function SettingsView({ initialViewModel }: SettingsViewProps) {
           </SettingsSection>
         </div>
       </div>
-    </MainLayout>
+      </div>
+    </>
   );
 }

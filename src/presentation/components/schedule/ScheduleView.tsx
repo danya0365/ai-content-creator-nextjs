@@ -1,13 +1,18 @@
 'use client';
 
 import { Content } from '@/src/application/repositories/IContentRepository';
-import { TimeSlotConfig } from '@/src/data/master/contentTypes';
+import { TimeSlot, TimeSlotConfig } from '@/src/data/master/contentTypes';
 import { ScheduleDay, ScheduleViewModel } from '@/src/presentation/presenters/schedule/SchedulePresenter';
 import { useSchedulePresenter } from '@/src/presentation/presenters/schedule/useSchedulePresenter';
+import { useGenerateStore } from '@/src/presentation/stores/useGenerateStore';
 import { animated, config, useSpring } from '@react-spring/web';
-import { MainLayout } from '../layout/MainLayout';
+import { useEffect } from 'react';
+import { GenerateContentModal } from '../generate/GenerateContentModal';
 import { JellyButton } from '../ui/JellyButton';
 import { JellyCard } from '../ui/JellyCard';
+import { SmartImage } from '../ui/SmartImage';
+import { ContentDetailModal } from '../shared/ContentDetailModal';
+import { ScheduleSkeleton } from './ScheduleSkeleton';
 
 interface DayColumnProps {
   day: ScheduleDay;
@@ -55,9 +60,10 @@ interface TimeSlotRowProps {
   slot: TimeSlotConfig;
   contents: Content[];
   onAddContent: () => void;
+  onViewContent: (content: Content) => void;
 }
 
-function TimeSlotRow({ slot, contents, onAddContent }: TimeSlotRowProps) {
+function TimeSlotRow({ slot, contents, onAddContent, onViewContent }: TimeSlotRowProps) {
   return (
     <div className="flex gap-4 items-stretch">
       {/* Time label */}
@@ -77,10 +83,19 @@ function TimeSlotRow({ slot, contents, onAddContent }: TimeSlotRowProps) {
           contents.map((content) => (
             <JellyCard
               key={content.id}
-              className="flex-shrink-0 w-48 glass-card-hover p-3 rounded-xl"
+              className="flex-shrink-0 w-48 glass-card-hover p-3 rounded-xl cursor-pointer"
+              onClick={() => onViewContent(content)}
             >
-              <div className="w-full aspect-video rounded-lg bg-gradient-to-br from-violet-500/20 to-fuchsia-500/20 mb-2 flex items-center justify-center">
-                <span className="text-2xl">🎨</span>
+              <div className="w-full aspect-video rounded-lg bg-gradient-to-br from-violet-500/20 to-fuchsia-500/20 mb-2 flex items-center justify-center overflow-hidden relative">
+                <SmartImage
+                  src={content.imageUrl}
+                  alt={content.title}
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 768px) 100vw, 300px"
+                  emojiClassName="text-2xl"
+                  containerClassName="w-full h-full flex items-center justify-center absolute inset-0"
+                />
               </div>
               <h4 className="text-xs font-medium text-foreground line-clamp-2">{content.title}</h4>
             </JellyCard>
@@ -132,6 +147,16 @@ export function ScheduleView({ initialViewModel }: ScheduleViewProps) {
     totalScheduled: 0,
   };
 
+  // Zustand store
+  const { isModalOpen, openModal, closeModal, generateContent, generatedContent } = useGenerateStore();
+
+  // Auto-refresh when new content is generated
+  useEffect(() => {
+    if (generatedContent) {
+      actions.refresh();
+    }
+  }, [generatedContent, actions]);
+
   const headerSpring = useSpring({
     from: { opacity: 0, y: -10 },
     to: { opacity: 1, y: 0 },
@@ -140,22 +165,13 @@ export function ScheduleView({ initialViewModel }: ScheduleViewProps) {
 
   // Loading state
   if (state.loading && !state.viewModel) {
-    return (
-      <MainLayout showBubbles={false}>
-        <div className="h-full flex items-center justify-center">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-violet-500 mx-auto mb-4"></div>
-            <p className="text-muted">กำลังโหลด...</p>
-          </div>
-        </div>
-      </MainLayout>
-    );
+    return <ScheduleSkeleton />;
   }
 
   // Error state
   if (state.error) {
     return (
-      <MainLayout showBubbles={false}>
+      <>
         <div className="h-full flex items-center justify-center">
           <div className="text-center">
             <p className="text-red-400 mb-4">{state.error}</p>
@@ -164,12 +180,12 @@ export function ScheduleView({ initialViewModel }: ScheduleViewProps) {
             </JellyButton>
           </div>
         </div>
-      </MainLayout>
+      </>
     );
   }
 
   return (
-    <MainLayout showBubbles={false}>
+    <>
       <div className="h-full overflow-auto scrollbar-thin">
         <div className="max-w-6xl mx-auto px-6 py-6 space-y-6">
           
@@ -181,7 +197,11 @@ export function ScheduleView({ initialViewModel }: ScheduleViewProps) {
                 จัดตารางโพสต์คอนเทนต์ • {viewModel.totalScheduled} รายการที่กำลังรอโพสต์
               </p>
             </div>
-            <JellyButton variant="primary" size="lg">
+            <JellyButton 
+              variant="primary" 
+              size="lg" 
+              onClick={() => openModal({ scheduledDate: state.selectedDay?.dateString })}
+            >
               <span>➕</span>
               <span>เพิ่ม Schedule</span>
             </JellyButton>
@@ -226,7 +246,12 @@ export function ScheduleView({ initialViewModel }: ScheduleViewProps) {
                     key={slot.id}
                     slot={slot}
                     contents={actions.getContentsForSlot(slot)}
-                    onAddContent={() => console.log('Add content for', slot.id)}
+                    onAddContent={() => openModal({
+                      timeSlot: slot.id as TimeSlot,
+                      scheduledDate: state.selectedDay?.dateString,
+                      scheduledTime: `${slot.startHour}:00`
+                    })}
+                    onViewContent={actions.selectContent}
                   />
                 ))}
               </div>
@@ -250,6 +275,21 @@ export function ScheduleView({ initialViewModel }: ScheduleViewProps) {
           </div>
         </div>
       </div>
-    </MainLayout>
+
+      {/* Generate Content Modal */}
+      <GenerateContentModal
+        isOpen={isModalOpen}
+        onClose={closeModal}
+        onGenerate={generateContent}
+      />
+
+      {/* Shared Content Detail Modal */}
+      {state.selectedContent && (
+        <ContentDetailModal
+          content={state.selectedContent}
+          onClose={() => actions.selectContent(null)}
+        />
+      )}
+    </>
   );
 }

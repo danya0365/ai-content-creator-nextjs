@@ -4,8 +4,8 @@
  * ✅ Uses dependency injection for repository
  */
 
-import { CONTENT_TYPES, ContentType, TIME_SLOTS, TimeSlotConfig } from '@/src/data/master/contentTypes';
 import { Content, ContentStats, IContentRepository } from '@/src/application/repositories/IContentRepository';
+import { CONTENT_TYPES, ContentType, TIME_SLOTS, TimeSlotConfig } from '@/src/data/master/contentTypes';
 import { Metadata } from 'next';
 
 export interface HomeViewModel {
@@ -28,15 +28,10 @@ export class HomePresenter {
    * Get view model for the page
    */
   async getViewModel(): Promise<HomeViewModel> {
-    const [stats, allContents] = await Promise.all([
+    const [stats, recentContents] = await Promise.all([
       this.repository.getStats(),
-      this.repository.getAll(),
+      this.repository.getAll({ status: 'published', limit: 5 }),
     ]);
-
-    // Get recent published contents
-    const recentContents = allContents
-      .filter((c) => c.status === 'published')
-      .slice(0, 5);
 
     return {
       stats,
@@ -60,5 +55,14 @@ export class HomePresenter {
         type: 'website',
       },
     };
+  }
+
+  /**
+   * Subscribe to content changes
+   */
+  subscribeToChanges(callback: () => void): () => void {
+    return this.repository.subscribe(() => {
+      callback();
+    });
   }
 }

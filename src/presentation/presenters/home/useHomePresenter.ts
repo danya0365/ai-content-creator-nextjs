@@ -54,10 +54,16 @@ export function useHomePresenter(
   }, [loadData]);
 
   useEffect(() => {
-    if (!initialViewModel) {
-      loadData();
-    }
-  }, [initialViewModel, loadData]);
+    loadData();
+  }, []);
+
+  // Subscribe to real-time changes
+  useEffect(() => {
+    const unsubscribe = presenter.subscribeToChanges(() => {
+      refresh();
+    });
+    return () => unsubscribe();
+  }, [presenter, refresh]);
 
   return [
     { viewModel, loading, error },

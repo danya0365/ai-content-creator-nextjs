@@ -72,14 +72,15 @@ export interface I[PageItem]Repository {
   getById(id: string): Promise<[PageItem] | null>;
 
   /**
-   * Get all items
+   * Get all items with optional filter
+   * ⚠️ Use 'limit' in filter to protect performance
    */
-  getAll(): Promise<[PageItem][]>;
+  getAll(filter?: any): Promise<[PageItem][]>;
 
   /**
-   * Get paginated items
+   * Get paginated items (Recommended for lists)
    */
-  getPaginated(page: number, perPage: number): Promise<PaginatedResult<[PageItem]>>;
+  getPaginated(page: number, perPage: number, filter?: any): Promise<PaginatedResult<[PageItem]>>;
 
   /**
    * Get items by user ID (if applicable)
@@ -102,7 +103,7 @@ export interface I[PageItem]Repository {
   delete(id: string): Promise<boolean>;
 
   /**
-   * Get statistics
+   * Get statistics (Calculated at Repository/DB level)
    */
   getStats(): Promise<[PageStats]>;
 }
@@ -543,25 +544,34 @@ export interface [PageName]ViewModel {
 /**
  * Presenter for [PageName] management
  * ✅ Receives repository via constructor injection (not Supabase directly)
+ * ✅ Serves as the Single Source of Truth for both UI Views and API Routes
  */
 export class [PageName]Presenter {
   constructor(
     private readonly repository: I[PageItem]Repository
   ) {}
 
+  // ============================================================
+  // VIEW MODEL METHODS (For Client/Server Components)
+  // ============================================================
+
   /**
    * Get view model for the page
+   * ⚠️ Use this ONLY for rendering UI views, NOT for API route responses
    */
   async getViewModel(page: number = 1, perPage: number = 10): Promise<[PageName]ViewModel> {
     try {
-      // Get data in parallel for better performance
-      const [paginatedResult, stats] = await Promise.all([
+      // ✅ BEST PRACTICE: Get data in parallel for better performance
+      // ✅ NO In-Memory Filtering! Pass filters/limits directly to repository.
+      const [paginatedResult, stats, recentItems] = await Promise.all([
         this.repository.getPaginated(page, perPage),
         this.repository.getStats(),
+        this.repository.getAll({ limit: 5 }) // Fetch specifically for a 'Recent' section
       ]);
 
       return {
         items: paginatedResult.data,
+        recentItems, // Separate data slice from repository
         stats,
         totalCount: paginatedResult.total,
         page,
@@ -582,6 +592,11 @@ export class [PageName]Presenter {
       description: "ระบบจัดการ[PageThaiDescription]",
     };
   }
+
+  // ============================================================
+  // GRANULAR DATA METHODS (For API Routes & Individual Actions)
+  // ============================================================
+  // ⚠️ API Routes MUST call these methods individually rather than using getViewModel()
 
   /**
    * Create a new item

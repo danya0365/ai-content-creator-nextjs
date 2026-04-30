@@ -1,0 +1,104 @@
+import { createServerContentPresenter } from '@/src/presentation/presenters/content/ContentPresenterServerFactory';
+import { createServerAuthPresenter } from '@/src/presentation/presenters/auth/AuthPresenterServerFactory';
+import { NextRequest, NextResponse } from 'next/server';
+
+export async function GET(request: NextRequest) {
+  try {
+    const presenter = createServerContentPresenter();
+    const { searchParams } = new URL(request.url);
+    const action = searchParams.get('action');
+    
+    // 1. Specialized Actions
+    if (action === 'stats') {
+      const stats = await presenter.getStats();
+      return NextResponse.json(stats);
+    }
+
+    if (action === 'analytics') {
+      const metrics = await presenter.getAnalytics();
+      return NextResponse.json(metrics);
+    }
+
+    if (action === 'recentPublished') {
+      const limit = parseInt(searchParams.get('limit') || '5');
+      const contents = await presenter.getRecentPublished(limit);
+      return NextResponse.json(contents);
+    }
+
+    if (action === 'scheduled') {
+      const contents = await presenter.getScheduled();
+      return NextResponse.json(contents);
+    }
+
+    if (action === 'cursorPaginated') {
+      const cursor = searchParams.get('cursor');
+      const limit = searchParams.get('limit');
+      const status = searchParams.get('status');
+      const contentTypeId = searchParams.get('contentTypeId');
+      const direction = searchParams.get('direction');
+
+      const result = await presenter.getCursorPaginated({
+        cursor: cursor || undefined,
+        limit: limit ? parseInt(limit) : undefined,
+        status: (status as any) || undefined,
+        contentTypeId: contentTypeId || undefined,
+        direction: (direction as any) || undefined,
+      });
+      return NextResponse.json(result);
+    }
+
+    // 2. Paginated or Filtered List
+    const status = searchParams.get('status');
+    const timeSlot = searchParams.get('timeSlot');
+    const contentTypeId = searchParams.get('contentTypeId');
+    const page = searchParams.get('page');
+    const perPage = searchParams.get('perPage');
+
+    const filter: any = {
+      status: status || undefined,
+      timeSlot: timeSlot || undefined,
+      contentTypeId: contentTypeId || undefined,
+    };
+
+    if (page && perPage) {
+      const result = await presenter.getPaginated(parseInt(page), parseInt(perPage), filter);
+      return NextResponse.json(result);
+    }
+
+    const contents = await presenter.getAll(filter);
+    return NextResponse.json(contents);
+    
+  } catch (error) {
+    console.error('[API Contents] GET Error:', error);
+    return NextResponse.json({ error: 'เกิดข้อผิดพลาดในการโหลดข้อมูล' }, { status: 500 });
+  }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const data = await request.json();
+    
+    // 1. Get current active profile for attribution
+    const authPresenter = await createServerAuthPresenter();
+    const profile = await authPresenter.getProfile();
+    
+    if (!profile) {
+      return NextResponse.json({ error: 'ไม่พบโปรไฟล์ที่ใช้งานอยู่ กรุณาเข้าสู่ระบบใหม่' }, { status: 401 });
+    }
+
+    // 2. Inject profileId into the creation data
+    const createData = {
+      ...data,
+      profileId: profile.id
+    };
+
+    const presenter = createServerContentPresenter();
+    const content = await presenter.create(createData);
+    
+    return NextResponse.json(content, { status: 201 });
+  } catch (error) {
+    console.error('[API Contents] POST Error:', error);
+    const message = error instanceof Error ? error.message : 'เกิดข้อผิดพลาดในการสร้างคอนเทนต์';
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
+}

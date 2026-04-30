@@ -1,4 +1,6 @@
+import AuthInitializerWrapper from "@/src/presentation/components/auth/AuthInitializerWrapper";
 import { ClientProviders } from "@/src/presentation/components/ui/ClientProviders";
+import { MainLayout } from "@/src/presentation/components/layout/MainLayout";
 import { ThemeProvider } from "@/src/presentation/components/ui/ThemeProvider";
 import type { Metadata } from "next";
 import "../public/styles/index.css";
@@ -35,9 +37,12 @@ export default function RootLayout({
   return (
     <html lang="th" suppressHydrationWarning>
       <body className="antialiased" suppressHydrationWarning>
+        <AuthInitializerWrapper />
         <ThemeProvider>
           <ClientProviders>
-            {children}
+            <MainLayout>
+              {children}
+            </MainLayout>
           </ClientProviders>
         </ThemeProvider>
       </body>

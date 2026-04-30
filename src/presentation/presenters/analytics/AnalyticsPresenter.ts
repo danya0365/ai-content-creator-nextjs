@@ -62,77 +62,74 @@ export class AnalyticsPresenter {
    * Get view model for the page
    */
   async getViewModel(): Promise<AnalyticsViewModel> {
-    const stats = await this.repository.getStats();
-    const allContents = await this.repository.getAll();
+    try {
+      const [stats, topPerformingContents, metrics] = await Promise.all([
+        this.repository.getStats(),
+        this.repository.getTopPerforming(5),
+        this.repository.getAnalyticsMetrics()
+      ]);
 
-    // Generate chart data based on stats
-    const engagementChart: AnalyticsChartData = {
-      labels: ['จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส', 'อา'],
-      data: [65, 78, 90, 81, 56, 55, 40],
-    };
+      const goals: AnalyticsGoal[] = [
+        { id: 'posts', label: 'โพสต์รายเดือน', current: stats.totalContents, target: 30, unit: 'โพสต์' },
+        { id: 'likes', label: 'ยอดไลค์', current: stats.totalLikes, target: 1000, unit: 'ไลค์' },
+        { id: 'shares', label: 'ยอดแชร์', current: stats.totalShares, target: 500, unit: 'แชร์' },
+      ];
 
-    const contentTypeChart: AnalyticsChartData = {
-      labels: ['ข่าว', 'อาหาร', 'เทค', 'เกม', 'มีม', 'คำคม'],
-      data: [25, 18, 15, 12, 20, 10],
-    };
+      const growthRate = metrics.growth.rate;
 
-    const goals: AnalyticsGoal[] = [
-      { id: 'posts', label: 'โพสต์รายเดือน', current: stats.totalContents, target: 30, unit: 'โพสต์' },
-      { id: 'likes', label: 'ยอดไลค์', current: stats.totalLikes, target: 1000, unit: 'ไลค์' },
-      { id: 'shares', label: 'ยอดแชร์', current: stats.totalShares, target: 500, unit: 'แชร์' },
-    ];
+      // Transform repository dailyEngagement to weekly UI labels
+      const days = ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส'];
+      const engagementChart: AnalyticsChartData = { labels: [], data: [] };
+      const weeklyData: ChartDataPoint[] = metrics.dailyEngagement.map(d => {
+        const dateObj = new Date(d.date);
+        const label = days[dateObj.getDay()];
+        engagementChart.labels.push(label);
+        engagementChart.data.push(d.total);
+        return { label, value: d.total };
+      });
 
-    // Calculate growth rate (mock for now)
-    const growthRate = 15.4;
+      // Types Data Mapping
+      const typeColors = ['#FFB347', '#FF6B6B', '#4ECDC4', '#C9B1FF', '#45B7D1'];
+      const contentTypeChart: AnalyticsChartData = { 
+        labels: metrics.contentTypes.map(t => t.id), 
+        data: metrics.contentTypes.map(t => t.count) 
+      };
+      
+      const contentTypeData: ChartDataPoint[] = metrics.contentTypes.map((t, idx) => ({
+        label: t.id,
+        value: t.count,
+        color: typeColors[idx % typeColors.length]
+      }));
 
-    // ✅ Weekly engagement data
-    const weeklyData: ChartDataPoint[] = [
-      { label: 'จ', value: 142 },
-      { label: 'อ', value: 189 },
-      { label: 'พ', value: 156 },
-      { label: 'พฤ', value: 234 },
-      { label: 'ศ', value: 312 },
-      { label: 'ส', value: 278 },
-      { label: 'อา', value: 198 },
-    ];
+      // Monthly Trends
+      const monthlyData: ChartDataPoint[] = metrics.weeklyTrends.map(w => ({
+        label: w.weekLabel,
+        value: w.total
+      }));
 
-    // ✅ Monthly data
-    const monthlyData: ChartDataPoint[] = [
-      { label: 'W1', value: 850 },
-      { label: 'W2', value: 1200 },
-      { label: 'W3', value: 980 },
-      { label: 'W4', value: 1450 },
-    ];
+      // ✅ Top performers from repository (Calculated at Repository/DB level)
+      const topPerformers: TopPerformer[] = topPerformingContents.map((c) => ({
+        title: c.title,
+        likes: c.likes || 0,
+        shares: c.shares || 0,
+        type: c.contentTypeId,
+      }));
 
-    // ✅ Content type distribution
-    const contentTypeData: ChartDataPoint[] = [
-      { label: 'Morning News', value: 35, color: '#FFB347' },
-      { label: 'Food', value: 25, color: '#FF6B6B' },
-      { label: 'Tech Tips', value: 20, color: '#4ECDC4' },
-      { label: 'Entertainment', value: 12, color: '#C9B1FF' },
-      { label: 'Motivation', value: 8, color: '#45B7D1' },
-    ];
-
-    // ✅ Top performers from actual content
-    const sortedByLikes = [...allContents].sort((a, b) => (b.likes || 0) - (a.likes || 0));
-    const topPerformers: TopPerformer[] = sortedByLikes.slice(0, 5).map((c) => ({
-      title: c.title,
-      likes: c.likes || 0,
-      shares: c.shares || 0,
-      type: c.contentTypeId,
-    }));
-
-    return {
-      stats,
-      engagementChart,
-      contentTypeChart,
-      goals,
-      growthRate,
-      weeklyData,
-      monthlyData,
-      contentTypeData,
-      topPerformers,
-    };
+      return {
+        stats,
+        engagementChart,
+        contentTypeChart,
+        goals,
+        growthRate,
+        weeklyData,
+        monthlyData,
+        contentTypeData,
+        topPerformers,
+      };
+    } catch (error) {
+      console.error('[AnalyticsPresenter] Error in getViewModel:', error);
+      throw error;
+    }
   }
 
   /**

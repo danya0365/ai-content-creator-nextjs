@@ -2,17 +2,54 @@
 -- Created: 2026-01-04
 -- Author: Marosdee Uma
 -- Description: Database schema for AI Content Creator application
--- NOTE: Content types use master data (code) instead of DB table for performance
+-- NOTE: Content types are now managed via DB table for dynamic updates
+
+-- ============================================================================
+-- CONTENT TYPES TABLE
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS public.ai_content_types (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  name_th TEXT NOT NULL,
+  description TEXT,
+  description_th TEXT,
+  icon TEXT,
+  color TEXT,
+  prompt_template TEXT,
+  suggested_time_slots TEXT[] DEFAULT '{}',
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  is_active BOOLEAN DEFAULT true
+);
+
+-- Updated at trigger for ai_content_types
+CREATE TRIGGER update_ai_content_types_updated_at
+  BEFORE UPDATE ON public.ai_content_types
+  FOR EACH ROW
+  EXECUTE FUNCTION update_updated_at_column();
+
+-- Content Types indices
+CREATE INDEX IF NOT EXISTS idx_ai_content_types_is_active ON public.ai_content_types(is_active);
+
+-- Content Types RLS
+ALTER TABLE public.ai_content_types ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "ai_content_types_select_all" ON public.ai_content_types
+  FOR SELECT USING (true);
+
+CREATE POLICY "ai_content_types_admin_all" ON public.ai_content_types
+  FOR ALL USING (
+    public.get_active_profile_role() = 'admin'::public.profile_role
+  );
 
 -- ============================================================================
 -- CONTENTS TABLE (Main Table)
 -- ============================================================================
--- NOTE: content_type_id is stored as TEXT, validated by application code
--- using master data from src/data/master/contentTypes.ts
+-- NOTE: content_type_id refers to ai_content_types table
 CREATE TABLE IF NOT EXISTS public.ai_contents (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT extensions.uuid_generate_v4(),
   profile_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
-  content_type_id TEXT NOT NULL, -- Validated by app using master data
+  content_type_id TEXT NOT NULL REFERENCES public.ai_content_types(id) ON DELETE RESTRICT,
   title TEXT NOT NULL,
   description TEXT,
   image_url TEXT,
@@ -88,6 +125,10 @@ CREATE POLICY "ai_contents_admin_all" ON public.ai_contents
   FOR ALL USING (
     public.get_active_profile_role() = 'admin'::public.profile_role
   );
+
+-- Contents: Public can view all (for anonymous API access)
+CREATE POLICY "ai_contents_public_read" ON public.ai_contents
+  FOR SELECT USING (true);
 
 -- ============================================================================
 -- CREATE AI CONTENTS STORAGE BUCKET

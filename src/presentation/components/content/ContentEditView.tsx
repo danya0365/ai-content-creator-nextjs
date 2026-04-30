@@ -4,9 +4,9 @@ import { ContentEditViewModel } from '@/src/presentation/presenters/content/Cont
 import { useContentEditPresenter } from '@/src/presentation/presenters/content/useContentEditPresenter';
 import { animated, config, useSpring } from '@react-spring/web';
 import Link from 'next/link';
-import { MainLayout } from '../layout/MainLayout';
 import { JellyButton } from '../ui/JellyButton';
 import { JellyCard } from '../ui/JellyCard';
+import { ContentDetailSkeleton } from './ContentDetailSkeleton';
 
 interface ContentEditViewProps {
   contentId: string;
@@ -41,24 +41,14 @@ export function ContentEditView({ contentId, initialViewModel }: ContentEditView
     config: config.gentle,
   });
 
-  // Loading state
   if (state.loading && !state.viewModel) {
-    return (
-      <MainLayout showBubbles={false}>
-        <div className="h-full flex items-center justify-center">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-violet-500 mx-auto mb-4"></div>
-            <p className="text-muted">กำลังโหลด...</p>
-          </div>
-        </div>
-      </MainLayout>
-    );
+    return <ContentDetailSkeleton />;
   }
 
   // Error state
   if (state.error) {
     return (
-      <MainLayout showBubbles={false}>
+      <>
         <div className="h-full flex items-center justify-center">
           <div className="text-center">
             <p className="text-red-400 mb-4">{state.error}</p>
@@ -67,14 +57,14 @@ export function ContentEditView({ contentId, initialViewModel }: ContentEditView
             </JellyButton>
           </div>
         </div>
-      </MainLayout>
+      </>
     );
   }
 
   // Not found state
   if (!state.content) {
     return (
-      <MainLayout showBubbles={false}>
+      <>
         <div className="h-full flex items-center justify-center">
           <div className="text-center">
             <span className="text-5xl mb-4 block">🔍</span>
@@ -85,12 +75,12 @@ export function ContentEditView({ contentId, initialViewModel }: ContentEditView
             </Link>
           </div>
         </div>
-      </MainLayout>
+      </>
     );
   }
 
   return (
-    <MainLayout showBubbles={false}>
+    <>
       <div className="h-full overflow-auto scrollbar-thin">
         <div className="max-w-6xl mx-auto px-6 py-6">
           
@@ -152,9 +142,20 @@ export function ContentEditView({ contentId, initialViewModel }: ContentEditView
 
               {/* Description */}
               <JellyCard className="glass-card p-5">
-                <label className="block text-sm font-medium text-foreground mb-2">
-                  📄 Description
-                </label>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-sm font-medium text-foreground">
+                    📄 Description
+                  </label>
+                  <JellyButton
+                    onClick={actions.regenerateDescription}
+                    disabled={state.isRegenerating}
+                    variant="ghost"
+                    size="sm"
+                    className="text-muted hover:text-foreground"
+                  >
+                    {state.isRegenerating ? '⏳...' : '✨ Gen Description'}
+                  </JellyButton>
+                </div>
                 <textarea
                   value={state.formData.description}
                   onChange={(e) => actions.updateFormData({ description: e.target.value })}
@@ -170,14 +171,24 @@ export function ContentEditView({ contentId, initialViewModel }: ContentEditView
                   <label className="text-sm font-medium text-foreground">
                     🤖 AI Prompt
                   </label>
-                  <JellyButton
-                    onClick={actions.regenerateContent}
-                    disabled={state.isRegenerating}
-                    variant="ghost"
-                    size="sm"
-                  >
-                    {state.isRegenerating ? '⏳ Generating...' : '✨ Regenerate Image'}
-                  </JellyButton>
+                  <div className="flex gap-2">
+                    <JellyButton
+                      onClick={actions.regenerateContent}
+                      disabled={state.isRegenerating}
+                      variant="ghost"
+                      size="sm"
+                    >
+                      {state.isRegenerating ? '⏳...' : '📝 Gen เนื้อหาใหม่'}
+                    </JellyButton>
+                    <JellyButton
+                      onClick={actions.regenerateImage}
+                      disabled={state.isRegenerating}
+                      variant="ghost"
+                      size="sm"
+                    >
+                      {state.isRegenerating ? '⏳...' : '✨ Gen รูปใหม่'}
+                    </JellyButton>
+                  </div>
                 </div>
                 <textarea
                   value={state.formData.prompt}
@@ -261,12 +272,14 @@ export function ContentEditView({ contentId, initialViewModel }: ContentEditView
                 {/* Preview Card */}
                 <div className="glass-card p-4 rounded-xl">
                   {/* Image */}
-                  <div className={`aspect-video rounded-xl bg-gradient-to-br from-violet-500/30 via-purple-500/20 to-fuchsia-500/30 flex items-center justify-center mb-4 relative ${state.isRegenerating ? 'animate-pulse' : ''}`}>
+                  <div className={`aspect-video rounded-xl bg-gradient-to-br from-violet-500/30 via-purple-500/20 to-fuchsia-500/30 flex items-center justify-center mb-4 relative overflow-hidden ${state.isRegenerating ? 'animate-pulse' : ''}`}>
                     {state.isRegenerating ? (
                       <div className="text-center">
                         <span className="text-4xl mb-2 block animate-spin">✨</span>
                         <span className="text-sm text-muted">Generating...</span>
                       </div>
+                    ) : state.formData.imageUrl ? (
+                      <img src={state.formData.imageUrl} alt="Preview" className="w-full h-full object-cover" />
                     ) : (
                       <span className="text-6xl">🎨</span>
                     )}
@@ -302,6 +315,6 @@ export function ContentEditView({ contentId, initialViewModel }: ContentEditView
           </div>
         </div>
       </div>
-    </MainLayout>
+    </>
   );
 }

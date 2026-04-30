@@ -5,34 +5,22 @@ import { useState } from 'react';
 import { JellyCard } from '../ui/JellyCard';
 import { BarChart, LineChart } from '../ui/SimpleChart';
 
-// Mock data for engagement chart
-const MOCK_WEEKLY_DATA = [
-  { label: 'จ', value: 142 },
-  { label: 'อ', value: 189 },
-  { label: 'พ', value: 156 },
-  { label: 'พฤ', value: 234 },
-  { label: 'ศ', value: 312 },
-  { label: 'ส', value: 278 },
-  { label: 'อา', value: 198 },
-];
-
-const MOCK_ENGAGEMENT_BY_TYPE = [
-  { label: 'Likes', value: 1248, color: '#EC4899' },
-  { label: 'Shares', value: 456, color: '#8B5CF6' },
-  { label: 'Comments', value: 189, color: '#06B6D4' },
-];
+type ChartDataPoint = { label: string; value: number };
+type EngagementByTypeDataPoint = { label: string; value: number; color: string };
 
 type ChartType = 'line' | 'bar';
 type DateRange = 'week' | 'month';
 
 interface EngagementChartProps {
   className?: string;
+  weeklyData?: ChartDataPoint[];
+  typeData?: EngagementByTypeDataPoint[];
 }
 
 /**
  * EngagementChart - Weekly engagement visualization
  */
-export function EngagementChart({ className = '' }: EngagementChartProps) {
+export function EngagementChart({ className = '', weeklyData = [], typeData = [] }: EngagementChartProps) {
   const [chartType, setChartType] = useState<ChartType>('line');
   const [dateRange, setDateRange] = useState<DateRange>('week');
 
@@ -43,8 +31,8 @@ export function EngagementChart({ className = '' }: EngagementChartProps) {
   });
 
   // Calculate totals
-  const totalEngagement = MOCK_WEEKLY_DATA.reduce((sum, d) => sum + d.value, 0);
-  const avgEngagement = Math.round(totalEngagement / MOCK_WEEKLY_DATA.length);
+  const totalEngagement = weeklyData.reduce((sum, d) => sum + d.value, 0);
+  const avgEngagement = weeklyData.length > 0 ? Math.round(totalEngagement / weeklyData.length) : 0;
 
   return (
     <animated.div style={headerSpring}>
@@ -113,14 +101,14 @@ export function EngagementChart({ className = '' }: EngagementChartProps) {
         <div className="h-[180px] mb-4">
           {chartType === 'line' ? (
             <LineChart
-              data={MOCK_WEEKLY_DATA}
+              data={weeklyData}
               height={180}
               strokeColor="#8B5CF6"
               fillGradient
             />
           ) : (
             <BarChart
-              data={MOCK_WEEKLY_DATA}
+              data={weeklyData}
               height={180}
               showLabels
               showValues
@@ -130,7 +118,7 @@ export function EngagementChart({ className = '' }: EngagementChartProps) {
 
         {/* Engagement breakdown */}
         <div className="grid grid-cols-3 gap-3">
-          {MOCK_ENGAGEMENT_BY_TYPE.map((item) => (
+          {typeData.map((item) => (
             <div
               key={item.label}
               className="glass-card p-3 rounded-xl text-center"

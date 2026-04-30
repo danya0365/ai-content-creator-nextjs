@@ -1,20 +1,22 @@
+/**
+ * HomePresenterClientFactory
+ * Factory for creating HomePresenter instances on the client side
+ * ✅ Uses ApiContentRepository for production (calls API routes)
+ */
+
 'use client';
 
-import { mockContentRepository } from '@/src/infrastructure/repositories/mock/MockContentRepository';
+import { SupabaseContentRepository } from '@/src/infrastructure/repositories/SupabaseContentRepository';
+import { createClient } from '@/src/infrastructure/supabase/client';
 import { HomePresenter } from './HomePresenter';
-// import { SupabaseContentRepository } from '@/src/infrastructure/repositories/SupabaseContentRepository';
-// import { getSupabaseClient } from '@/src/infrastructure/supabase/client';
 
 export class HomePresenterClientFactory {
   static create(): HomePresenter {
-    // ✅ Use Mock Repository for development
-    const repository = mockContentRepository;
-    
-    // ⏳ TODO: Switch to Supabase Repository when backend is ready
-    /*
-    const supabase = getSupabaseClient();
+    // ✅ Use API Repository for client-side
+    // ✅ Pass browser Supabase client *only* for realtime channel subscription
+    const supabase = createClient();
+    //const repository = new ApiContentRepository(supabase);
     const repository = new SupabaseContentRepository(supabase);
-    */
 
     return new HomePresenter(repository);
   }

@@ -3,55 +3,9 @@
 import { animated, config, useSpring } from '@react-spring/web';
 import { JellyCard } from '../ui/JellyCard';
 
-// Activity types
-type ActivityType = 'created' | 'published' | 'scheduled' | 'edited' | 'deleted';
+import { DashboardActivity } from '../../presenters/dashboard/DashboardPresenter';
 
-interface Activity {
-  id: string;
-  type: ActivityType;
-  title: string;
-  timestamp: Date;
-  contentType?: string;
-}
-
-// Mock activities data
-const MOCK_ACTIVITIES: Activity[] = [
-  {
-    id: '1',
-    type: 'published',
-    title: 'สรุปข่าว AI วันนี้',
-    timestamp: new Date(Date.now() - 1000 * 60 * 30), // 30 mins ago
-    contentType: 'morning-news',
-  },
-  {
-    id: '2',
-    type: 'created',
-    title: 'มีมโปรแกรมเมอร์ตลกๆ',
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2), // 2 hours ago
-    contentType: 'entertainment',
-  },
-  {
-    id: '3',
-    type: 'scheduled',
-    title: 'เคล็ดลับ CSS Grid',
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 5), // 5 hours ago
-    contentType: 'tech-tips',
-  },
-  {
-    id: '4',
-    type: 'published',
-    title: 'ก๋วยเตี๋ยวเรือสูตรเด็ด',
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24), // 1 day ago
-    contentType: 'food',
-  },
-  {
-    id: '5',
-    type: 'edited',
-    title: 'คำคมสร้างแรงบันดาลใจ',
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2), // 2 days ago
-    contentType: 'daily-motivation',
-  },
-];
+type ActivityType = DashboardActivity['type'];
 
 // Activity type config
 const ACTIVITY_CONFIG: Record<ActivityType, { icon: string; label: string; color: string }> = {
@@ -83,16 +37,16 @@ function formatRelativeTime(date: Date): string {
 /**
  * Group activities by date
  */
-function groupActivitiesByDate(activities: Activity[]) {
-  const groups: { label: string; activities: Activity[] }[] = [];
+function groupActivitiesByDate(activities: DashboardActivity[]) {
+  const groups: { label: string; activities: DashboardActivity[] }[] = [];
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const yesterday = new Date(today);
   yesterday.setDate(yesterday.getDate() - 1);
 
-  const todayActivities: Activity[] = [];
-  const yesterdayActivities: Activity[] = [];
-  const olderActivities: Activity[] = [];
+  const todayActivities: DashboardActivity[] = [];
+  const yesterdayActivities: DashboardActivity[] = [];
+  const olderActivities: DashboardActivity[] = [];
 
   activities.forEach((activity) => {
     const activityDate = new Date(activity.timestamp);
@@ -121,7 +75,7 @@ function groupActivitiesByDate(activities: Activity[]) {
 }
 
 interface ActivityItemProps {
-  activity: Activity;
+  activity: DashboardActivity;
   delay: number;
 }
 
@@ -148,7 +102,7 @@ function ActivityItem({ activity, delay }: ActivityItemProps) {
         <div className="text-xs text-muted flex items-center gap-2">
           <span>{config.label}</span>
           <span>•</span>
-          <span>{formatRelativeTime(activity.timestamp)}</span>
+          <span suppressHydrationWarning>{formatRelativeTime(activity.timestamp)}</span>
         </div>
       </div>
     </animated.div>
@@ -158,20 +112,21 @@ function ActivityItem({ activity, delay }: ActivityItemProps) {
 interface ActivityFeedProps {
   className?: string;
   maxItems?: number;
+  activities?: DashboardActivity[];
 }
 
 /**
  * ActivityFeed - Recent activities list grouped by date
  */
-export function ActivityFeed({ className = '', maxItems = 10 }: ActivityFeedProps) {
+export function ActivityFeed({ className = '', maxItems = 10, activities = [] }: ActivityFeedProps) {
   const spring = useSpring({
     from: { opacity: 0, y: 10 },
     to: { opacity: 1, y: 0 },
     config: config.gentle,
   });
 
-  const activities = MOCK_ACTIVITIES.slice(0, maxItems);
-  const groupedActivities = groupActivitiesByDate(activities);
+  const displayActivities = activities.slice(0, maxItems);
+  const groupedActivities = groupActivitiesByDate(displayActivities);
 
   return (
     <animated.div style={spring}>
@@ -209,7 +164,7 @@ export function ActivityFeed({ className = '', maxItems = 10 }: ActivityFeedProp
         </div>
 
         {/* Empty state */}
-        {activities.length === 0 && (
+        {displayActivities.length === 0 && (
           <div className="text-center py-8 text-muted">
             <span className="text-3xl mb-2 block">📭</span>
             <p className="text-sm">ยังไม่มีกิจกรรม</p>

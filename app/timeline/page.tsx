@@ -22,12 +22,17 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function TimelinePage() {
   const presenter = await createServerTimelinePresenter();
 
+  let viewModel = null;
+  let fetchError = false;
+
   try {
-    const viewModel = await presenter.getViewModel();
-    return <TimelineView initialViewModel={viewModel} />;
+    viewModel = await presenter.getCursorViewModel();
   } catch (error) {
     console.error("Error fetching timeline data:", error);
+    fetchError = true;
+  }
 
+  if (fetchError || !viewModel) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
@@ -45,4 +50,6 @@ export default async function TimelinePage() {
       </div>
     );
   }
+
+  return <TimelineView initialViewModel={viewModel} />;
 }

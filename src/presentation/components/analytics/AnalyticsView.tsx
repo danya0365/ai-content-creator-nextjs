@@ -3,11 +3,11 @@
 import { AnalyticsViewModel } from '@/src/presentation/presenters/analytics/AnalyticsPresenter';
 import { useAnalyticsPresenter } from '@/src/presentation/presenters/analytics/useAnalyticsPresenter';
 import { animated, config, useSpring } from '@react-spring/web';
-import { MainLayout } from '../layout/MainLayout';
 import { JellyButton } from '../ui/JellyButton';
 import { JellyCard } from '../ui/JellyCard';
 import { BarChart, DonutChart, LineChart } from '../ui/SimpleChart';
 import { ProgressBar, TrendIndicator } from '../ui/TrendIndicator';
+import { AnalyticsSkeleton } from './AnalyticsSkeleton';
 
 interface AnalyticsViewProps {
   initialViewModel?: AnalyticsViewModel;
@@ -29,22 +29,13 @@ export function AnalyticsView({ initialViewModel }: AnalyticsViewProps) {
 
   // Loading state
   if (state.loading && !state.viewModel) {
-    return (
-      <MainLayout showBubbles={false}>
-        <div className="h-full flex items-center justify-center">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-violet-500 mx-auto mb-4"></div>
-            <p className="text-muted">กำลังโหลด...</p>
-          </div>
-        </div>
-      </MainLayout>
-    );
+    return <AnalyticsSkeleton />;
   }
 
   // Error state
   if (state.error) {
     return (
-      <MainLayout showBubbles={false}>
+      <>
         <div className="h-full flex items-center justify-center">
           <div className="text-center">
             <p className="text-red-400 mb-4">{state.error}</p>
@@ -53,7 +44,7 @@ export function AnalyticsView({ initialViewModel }: AnalyticsViewProps) {
             </JellyButton>
           </div>
         </div>
-      </MainLayout>
+      </>
     );
   }
 
@@ -73,7 +64,7 @@ export function AnalyticsView({ initialViewModel }: AnalyticsViewProps) {
   const topPerformers = viewModel?.topPerformers || [];
 
   return (
-    <MainLayout showBubbles={false}>
+    <>
       <div className="h-full overflow-auto scrollbar-thin">
         <div className="max-w-6xl mx-auto px-6 py-6 space-y-6">
           
@@ -269,7 +260,7 @@ export function AnalyticsView({ initialViewModel }: AnalyticsViewProps) {
           </JellyCard>
         </div>
       </div>
-    </MainLayout>
+    </>
   );
 }
 
