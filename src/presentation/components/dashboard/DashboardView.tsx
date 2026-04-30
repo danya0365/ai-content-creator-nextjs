@@ -1,22 +1,24 @@
-'use client';
+"use client";
 
-import { Content } from '@/src/application/repositories/IContentRepository';
-import { ContentType } from '@/src/data/master/contentTypes';
-import { DashboardViewModel } from '@/src/presentation/presenters/dashboard/DashboardPresenter';
-import { useDashboardPresenter } from '@/src/presentation/presenters/dashboard/useDashboardPresenter';
-import { useGenerateStore } from '@/src/presentation/stores/useGenerateStore';
-import { animated, config, useSpring } from '@react-spring/web';
-import Link from 'next/link';
-import { GenerateContentModal } from '../generate/GenerateContentModal';
-import { AiAssistantWidget } from '../ui/AiAssistantWidget';
-import { JellyButton } from '../ui/JellyButton';
-import { JellyCard } from '../ui/JellyCard';
-import { MiniSparkline } from '../ui/SimpleChart';
-import { SmartImage } from '../ui/SmartImage';
-import { TrendIndicator } from '../ui/TrendIndicator';
-import { ActivityFeed } from './ActivityFeed';
-import { EngagementChart } from './EngagementChart';
-import { DashboardSkeleton } from './DashboardSkeleton';
+import { Content } from "@/src/application/repositories/IContentRepository";
+import { ContentType } from "@/src/data/master/contentTypes";
+import { DashboardViewModel } from "@/src/presentation/presenters/dashboard/DashboardPresenter";
+import { useDashboardPresenter } from "@/src/presentation/presenters/dashboard/useDashboardPresenter";
+import { useGenerateStore } from "@/src/presentation/stores/useGenerateStore";
+import { animated, config, useSpring } from "@react-spring/web";
+import Link from "next/link";
+import { usePhotoPromptStore } from "../../stores/usePhotoPromptStore";
+import { GenerateContentModal } from "../generate/GenerateContentModal";
+import { GeneratePhotoPromptModal } from "../generate/GeneratePhotoPromptModal";
+import { AiAssistantWidget } from "../ui/AiAssistantWidget";
+import { JellyButton } from "../ui/JellyButton";
+import { JellyCard } from "../ui/JellyCard";
+import { MiniSparkline } from "../ui/SimpleChart";
+import { SmartImage } from "../ui/SmartImage";
+import { TrendIndicator } from "../ui/TrendIndicator";
+import { ActivityFeed } from "./ActivityFeed";
+import { DashboardSkeleton } from "./DashboardSkeleton";
+import { EngagementChart } from "./EngagementChart";
 interface StatCardProps {
   value: number | string;
   label: string;
@@ -27,7 +29,15 @@ interface StatCardProps {
   sparklineData?: number[];
 }
 
-function StatCard({ value, label, icon, color, delay, trend, sparklineData }: StatCardProps) {
+function StatCard({
+  value,
+  label,
+  icon,
+  color,
+  delay,
+  trend,
+  sparklineData,
+}: StatCardProps) {
   const springProps = useSpring({
     from: { opacity: 0, y: 20 },
     to: { opacity: 1, y: 0 },
@@ -48,9 +58,15 @@ function StatCard({ value, label, icon, color, delay, trend, sparklineData }: St
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-2xl font-bold text-foreground">{value}</span>
+                <span className="text-2xl font-bold text-foreground">
+                  {value}
+                </span>
                 {trend !== undefined && (
-                  <TrendIndicator value={100 + trend} previousValue={100} size="sm" />
+                  <TrendIndicator
+                    value={100 + trend}
+                    previousValue={100}
+                    size="sm"
+                  />
                 )}
               </div>
               <div className="text-sm text-muted">{label}</div>
@@ -79,10 +95,10 @@ function ContentCard({ content, delay }: ContentCardProps) {
   });
 
   const statusColors = {
-    draft: 'bg-gray-500/20 text-gray-400',
-    scheduled: 'bg-blue-500/20 text-blue-400',
-    published: 'bg-green-500/20 text-green-400',
-    failed: 'bg-red-500/20 text-red-400',
+    draft: "bg-gray-500/20 text-gray-400",
+    scheduled: "bg-blue-500/20 text-blue-400",
+    published: "bg-green-500/20 text-green-400",
+    failed: "bg-red-500/20 text-red-400",
   };
 
   return (
@@ -101,19 +117,27 @@ function ContentCard({ content, delay }: ContentCardProps) {
               emojiClassName="text-4xl group-hover:scale-110 transition-transform duration-300"
             />
           </div>
-          
+
           {/* Content info */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <span className={`text-xs px-2 py-1 rounded-full ${statusColors[content.status]}`}>
-                {content.status === 'published' ? '✅ Published' : 
-                 content.status === 'scheduled' ? '📅 Scheduled' : 
-                 content.status === 'draft' ? '📝 Draft' : '❌ Failed'}
+              <span
+                className={`text-xs px-2 py-1 rounded-full ${statusColors[content.status]}`}
+              >
+                {content.status === "published"
+                  ? "✅ Published"
+                  : content.status === "scheduled"
+                    ? "📅 Scheduled"
+                    : content.status === "draft"
+                      ? "📝 Draft"
+                      : "❌ Failed"}
               </span>
               <span className="text-xs text-muted">{content.timeSlot}</span>
             </div>
-            <h4 className="text-sm font-semibold text-foreground line-clamp-2">{content.title}</h4>
-            {content.status === 'published' && (
+            <h4 className="text-sm font-semibold text-foreground line-clamp-2">
+              {content.title}
+            </h4>
+            {content.status === "published" && (
               <div className="flex items-center gap-3 text-xs text-muted">
                 <span>❤️ {content.likes}</span>
                 <span>🔗 {content.shares}</span>
@@ -132,7 +156,11 @@ interface QuickGenerateCardProps {
   onClick: () => void;
 }
 
-function QuickGenerateCard({ contentType, delay, onClick }: QuickGenerateCardProps) {
+function QuickGenerateCard({
+  contentType,
+  delay,
+  onClick,
+}: QuickGenerateCardProps) {
   const springProps = useSpring({
     from: { opacity: 0, x: -20 },
     to: { opacity: 1, x: 0 },
@@ -142,7 +170,7 @@ function QuickGenerateCard({ contentType, delay, onClick }: QuickGenerateCardPro
 
   return (
     <animated.div style={springProps}>
-      <JellyCard 
+      <JellyCard
         onClick={onClick}
         className="glass-card-hover p-4 flex items-center gap-3 text-left w-full"
         as="button"
@@ -154,11 +182,21 @@ function QuickGenerateCard({ contentType, delay, onClick }: QuickGenerateCardPro
           {contentType.icon}
         </div>
         <div className="flex-1 min-w-0">
-          <div className="text-sm font-semibold text-foreground">{contentType.nameTh}</div>
-          <div className="text-xs text-muted truncate">{contentType.descriptionTh}</div>
+          <div className="text-sm font-semibold text-foreground">
+            {contentType.nameTh}
+          </div>
+          <div className="text-xs text-muted truncate">
+            {contentType.descriptionTh}
+          </div>
         </div>
         <div className="text-muted">
-          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <svg
+            className="w-5 h-5"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2}
+          >
             <path d="M9 5l7 7-7 7" />
           </svg>
         </div>
@@ -179,10 +217,17 @@ interface DashboardViewProps {
 export function DashboardView({ initialViewModel }: DashboardViewProps) {
   // ✅ Use custom hook for state management
   const [state, actions] = useDashboardPresenter(initialViewModel);
-  
+
   // Get viewModel from hook state or use fallback
   const viewModel = state.viewModel || {
-    stats: { totalContents: 0, publishedCount: 0, scheduledCount: 0, draftCount: 0, totalLikes: 0, totalShares: 0 },
+    stats: {
+      totalContents: 0,
+      publishedCount: 0,
+      scheduledCount: 0,
+      draftCount: 0,
+      totalLikes: 0,
+      totalShares: 0,
+    },
     recentContents: [],
     activities: [],
     engagementWeeklyData: [],
@@ -196,7 +241,13 @@ export function DashboardView({ initialViewModel }: DashboardViewProps) {
   };
 
   // Zustand store
-  const { isModalOpen, isGenerating, openModal, closeModal, generateContent } = useGenerateStore();
+  const { isModalOpen, isGenerating, openModal, closeModal, generateContent } =
+    useGenerateStore();
+  const {
+    isModalOpen: isPhotoModalOpen,
+    openModal: openPhotoModal,
+    closeModal: closePhotoModal,
+  } = usePhotoPromptStore();
 
   const headerSpring = useSpring({
     from: { opacity: 0, y: -10 },
@@ -228,54 +279,76 @@ export function DashboardView({ initialViewModel }: DashboardViewProps) {
     <>
       <div className="h-full overflow-auto scrollbar-thin">
         <div className="max-w-7xl mx-auto px-3 py-4 md:px-6 md:py-6 space-y-4 md:space-y-6">
-          
           {/* Header */}
-          <animated.div style={headerSpring} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <animated.div
+            style={headerSpring}
+            className="flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+          >
             <div>
-              <h1 className="text-xl md:text-2xl font-bold gradient-text-purple">Dashboard</h1>
-              <p className="text-xs md:text-sm text-muted">จัดการและติดตามคอนเทนต์ของคุณ</p>
+              <h1 className="text-xl md:text-2xl font-bold gradient-text-purple">
+                Dashboard
+              </h1>
+              <p className="text-xs md:text-sm text-muted">
+                จัดการและติดตามคอนเทนต์ของคุณ
+              </p>
             </div>
-            <JellyButton onClick={() => openModal()} variant="primary" size="lg" className="w-full sm:w-auto">
-              <span>✨</span>
-              <span>สร้างคอนเทนต์ใหม่</span>
-            </JellyButton>
+            <div className="flex gap-2 w-full sm:w-auto">
+              <JellyButton
+                onClick={() => openModal()}
+                variant="primary"
+                size="lg"
+                className="flex-1 sm:flex-initial"
+              >
+                <span>✨</span>
+                <span>สร้างคอนเทนต์</span>
+              </JellyButton>
+              <JellyButton
+                onClick={openPhotoModal}
+                variant="secondary"
+                size="lg"
+                className="flex-1 sm:flex-initial"
+              >
+                <span>🖼️</span>
+                <span>สร้าง Prompt รูป</span>
+              </JellyButton>
+            </div>
           </animated.div>
 
           {/* Stats Grid */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 md:gap-4">
-            <StatCard 
-              value={viewModel.stats.totalContents} 
-              label="Total Contents" 
-              icon="📝" 
-              color="#8B5CF6" 
-              delay={100} 
+            <StatCard
+              value={viewModel.stats.totalContents}
+              label="Total Contents"
+              icon="📝"
+              color="#8B5CF6"
+              delay={100}
               trend={12.5}
               sparklineData={[8, 12, 10, 15, 14, 18, 22]}
             />
-            <StatCard 
-              value={viewModel.stats.publishedCount} 
-              label="Published" 
-              icon="✅" 
-              color="#10B981" 
-              delay={150} 
+            <StatCard
+              value={viewModel.stats.publishedCount}
+              label="Published"
+              icon="✅"
+              color="#10B981"
+              delay={150}
               trend={8.3}
               sparklineData={[5, 7, 6, 9, 11, 10, 12]}
             />
-            <StatCard 
-              value={viewModel.stats.scheduledCount} 
-              label="Scheduled" 
-              icon="📅" 
-              color="#3B82F6" 
-              delay={200} 
+            <StatCard
+              value={viewModel.stats.scheduledCount}
+              label="Scheduled"
+              icon="📅"
+              color="#3B82F6"
+              delay={200}
               trend={-5.2}
               sparklineData={[10, 8, 9, 7, 6, 8, 5]}
             />
-            <StatCard 
-              value={viewModel.stats.totalLikes} 
-              label="Total Likes" 
-              icon="❤️" 
-              color="#EF4444" 
-              delay={250} 
+            <StatCard
+              value={viewModel.stats.totalLikes}
+              label="Total Likes"
+              icon="❤️"
+              color="#EF4444"
+              delay={250}
               trend={24.8}
               sparklineData={[120, 145, 180, 210, 250, 290, 340]}
             />
@@ -283,30 +356,43 @@ export function DashboardView({ initialViewModel }: DashboardViewProps) {
 
           {/* Charts Section */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 md:gap-6">
-            <EngagementChart weeklyData={viewModel.engagementWeeklyData} typeData={viewModel.engagementByType} />
+            <EngagementChart
+              weeklyData={viewModel.engagementWeeklyData}
+              typeData={viewModel.engagementByType}
+            />
             <ActivityFeed activities={viewModel.activities} />
           </div>
 
           {/* Main Content Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
-            
             {/* Recent Contents - 2 columns */}
             <div className="lg:col-span-2 space-y-3 md:space-y-4">
               <div className="flex items-center justify-between">
-                <h2 className="text-base md:text-lg font-semibold text-foreground">คอนเทนต์ล่าสุด</h2>
-                <Link href="/gallery" className="text-xs md:text-sm text-violet-400 hover:text-violet-300 transition-colors">
+                <h2 className="text-base md:text-lg font-semibold text-foreground">
+                  คอนเทนต์ล่าสุด
+                </h2>
+                <Link
+                  href="/gallery"
+                  className="text-xs md:text-sm text-violet-400 hover:text-violet-300 transition-colors"
+                >
                   ดูทั้งหมด →
                 </Link>
               </div>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-2 md:gap-4">
                 {viewModel.recentContents.length > 0 ? (
                   viewModel.recentContents.map((content, index) => (
-                    <ContentCard key={content.id} content={content} delay={300 + index * 50} />
+                    <ContentCard
+                      key={content.id}
+                      content={content}
+                      delay={300 + index * 50}
+                    />
                   ))
                 ) : (
                   <JellyCard className="col-span-full glass-card p-8 text-center">
                     <span className="text-4xl mb-3 block">🎨</span>
-                    <p className="text-muted">ยังไม่มีคอนเทนต์ เริ่มสร้างกันเลย!</p>
+                    <p className="text-muted">
+                      ยังไม่มีคอนเทนต์ เริ่มสร้างกันเลย!
+                    </p>
                   </JellyCard>
                 )}
               </div>
@@ -323,20 +409,30 @@ export function DashboardView({ initialViewModel }: DashboardViewProps) {
               {viewModel.currentTimeSlot && (
                 <JellyCard className="glass-card p-4">
                   <div className="flex items-center gap-2 mb-3">
-                    <span className="text-2xl">{viewModel.currentTimeSlot.emoji}</span>
+                    <span className="text-2xl">
+                      {viewModel.currentTimeSlot.emoji}
+                    </span>
                     <div>
-                      <div className="text-sm font-semibold text-foreground">{viewModel.currentTimeSlot.nameTh}</div>
+                      <div className="text-sm font-semibold text-foreground">
+                        {viewModel.currentTimeSlot.nameTh}
+                      </div>
                       <div className="text-xs text-muted">
-                        {viewModel.currentTimeSlot.startHour}:00 - {viewModel.currentTimeSlot.endHour}:00
+                        {viewModel.currentTimeSlot.startHour}:00 -{" "}
+                        {viewModel.currentTimeSlot.endHour}:00
                       </div>
                     </div>
                   </div>
                   <div className="w-full h-1 bg-surface rounded-full overflow-hidden">
-                    <div 
+                    <div
                       className="h-full bg-gradient-to-r from-violet-500 to-fuchsia-500 rounded-full"
-                      style={{ 
-                        width: `${((new Date().getHours() - viewModel.currentTimeSlot.startHour) / 
-                                  (viewModel.currentTimeSlot.endHour - viewModel.currentTimeSlot.startHour)) * 100}%` 
+                      style={{
+                        width: `${
+                          ((new Date().getHours() -
+                            viewModel.currentTimeSlot.startHour) /
+                            (viewModel.currentTimeSlot.endHour -
+                              viewModel.currentTimeSlot.startHour)) *
+                          100
+                        }%`,
                       }}
                     />
                   </div>
@@ -345,13 +441,15 @@ export function DashboardView({ initialViewModel }: DashboardViewProps) {
 
               {/* Quick Generate */}
               <div>
-                <h3 className="text-sm font-semibold text-foreground mb-3">🚀 Quick Generate</h3>
+                <h3 className="text-sm font-semibold text-foreground mb-3">
+                  🚀 Quick Generate
+                </h3>
                 <div className="space-y-2">
                   {viewModel.suggestedContentTypes.map((type, index) => (
-                    <QuickGenerateCard 
-                      key={type.id} 
-                      contentType={type} 
-                      delay={400 + index * 50} 
+                    <QuickGenerateCard
+                      key={type.id}
+                      contentType={type}
+                      delay={400 + index * 50}
                       onClick={() => openModal({ contentTypeId: type.id })}
                     />
                   ))}
@@ -361,10 +459,16 @@ export function DashboardView({ initialViewModel }: DashboardViewProps) {
               {/* Scheduled */}
               {viewModel.scheduledContents.length > 0 && (
                 <div>
-                  <h3 className="text-sm font-semibold text-foreground mb-3">📅 กำลังจะโพสต์</h3>
+                  <h3 className="text-sm font-semibold text-foreground mb-3">
+                    📅 กำลังจะโพสต์
+                  </h3>
                   <div className="space-y-2">
                     {viewModel.scheduledContents.slice(0, 3).map((content) => (
-                      <Link key={content.id} href={`/content/${content.id}`} className="block">
+                      <Link
+                        key={content.id}
+                        href={`/content/${content.id}`}
+                        className="block"
+                      >
                         <JellyCard className="glass-card-hover p-3 flex items-center gap-3 cursor-pointer">
                           <div className="w-10 h-10 flex-shrink-0 rounded-lg bg-gradient-to-br from-violet-500/20 to-fuchsia-500/20 overflow-hidden relative">
                             <SmartImage
@@ -378,8 +482,12 @@ export function DashboardView({ initialViewModel }: DashboardViewProps) {
                             />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <div className="text-xs font-medium text-foreground truncate">{content.title}</div>
-                            <div className="text-xs text-muted">{content.timeSlot}</div>
+                            <div className="text-xs font-medium text-foreground truncate">
+                              {content.title}
+                            </div>
+                            <div className="text-xs text-muted">
+                              {content.timeSlot}
+                            </div>
                           </div>
                         </JellyCard>
                       </Link>
@@ -397,6 +505,12 @@ export function DashboardView({ initialViewModel }: DashboardViewProps) {
         isOpen={isModalOpen}
         onClose={closeModal}
         onGenerate={generateContent}
+      />
+
+      {/* Photo Prompt Generator Modal */}
+      <GeneratePhotoPromptModal
+        isOpen={isPhotoModalOpen}
+        onClose={closePhotoModal}
       />
     </>
   );

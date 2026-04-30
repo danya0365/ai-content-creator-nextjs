@@ -1,11 +1,11 @@
 /**
  * WavespeedContentService
  * Service for generating content using Wavespeed AI API
- * 
+ *
  * ✅ Supports 700+ AI models
  * ✅ Async task-based generation (polling)
  * ✅ Unified API interface
- * 
+ *
  * Get API key: https://wavespeed.ai/
  */
 
@@ -14,15 +14,15 @@ import {
   GenerateContentResponse,
   GenerateTopicIdeaResponse,
   IContentService,
-} from '@/src/application/services/IContentService';
+} from "@/src/application/services/IContentService";
+import { ContentType } from "@/src/data/master/contentTypes";
+import { getImageStyleById } from "@/src/data/master/imageStyles";
+import { getPlatformById } from "@/src/data/master/platforms";
+import { getToneById } from "@/src/data/master/tones";
 import {
   WavespeedContentModel,
   resolveWavespeedContentModel,
-} from './WavespeedModels';
-import { ContentType } from '@/src/data/master/contentTypes';
-import { getImageStyleById } from '@/src/data/master/imageStyles';
-import { getPlatformById } from '@/src/data/master/platforms';
-import { getToneById } from '@/src/data/master/tones';
+} from "./WavespeedModels";
 
 /**
  * Generate content prompt based on type and topic
@@ -35,14 +35,15 @@ function buildPrompt(
   imageStyleId: string,
   platformId?: string,
   toneId?: string,
-  brandContext?: string
+  brandContext?: string,
 ): string {
-  const timeContext = {
-    morning: 'เช้าวันใหม่ที่สดใส',
-    lunch: 'ช่วงพักเที่ยง',
-    afternoon: 'บ่ายอันแสนสดใส',
-    evening: 'ค่ำคืนที่ผ่อนคลาย',
-  }[timeSlot] || '';
+  const timeContext =
+    {
+      morning: "เช้าวันใหม่ที่สดใส",
+      lunch: "ช่วงพักเที่ยง",
+      afternoon: "บ่ายอันแสนสดใส",
+      evening: "ค่ำคืนที่ผ่อนคลาย",
+    }[timeSlot] || "";
 
   const style = getImageStyleById(imageStyleId);
   const platform = platformId ? getPlatformById(platformId) : null;
@@ -54,11 +55,11 @@ Your goal is to create high-retention content that captures attention within the
 Create engaging social media content about: "${topic}"
 
 [CONTENT STRATEGY & VIRAL GUIDANCE]
-${contentType.contentGuidance ? contentType.contentGuidance.replace('{topic}', topic) : 'Create a high-impact post with a strong hook and clear value.'}
+${contentType.contentGuidance ? contentType.contentGuidance.replace("{topic}", topic) : "Create a high-impact post with a strong hook and clear value."}
 
 Context: This content will be posted during ${timeContext}.
 Content Type: ${contentType.name} - ${contentType.description}
-Language: ${language === 'th' ? 'Thai' : 'English'}`;
+Language: ${language === "th" ? "Thai" : "English"}`;
 
   if (platform) {
     prompt += `\n\n[CRITICAL SOCIAL PLATFORM CONSTRAINTS: ${platform.nameEn}]\n${platform.promptGuidance}`;
@@ -68,15 +69,15 @@ Language: ${language === 'th' ? 'Thai' : 'English'}`;
     prompt += `\n\n[TONE OF VOICE: ${tone.nameEn}]\n${tone.promptModifier}`;
   }
 
-  if (brandContext && brandContext.trim() !== '') {
+  if (brandContext && brandContext.trim() !== "") {
     prompt += `\n\n[BRAND PERSONA & CUSTOM INSTRUCTIONS]\nYou must strictly adhere to the following brand guidelines and styles:\n${brandContext}`;
   }
 
   if (contentType.typographyGuidance) {
-    prompt += `\n\n[IMAGE TYPOGRAPHY & VISUAL OVERLAY GUIDANCE]\nYour "imagePrompt" MUST include specific instructions to render text onto the image. The FLUX image generator is capable of perfect typography. Use this rule:\n${contentType.typographyGuidance.replace('{topic}', topic)}`;
+    prompt += `\n\n[IMAGE TYPOGRAPHY & VISUAL OVERLAY GUIDANCE]\nYour "imagePrompt" MUST include specific instructions to render text onto the image. The FLUX image generator is capable of perfect typography. Use this rule:\n${contentType.typographyGuidance.replace("{topic}", topic)}`;
   }
 
-  if (contentType.category === 'islamic') {
+  if (contentType.category === "islamic") {
     prompt += `\n\n[CRITICAL RELIGIOUS IMAGE RULE: TEXT-FIRST CANVAS]\nFor this content, the IMAGE IS A CANVAS for the sacred text.
 1. BACKGROUND: Use extremely blurred, subtle, or minimalist backgrounds (Bokeh, soft lighting, or simple patterns).
 2. TEXT FOCUS: The text must be LARGE, BOLD, and CENTERED. It should cover the majority of the image area.
@@ -110,8 +111,7 @@ export class WavespeedContentService implements IContentService {
   private apiKey: string;
   // Wavespeed Model UUID - Text generation (strict typed)
   private modelUuid: WavespeedContentModel;
-  private baseUrl = 'https://api.wavespeed.ai/api/v3';
-  private llmBaseUrl = 'https://llm.wavespeed.ai/v1';
+  private llmBaseUrl = "https://llm.wavespeed.ai/v1";
 
   /**
    * @param apiKey - Wavespeed AI API key
@@ -122,38 +122,58 @@ export class WavespeedContentService implements IContentService {
     this.modelUuid = resolveWavespeedContentModel(modelUuid);
   }
 
-  async generateContent(request: GenerateContentRequest): Promise<GenerateContentResponse> {
+  async generateContent(
+    request: GenerateContentRequest,
+  ): Promise<GenerateContentResponse> {
     if (!this.apiKey) {
       return {
         success: false,
-        error: 'No Wavespeed AI API key provided',
+        error: "No Wavespeed AI API key provided",
       };
     }
 
     if (!this.modelUuid) {
       return {
         success: false,
-        error: 'No Wavespeed Content Model UUID provided',
+        error: "No Wavespeed Content Model UUID provided",
       };
     }
 
     try {
-      const { contentType, topic, timeSlot, language = 'th', imageStyle, platform, tone, brandContext } = request;
-      const prompt = buildPrompt(contentType, topic, timeSlot, language, imageStyle, platform, tone, brandContext);
+      const {
+        contentType,
+        topic,
+        timeSlot,
+        language = "th",
+        imageStyle,
+        platform,
+        tone,
+        brandContext,
+      } = request;
+      const prompt = buildPrompt(
+        contentType,
+        topic,
+        timeSlot,
+        language,
+        imageStyle,
+        platform,
+        tone,
+        brandContext,
+      );
 
-      console.log(`[WavespeedContentService] Generating content using LLM: ${this.modelUuid}`);
-      
+      console.log(
+        `[WavespeedContentService] Generating content using LLM: ${this.modelUuid}`,
+      );
+
       const response = await fetch(`${this.llmBaseUrl}/chat/completions`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.apiKey}`,
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${this.apiKey}`,
         },
         body: JSON.stringify({
           model: this.modelUuid,
-          messages: [
-            { role: 'user', content: prompt }
-          ],
+          messages: [{ role: "user", content: prompt }],
           temperature: 0.7,
           max_tokens: 2000,
         }),
@@ -161,7 +181,7 @@ export class WavespeedContentService implements IContentService {
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('Wavespeed LLM API error:', errorText);
+        console.error("Wavespeed LLM API error:", errorText);
         return {
           success: false,
           error: `Wavespeed LLM API error: ${response.status}`,
@@ -174,17 +194,17 @@ export class WavespeedContentService implements IContentService {
       if (!textContent) {
         return {
           success: false,
-          error: 'No content received from Wavespeed LLM',
+          error: "No content received from Wavespeed LLM",
         };
       }
 
       // Parse JSON from response
       const jsonMatch = textContent.match(/\{[\s\S]*\}/);
       if (!jsonMatch) {
-         return {
+        return {
           success: false,
-          error: 'Failed to parse Wavespeed response as JSON',
-          };
+          error: "Failed to parse Wavespeed response as JSON",
+        };
       }
 
       const parsed = JSON.parse(jsonMatch[0]);
@@ -193,15 +213,17 @@ export class WavespeedContentService implements IContentService {
       return {
         success: true,
         title: parsed.title || `${topic} 🎨`,
-        description: parsed.description || `AI generated content about ${topic}`,
+        description:
+          parsed.description || `AI generated content about ${topic}`,
         prompt: prompt,
-        imagePrompt: parsed.imagePrompt || `Cute ${style.nameEn} illustration of ${topic}`,
-        hashtags: parsed.hashtags || ['#pixelart', '#ai', '#content'],
+        imagePrompt:
+          parsed.imagePrompt || `Cute ${style.nameEn} illustration of ${topic}`,
+        hashtags: parsed.hashtags || ["#pixelart", "#ai", "#content"],
       };
-
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      console.error('Wavespeed content generation error:', errorMessage);
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error";
+      console.error("Wavespeed content generation error:", errorMessage);
       return {
         success: false,
         error: errorMessage,
@@ -212,13 +234,21 @@ export class WavespeedContentService implements IContentService {
   /**
    * Poll Wavespeed API for task completion
    */
-  private async pollForResults(pollUrl: string, taskId: string, prompt: string, topic: string, imageStyle: string, maxRetries = 30, intervalMs = 2000): Promise<GenerateContentResponse> {
+  private async pollForResults(
+    pollUrl: string,
+    taskId: string,
+    prompt: string,
+    topic: string,
+    imageStyle: string,
+    maxRetries = 30,
+    intervalMs = 2000,
+  ): Promise<GenerateContentResponse> {
     for (let i = 0; i < maxRetries; i++) {
       try {
         const response = await fetch(pollUrl, {
-          method: 'GET',
+          method: "GET",
           headers: {
-            'Authorization': `Bearer ${this.apiKey}`,
+            Authorization: `Bearer ${this.apiKey}`,
           },
         });
 
@@ -230,18 +260,18 @@ export class WavespeedContentService implements IContentService {
         const data = await response.json();
         const status = data.data?.status || data.status;
 
-        if (status === 'completed' || status === 'success') {
+        if (status === "completed" || status === "success") {
           const outputs = data.data?.outputs || data.outputs;
           const textContent = outputs?.[0]?.text || outputs?.[0];
 
           if (textContent) {
-             // Parse JSON from response
+            // Parse JSON from response
             const jsonMatch = textContent.match(/\{[\s\S]*\}/);
             if (!jsonMatch) {
-                return {
+              return {
                 success: false,
-                error: 'Failed to parse Wavespeed response as JSON',
-                };
+                error: "Failed to parse Wavespeed response as JSON",
+              };
             }
 
             const parsed = JSON.parse(jsonMatch[0]);
@@ -250,62 +280,69 @@ export class WavespeedContentService implements IContentService {
             return {
               success: true,
               title: parsed.title || `${topic} 🎨`,
-              description: parsed.description || `AI generated content about ${topic}`,
+              description:
+                parsed.description || `AI generated content about ${topic}`,
               prompt: prompt,
-              imagePrompt: parsed.imagePrompt || `Cute ${style.nameEn} illustration of ${topic}`,
-              hashtags: parsed.hashtags || ['#pixelart', '#ai', '#content'],
+              imagePrompt:
+                parsed.imagePrompt ||
+                `Cute ${style.nameEn} illustration of ${topic}`,
+              hashtags: parsed.hashtags || ["#pixelart", "#ai", "#content"],
             };
           }
           return {
             success: false,
-            error: 'Task completed but no content found',
+            error: "Task completed but no content found",
           };
-        } else if (status === 'failed') {
+        } else if (status === "failed") {
           return {
             success: false,
-            error: `Wavespeed task failed: ${data.data?.error || data.error || 'Unknown error'}`,
+            error: `Wavespeed task failed: ${data.data?.error || data.error || "Unknown error"}`,
           };
         }
 
         // Wait before next poll
-        await new Promise(resolve => setTimeout(resolve, intervalMs));
+        await new Promise((resolve) => setTimeout(resolve, intervalMs));
       } catch (error) {
-        console.error('Polling error:', error);
+        console.error("Polling error:", error);
       }
     }
 
     return {
       success: false,
-      error: 'Polling timed out after 60 seconds',
+      error: "Polling timed out after 60 seconds",
     };
   }
 
   async generateTopicIdea(
     contentType: ContentType,
-    options?: { trends?: string[]; brandContext?: string; mode?: string }
+    options?: { trends?: string[]; brandContext?: string; mode?: string },
   ): Promise<GenerateTopicIdeaResponse> {
-    if (!this.apiKey) return { success: false, error: 'No Wavespeed API key' };
+    if (!this.apiKey) return { success: false, error: "No Wavespeed API key" };
     try {
-      let systemPrompt = 'You are a creative brainstorming assistant. Reply with ONLY ONE short, engaging topic idea (in Thai) for the requested category. Do not include any quotes or markdown formatting.';
+      let systemPrompt =
+        "You are a creative brainstorming assistant. Reply with ONLY ONE short, engaging topic idea (in Thai) for the requested category. Do not include any quotes or markdown formatting.";
       if (options?.trends && options.trends.length > 0) {
-        systemPrompt += `\n\nCRITICAL CONTEXT: Base your topic idea heavily around at least one of these current trending topics in Thailand: [${options.trends.join(', ')}]. This is a "Trendjacking" requirement.`;
+        systemPrompt += `\n\nCRITICAL CONTEXT: Base your topic idea heavily around at least one of these current trending topics in Thailand: [${options.trends.join(", ")}]. This is a "Trendjacking" requirement.`;
       }
-      if (options?.brandContext && options.brandContext.trim() !== '') {
+      if (options?.brandContext && options.brandContext.trim() !== "") {
         systemPrompt += `\n\nBRAND PERSONA: Ensure the idea aligns strictly with this brand styling: ${options.brandContext}`;
       }
 
       // 1. Send direct request to LLM endpoint
       const response = await fetch(`${this.llmBaseUrl}/chat/completions`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.apiKey}`,
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${this.apiKey}`,
         },
         body: JSON.stringify({
           model: this.modelUuid,
           messages: [
-            { role: 'system', content: systemPrompt },
-            { role: 'user', content: `Generate one topic idea about ${contentType.nameTh} (${contentType.name}).` }
+            { role: "system", content: systemPrompt },
+            {
+              role: "user",
+              content: `Generate one topic idea about ${contentType.nameTh} (${contentType.name}).`,
+            },
           ],
           temperature: 0.9,
           max_tokens: 1000,
@@ -314,20 +351,31 @@ export class WavespeedContentService implements IContentService {
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('Wavespeed LLM API error:', errorText);
-        return { success: false, error: `Wavespeed API error: ${response.status}` };
+        console.error("Wavespeed LLM API error:", errorText);
+        return {
+          success: false,
+          error: `Wavespeed API error: ${response.status}`,
+        };
       }
 
       const data = await response.json();
-      const idea = (data.choices?.[0]?.message?.content || data.choices?.[0]?.message?.reasoning_content)?.replace(/["*/]/g, '').trim();
+      const idea = (
+        data.choices?.[0]?.message?.content ||
+        data.choices?.[0]?.message?.reasoning_content
+      )
+        ?.replace(/["*/]/g, "")
+        .trim();
 
       return {
         success: !!idea,
         idea,
-        error: idea ? undefined : 'No idea generated'
+        error: idea ? undefined : "No idea generated",
       };
     } catch (e) {
-      return { success: false, error: e instanceof Error ? e.message : 'Unknown error' };
+      return {
+        success: false,
+        error: e instanceof Error ? e.message : "Unknown error",
+      };
     }
   }
 }
